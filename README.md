@@ -229,6 +229,18 @@ err := helper.ShareResource(ctx, c, resourceID, changes)
 
 Note: These Functions are Also Availabe for Folders (PRO)
 
+## Moveing (PRO)
+In Passbolt PRO there are Folders, during Creation of Resources and Folders you can Specify in which Folder you want to create the Resource / Folder inside of. But if you want to change which Folder the Resource / Folder is in then you can't use the Update function (it is / was possible to update the parent Folder using the Update function but that breaks things). Instead you use the Move function.
+```
+err := client.MoveResource(ctx, "resource id", "parent folder id")
+```
+```
+err := client.MoveFolder(ctx, "folder id", "parent folder id")
+```
+
+## Other
+These Examples are just the main Usecases of this Modules, there are many more API calls that are supported. Look at the [Reference](https://pkg.go.dev/github.com/speatzle/go-passbolt) for more information.
+
 ## Full Example
 This Example Creates a Resource, Searches for a User Named Test User, Checks that its Not itself and Shares the Password with the Test User if Nessesary:
 
@@ -301,6 +313,7 @@ func main() {
 
 	if client.GetUserID() == users[0].ID {
 		fmt.Println("I am the Test User, No Need to Share Password With myself")
+        client.Logout(ctx)
 		return
 	}
 
@@ -309,6 +322,8 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("Shared Resource With Test User %v\n", users[0].ID)
+
+    client.Logout(ctx)
 }
 ```
 
