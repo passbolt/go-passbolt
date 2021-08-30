@@ -323,7 +323,7 @@ func main() {
 	}
 	fmt.Printf("Shared Resource With Test User %v\n", users[0].ID)
 
-    client.Logout(ctx)
+    	client.Logout(ctx)
 }
 ```
 
