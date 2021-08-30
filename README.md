@@ -115,7 +115,7 @@ Here We Specify that we want to Filter by Favorites and that the Response Should
 ```go
 favorites, err := client.GetResources(ctx, &api.GetResourcesOptions{
 	FilterIsFavorite: true,
-    ContainPermissions: true,
+    	ContainPermissions: true,
 })
 ```
 
@@ -132,7 +132,7 @@ Groups:
 
 ```go
 groups, err := client.GetGroups(ctx, &api.GetGroupsOptions{
-    FilterHasUsers: []string{"id of user", "id of other user"},
+    	FilterHasUsers: []string{"id of user", "id of other user"},
 	ContainUser: true,
 })
 ```
