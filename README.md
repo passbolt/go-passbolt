@@ -173,7 +173,7 @@ The ShareResourceWithUsersAndGroups function Shares the Resource With all Provid
 ```
 err := helper.ShareResourceWithUsersAndGroups(ctx, client, "resource id", []string{"user 1 id"}, []string{"group 1 id"}, 7)
 ```
-Note: Existing Permission of Users and Groups will be Adjusted to Fit the Type.
+Note: Existing Permission of Users and Groups will be adjusted to be of the Provided permissionType.
 
 If you need to do something more Complicated like setting Users/Groups to different Type then you can Use ShareResource directly:
 ```
