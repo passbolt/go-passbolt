@@ -1,11 +1,13 @@
 # go-passbolt
 A Go Module to interact with [Passbolt](https://www.passbolt.com/), a Open source Password Manager for Teams
 
-This Module tries to Support the Latest Passbolt PRO Server Release, PRO Features Such as Folders are Supported.
+This Module tries to Support the Latest Passbolt Community/PRO Server Release, PRO Features Such as Folders are Supported.
 Older Versions of Passbolt such as v2 are unsupported (it's a Password Manager, please update it)
 
 This Module is split into 2 packages: api and helper, in the api package you will find everything to directly interact with the API. The helper Package has simplified functions that use the api package to perform common but complicated tasks such as Sharing a Password. To use the API Package please read the Passbolt API [Docs](https://help.passbolt.com/api).
 Sadly the Docs aren't Complete so many Things here have been found by looking at the source of Passbolt or through trial and error, if you have a Question just ask.
+
+PR's are Welcome, if it's something bigger / fundamental: Please make a Issue and ask first.
 
 # Install
 
