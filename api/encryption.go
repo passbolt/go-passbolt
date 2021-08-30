@@ -1,4 +1,4 @@
-package passbolt
+package api
 
 import "github.com/ProtonMail/gopenpgp/v2/helper"
 

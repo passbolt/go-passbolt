@@ -1,4 +1,4 @@
-package passbolt
+package api
 
 import "errors"
 

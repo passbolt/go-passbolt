@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/speatzle/go-passbolt"
+	"github.com/speatzle/go-passbolt/api"
 )
 
 // CreateResource Creates a Resource where the Password and Description are Encrypted and Returns the Resources ID
-func CreateResource(ctx context.Context, c *passbolt.Client, folderParentID, name, username, uri, password, description string) (string, error) {
+func CreateResource(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	types, err := c.GetResourceTypes(ctx, nil)
 	if err != nil {
 		return "", fmt.Errorf("Getting ResourceTypes: %w", err)
 	}
-	var rType *passbolt.ResourceType
+	var rType *api.ResourceType
 	for _, tmp := range types {
 		if tmp.Slug == "password-and-description" {
 			rType = &tmp
@@ -24,7 +24,7 @@ func CreateResource(ctx context.Context, c *passbolt.Client, folderParentID, nam
 		return "", fmt.Errorf("Cannot find Resource type password-and-description")
 	}
 
-	resource := passbolt.Resource{
+	resource := api.Resource{
 		ResourceTypeID: rType.ID,
 		FolderParentID: folderParentID,
 		Name:           name,
@@ -32,7 +32,7 @@ func CreateResource(ctx context.Context, c *passbolt.Client, folderParentID, nam
 		URI:            uri,
 	}
 
-	tmp := passbolt.SecretDataTypePasswordAndDescription{
+	tmp := api.SecretDataTypePasswordAndDescription{
 		Password:    password,
 		Description: description,
 	}
@@ -45,7 +45,7 @@ func CreateResource(ctx context.Context, c *passbolt.Client, folderParentID, nam
 	if err != nil {
 		return "", fmt.Errorf("Encrypting Secret Data for User me: %w", err)
 	}
-	resource.Secrets = []passbolt.Secret{{Data: encSecretData}}
+	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
 	newresource, err := c.CreateResource(ctx, resource)
 	if err != nil {
@@ -55,19 +55,19 @@ func CreateResource(ctx context.Context, c *passbolt.Client, folderParentID, nam
 }
 
 // CreateResourceSimple Creates a Legacy Resource where only the Password is Encrypted and Returns the Resources ID
-func CreateResourceSimple(ctx context.Context, c *passbolt.Client, folderParentID, name, username, uri, password, description string) (string, error) {
+func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	enc, err := c.EncryptMessage(password)
 	if err != nil {
 		return "", fmt.Errorf("Encrypting Password: %w", err)
 	}
 
-	res := passbolt.Resource{
+	res := api.Resource{
 		Name:           name,
 		URI:            uri,
 		Username:       username,
 		FolderParentID: folderParentID,
 		Description:    description,
-		Secrets: []passbolt.Secret{
+		Secrets: []api.Secret{
 			{Data: enc},
 		},
 	}
@@ -80,7 +80,7 @@ func CreateResourceSimple(ctx context.Context, c *passbolt.Client, folderParentI
 }
 
 // GetResource Gets a Resource by ID
-func GetResource(ctx context.Context, c *passbolt.Client, resourceID string) (folderParentID, name, username, uri, password, description string, err error) {
+func GetResource(ctx context.Context, c *api.Client, resourceID string) (folderParentID, name, username, uri, password, description string, err error) {
 	resource, err := c.GetResource(ctx, resourceID)
 	if err != nil {
 		return "", "", "", "", "", "", fmt.Errorf("Getting Resource: %w", err)
@@ -109,7 +109,7 @@ func GetResource(ctx context.Context, c *passbolt.Client, resourceID string) (fo
 			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
 		}
 
-		var secretData passbolt.SecretDataTypePasswordAndDescription
+		var secretData api.SecretDataTypePasswordAndDescription
 		err = json.Unmarshal([]byte(rawSecretData), &secretData)
 		if err != nil {
 			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
@@ -124,7 +124,7 @@ func GetResource(ctx context.Context, c *passbolt.Client, resourceID string) (fo
 
 // UpdateResource Updates all Fields.
 // Note if you want to Change the FolderParentID please use the MoveResource Function
-func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, username, uri, password, description string) error {
+func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, username, uri, password, description string) error {
 	resource, err := c.GetResource(ctx, resourceID)
 	if err != nil {
 		return fmt.Errorf("Getting Resource: %w", err)
@@ -135,7 +135,7 @@ func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, u
 		return fmt.Errorf("Getting ResourceType: %w", err)
 	}
 
-	opts := &passbolt.GetUsersOptions{
+	opts := &api.GetUsersOptions{
 		FilterHasAccess: resourceID,
 	}
 	users, err := c.GetUsers(ctx, opts)
@@ -143,7 +143,7 @@ func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, u
 		return fmt.Errorf("Getting Users: %w", err)
 	}
 
-	newResource := passbolt.Resource{
+	newResource := api.Resource{
 		ID: resourceID,
 		// This needs to be specified or it will revert to a legacy password
 		ResourceTypeID: resource.ResourceTypeID,
@@ -158,7 +158,7 @@ func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, u
 		newResource.Description = description
 		secretData = password
 	case "password-and-description":
-		tmp := passbolt.SecretDataTypePasswordAndDescription{
+		tmp := api.SecretDataTypePasswordAndDescription{
 			Password:    password,
 			Description: description,
 		}
@@ -171,7 +171,7 @@ func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, u
 		return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 	}
 
-	newResource.Secrets = []passbolt.Secret{}
+	newResource.Secrets = []api.Secret{}
 	for _, user := range users {
 		var encSecretData string
 		// if this is our user use our stored and verified public key instead
@@ -186,7 +186,7 @@ func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, u
 				return fmt.Errorf("Encrypting Secret Data for User %v: %w", user.ID, err)
 			}
 		}
-		newResource.Secrets = append(newResource.Secrets, passbolt.Secret{
+		newResource.Secrets = append(newResource.Secrets, api.Secret{
 			UserID: user.ID,
 			Data:   encSecretData,
 		})
@@ -199,10 +199,10 @@ func UpdateResource(ctx context.Context, c *passbolt.Client, resourceID, name, u
 	return nil
 }
 
-func DeleteResource(ctx context.Context, c *passbolt.Client, resourceID string) error {
+func DeleteResource(ctx context.Context, c *api.Client, resourceID string) error {
 	return c.DeleteResource(ctx, resourceID)
 }
 
-func MoveResource(ctx context.Context, c *passbolt.Client, resourceID, folderParentID string) error {
+func MoveResource(ctx context.Context, c *api.Client, resourceID, folderParentID string) error {
 	return c.MoveResource(ctx, resourceID, folderParentID)
 }
