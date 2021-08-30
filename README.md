@@ -299,12 +299,7 @@ func main() {
 		panic("Cannot Find Test User")
 	}
 
-	me, err := client.GetMe(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	if me.ID == users[0].ID {
+	if client.GetUserID() == users[0].ID {
 		fmt.Println("I am the Test User, No Need to Share Password With myself")
 		return
 	}
