@@ -1,0 +1,57 @@
+package passbolt
+
+import (
+	"context"
+	"encoding/json"
+)
+
+// GPGKey is a GPGKey
+type GPGKey struct {
+	ID          string `json:"id,omitempty"`
+	ArmoredKey  string `json:"armored_key,omitempty"`
+	Created     *Time  `json:"created,omitempty"`
+	KeyCreated  *Time  `json:"key_created,omitempty"`
+	Bits        int    `json:"bits,omitempty"`
+	Deleted     bool   `json:"deleted,omitempty"`
+	Modified    *Time  `json:"modified,omitempty"`
+	KeyID       string `json:"key_id,omitempty"`
+	Fingerprint string `json:"fingerprint,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Expires     *Time  `json:"expires,omitempty"`
+}
+
+// GetGPGKeysOptions are all available query parameters
+type GetGPGKeysOptions struct {
+	// This is a Unix TimeStamp
+	FilterModifiedAfter int `url:"filter[modified-after],omitempty"`
+}
+
+// GetGPGKeys gets all Passbolt GPGKeys
+func (c *Client) GetGPGKeys(ctx context.Context, opts *GetGPGKeysOptions) ([]GPGKey, error) {
+	msg, err := c.DoCustomRequest(ctx, "GET", "/gpgkeys.json", "v2", nil, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var gpgkeys []GPGKey
+	err = json.Unmarshal(msg.Body, &gpgkeys)
+	if err != nil {
+		return nil, err
+	}
+	return gpgkeys, nil
+}
+
+// GetGPGKey gets a Passbolt GPGKey
+func (c *Client) GetGPGKey(ctx context.Context, gpgkeyID string) (*GPGKey, error) {
+	msg, err := c.DoCustomRequest(ctx, "GET", "/gpgkeys/"+gpgkeyID+".json", "v2", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var gpgkey GPGKey
+	err = json.Unmarshal(msg.Body, &gpgkey)
+	if err != nil {
+		return nil, err
+	}
+	return &gpgkey, nil
+}
