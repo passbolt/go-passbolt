@@ -11,20 +11,23 @@ type ResourceShareRequest struct {
 	Secrets     []Secret     `json:"secrets,omitempty"`
 }
 
-// ResourceShareSimulationResult is the Result of a Sharing Siumulation
+// ResourceShareSimulationResult is the Result of a Sharing Simulation
 type ResourceShareSimulationResult struct {
 	Changes ResourceShareSimulationChanges `json:"changes,omitempty"`
 }
 
+// ResourceShareSimulationChanges contains the Actual Changes
 type ResourceShareSimulationChanges struct {
 	Added   []ResourceShareSimulationChange `json:"added,omitempty"`
 	Removed []ResourceShareSimulationChange `json:"removed,omitempty"`
 }
 
+// ResourceShareSimulationChange is a single change
 type ResourceShareSimulationChange struct {
 	User ResourceShareSimulationUser `json:"user,omitempty"`
 }
 
+// ResourceShareSimulationUser contains the users id
 type ResourceShareSimulationUser struct {
 	ID string `json:"id,omitempty"`
 }

@@ -15,6 +15,7 @@ type ResourceType struct {
 	Modified    *Time           `json:"modified,omitempty"`
 }
 
+// GetResourceTypesOptions is a placeholder for future options
 type GetResourceTypesOptions struct {
 }
 

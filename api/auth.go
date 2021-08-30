@@ -176,6 +176,7 @@ func (c *Client) Logout(ctx context.Context) error {
 	return nil
 }
 
+// GetUserID Gets the ID of the Current User
 func (c *Client) GetUserID() string {
 	return c.userID
 }

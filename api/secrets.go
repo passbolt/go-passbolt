@@ -15,6 +15,7 @@ type Secret struct {
 	Modified   *Time  `json:"modified,omitempty"`
 }
 
+// SecretDataTypePasswordAndDescription is the format a secret of resource type "password-and-description" is stored in
 type SecretDataTypePasswordAndDescription struct {
 	Password    string `json:"password"`
 	Description string `json:"description,omitempty"`

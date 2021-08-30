@@ -30,6 +30,7 @@ func (c *Client) DoCustomRequest(ctx context.Context, method, path, version stri
 	return response, err
 }
 
+// DoCustomRequestAndReturnRawResponse Executes a Custom Request and returns a APIResponse and the Raw HTTP Response
 func (c *Client) DoCustomRequestAndReturnRawResponse(ctx context.Context, method, path, version string, body interface{}, opts interface{}) (*http.Response, *APIResponse, error) {
 	u, err := addOptions(path, version, opts)
 	if err != nil {
