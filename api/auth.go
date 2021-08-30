@@ -158,7 +158,7 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("Decrypted PublicKey Validation Message does not Match Original (you might be getting Hacked): %w", err)
 	}
 
-	// Insert PublicKey into Client after checking it to Prevent ignored errors leading to proceding with a potentially Malicious PublicKey
+	// Insert PublicKey into Client after checking it to Prevent ignored errors leading to proceeding with a potentially Malicious PublicKey
 	c.userPublicKey = user.GPGKey.ArmoredKey
 	c.userID = user.ID
 

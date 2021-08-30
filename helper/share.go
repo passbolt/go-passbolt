@@ -99,7 +99,7 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 
 // ShareFolderWithUsersAndGroups Shares a Folder With The Users and Groups with the Specified Type,
 // if the Folder has already been shared With the User/Group the Permission Type will be Adjusted/Deleted.
-// Note: Resources Permissions in the Folder are not Adjusted (Like the Extention does)
+// Note: Resources Permissions in the Folder are not Adjusted (Like the Extension does)
 func ShareFolderWithUsersAndGroups(ctx context.Context, c *api.Client, folderID string, Users []string, Groups []string, permissionType int) error {
 	changes := []ShareOperation{}
 	for _, userID := range Users {
@@ -159,14 +159,14 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 
 	permissionChanges := []api.Permission{}
 	for _, change := range changes {
-		// Find Permission thats invloves the Same ARO as Requested in the change
+		// Find Permission thats involves the Same ARO as Requested in the change
 		var oldPermission *api.Permission
 		for _, oldPerm := range oldPermissions {
 			if oldPerm.ARO == change.ARO && oldPerm.AROForeignKey == change.AROID {
 				oldPermission = &oldPerm
 			}
 		}
-		// Check Wheter Matching Permission Already Exists and needs to be adjusted or is a new one can be created
+		// Check Whether Matching Permission Already Exists and needs to be adjusted or is a new one can be created
 		if oldPermission == nil {
 			if change.Type == 15 || change.Type == 7 || change.Type == 1 {
 				permissionChanges = append(permissionChanges, api.Permission{
