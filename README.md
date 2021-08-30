@@ -1,4 +1,6 @@
 # go-passbolt
+[![Go Reference](https://pkg.go.dev/badge/github.com/speatzle/go-passbolt.svg)](https://pkg.go.dev/github.com/speatzle/go-passbolt)
+
 A Go Module to interact with [Passbolt](https://www.passbolt.com/), a Open source Password Manager for Teams
 
 This Module tries to Support the Latest Passbolt Community/PRO Server Release, PRO Features Such as Folders are Supported.
