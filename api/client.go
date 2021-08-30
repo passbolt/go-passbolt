@@ -33,7 +33,9 @@ type Client struct {
 	Debug bool
 }
 
-// NewClient Returns a new Passbolt Client
+// NewClient Returns a new Passbolt Client.
+// if httpClient is nil http.DefaultClient will be used.
+// if UserAgent is "" "goPassboltClient/1.0" will be used.
 func NewClient(BaseURL *url.URL, httpClient *http.Client, UserAgent, UserPrivateKey, UserPassword string) (*Client, error) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
