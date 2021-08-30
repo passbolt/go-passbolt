@@ -25,12 +25,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	"github.com/speatzle/go-passbolt/api"
 )
 
-const passboltAddress = "https://passbolt.example.com"
+const address = "https://passbolt.example.com"
 const userPassword = "aStrongPassword"
 const userPrivateKey = `
 -----BEGIN PGP PRIVATE KEY BLOCK-----
@@ -40,12 +39,7 @@ klasd...
 -----END PGP PRIVATE KEY BLOCK-----`
 
 func main() {
-	u, err := url.Parse(passboltAddress)
-	if err != nil {
-		panic(err)
-	}
-
-	client, err := api.NewClient(u, nil, "", userPrivateKey, userPassword)
+	client, err := api.NewClient(nil, "", address, userPrivateKey, userPassword)
 	if err != nil {
 		panic(err)
 	}
@@ -250,13 +244,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	"github.com/speatzle/go-passbolt/api"
 	"github.com/speatzle/go-passbolt/helper"
 )
 
-const passboltAddress = "https://passbolt.example.com"
+const address = "https://passbolt.example.com"
 const userPassword = "aStrongPassword"
 const userPrivateKey = `
 -----BEGIN PGP PRIVATE KEY BLOCK-----
@@ -268,12 +261,7 @@ klasd...
 func main() {
 	ctx := context.TODO()
 
-	u, err := url.Parse(passboltAddress)
-	if err != nil {
-		panic(err)
-	}
-
-	client, err := api.NewClient(u, nil, "", userPrivateKey, userPassword)
+	client, err := api.NewClient(nil, "", address, userPrivateKey, userPassword)
 	if err != nil {
 		panic(err)
 	}

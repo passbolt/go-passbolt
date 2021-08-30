@@ -36,12 +36,17 @@ type Client struct {
 // NewClient Returns a new Passbolt Client.
 // if httpClient is nil http.DefaultClient will be used.
 // if UserAgent is "" "goPassboltClient/1.0" will be used.
-func NewClient(BaseURL *url.URL, httpClient *http.Client, UserAgent, UserPrivateKey, UserPassword string) (*Client, error) {
+func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, UserPassword string) (*Client, error) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
 	if UserAgent == "" {
 		UserAgent = "goPassboltClient/1.0"
+	}
+
+	u, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("Parsing Base URL: %w", err)
 	}
 
 	// Verify that the Given Privatekey and Password are valid and work Together
@@ -64,7 +69,7 @@ func NewClient(BaseURL *url.URL, httpClient *http.Client, UserAgent, UserPrivate
 	// Create Client Object
 	c := &Client{
 		httpClient:     httpClient,
-		baseURL:        BaseURL,
+		baseURL:        u,
 		userAgent:      UserAgent,
 		userPassword:   []byte(UserPassword),
 		userPrivateKey: UserPrivateKey,
