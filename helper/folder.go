@@ -32,7 +32,7 @@ func DeleteFolder(ctx context.Context, c *api.Client, folderID string) error {
 	return c.DeleteFolder(ctx, folderID)
 }
 
-// MoveFolder Moves a Folder into a
+// MoveFolder Moves a Folder into a Folder
 func MoveFolder(ctx context.Context, c *api.Client, folderID, folderParentID string) error {
 	return c.MoveFolder(ctx, folderID, folderParentID)
 }

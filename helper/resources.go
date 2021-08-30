@@ -204,7 +204,7 @@ func DeleteResource(ctx context.Context, c *api.Client, resourceID string) error
 	return c.DeleteResource(ctx, resourceID)
 }
 
-// MoveResource Moves a Resource into a
+// MoveResource Moves a Resource into a Folder
 func MoveResource(ctx context.Context, c *api.Client, resourceID, folderParentID string) error {
 	return c.MoveResource(ctx, resourceID, folderParentID)
 }
