@@ -83,6 +83,7 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 		return nil, fmt.Errorf("Parsing URL: %w", err)
 	}
 	u := c.baseURL.ResolveReference(rel)
+
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
@@ -103,6 +104,15 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	req.Header.Set("X-CSRF-Token", c.csrfToken.Value)
 	req.AddCookie(&c.sessionToken)
 	req.AddCookie(&c.csrfToken)
+
+	// Debugging
+	c.log("Request URL: %v", req.URL.String())
+	if c.Debug && body != nil {
+		data, err := json.Marshal(body)
+		if err == nil {
+			c.log("Raw Request: %v", string(data))
+		}
+	}
 
 	return req, nil
 }
@@ -126,6 +136,8 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 	if err != nil {
 		return resp, fmt.Errorf("Error Reading Resopnse Body: %w", err)
 	}
+
+	c.log("Raw Response: %v", string(bodyBytes))
 
 	err = json.Unmarshal(bodyBytes, v)
 	if err != nil {
