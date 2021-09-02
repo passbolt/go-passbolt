@@ -57,6 +57,10 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 // Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar
 func (c *Client) Login(ctx context.Context) error {
 
+	if c.userPrivateKey == "" {
+		return fmt.Errorf("Client has no Private Key")
+	}
+
 	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
 	if err != nil {
 		return fmt.Errorf("Parsing User Private Key: %w", err)
