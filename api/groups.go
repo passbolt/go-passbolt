@@ -7,14 +7,30 @@ import (
 
 //Group is a Group
 type Group struct {
-	ID         string `json:"id,omitempty"`
-	Name       string `json:"name,omitempty"`
-	Created    *Time  `json:"created,omitempty"`
-	CreatedBy  string `json:"created_by,omitempty"`
-	Deleted    bool   `json:"deleted,omitempty"`
-	Modified   *Time  `json:"modified,omitempty"`
-	ModifiedBy string `json:"modified_by,omitempty"`
-	GroupUsers []User `json:"groups_users,omitempty"`
+	ID         string            `json:"id,omitempty"`
+	Name       string            `json:"name,omitempty"`
+	Created    *Time             `json:"created,omitempty"`
+	CreatedBy  string            `json:"created_by,omitempty"`
+	Deleted    bool              `json:"deleted,omitempty"`
+	Modified   *Time             `json:"modified,omitempty"`
+	ModifiedBy string            `json:"modified_by,omitempty"`
+	GroupUsers []GroupMembership `json:"groups_users,omitempty"`
+}
+
+type GroupMembership struct {
+	ID      string `json:"id,omitempty"`
+	UserID  string `json:"user_id,omitempty"`
+	GroupID string `json:"group_id,omitempty"`
+	IsAdmin bool   `json:"is_admin,omitempty"`
+	Delete  bool   `json:"delete,omitempty"`
+	User    User   `json:"user,omitempty"`
+	Created *Time  `json:"created,omitempty"`
+}
+
+type GroupUpdate struct {
+	Name         string            `json:"name,omitempty"`
+	GroupChanges []GroupMembership `json:"groups_users,omitempty"`
+	Secrets      []Secret          `json:"secrets,omitempty"`
 }
 
 // GetGroupsOptions are all available query parameters
@@ -27,6 +43,35 @@ type GetGroupsOptions struct {
 	ContainUser            bool `url:"contain[user],omitempty"`
 	ContainGroupUser       bool `url:"contain[group_user],omitempty"`
 	ContainMyGroupUser     bool `url:"contain[my_group_user],omitempty"`
+}
+
+// UpdateGroupDryRunResult is the Result of a Update Group DryRun
+type UpdateGroupDryRunResult struct {
+	DryRun UpdateGroupDryRun `json:"dry-run,omitempty"`
+}
+
+// UpdateGroupDryRun contains the Actual Secrets Needed to update the group
+type UpdateGroupDryRun struct {
+	// for which users the secrets need to be reencrypted
+	SecretsNeeded []UpdateGroupSecretsNeededContainer `json:"SecretsNeeded,omitempty"`
+	// secrets needed to be reencrypted
+	Secrets []GroupSecret `json:"Secrets,omitempty"`
+}
+
+// GroupSecret is a unnessesary container...
+type GroupSecret struct {
+	Secret []Secret `json:"secret,omitempty"`
+}
+
+// UpdateGroupSecretsNeededContainer is a unnessesary container...
+type UpdateGroupSecretsNeededContainer struct {
+	Secret UpdateGroupDryRunSecretsNeeded `json:"Secret,omitempty"`
+}
+
+// UpdateGroupDryRunSecretsNeeded a secret that needs to be reencrypted for a specific user
+type UpdateGroupDryRunSecretsNeeded struct {
+	ResourceID string `json:"resource_id,omitempty"`
+	UserID     string `json:"user_id,omitempty"`
 }
 
 // GetGroups gets all Passbolt Groups
@@ -74,17 +119,31 @@ func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
 }
 
 // UpdateGroup Updates a existing Passbolt Group
-func (c *Client) UpdateGroup(ctx context.Context, groupID string, group Group) (*Group, error) {
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+".json", "v2", group, nil)
+func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUpdate) (*Group, error) {
+	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+".json", "v2", update, nil)
 	if err != nil {
 		return nil, err
 	}
-
+	var group Group
 	err = json.Unmarshal(msg.Body, &group)
 	if err != nil {
 		return nil, err
 	}
 	return &group, nil
+}
+
+// UpdateGroupDryRun Checks that a Passbolt Group update passes validation
+func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update GroupUpdate) (*UpdateGroupDryRunResult, error) {
+	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+"/dry-run.json", "v2", update, nil)
+	if err != nil {
+		return nil, err
+	}
+	var result UpdateGroupDryRunResult
+	err = json.Unmarshal(msg.Body, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 // DeleteGroup Deletes a Passbolt Group
