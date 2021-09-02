@@ -36,7 +36,7 @@ func (c *Client) SetupInstall(ctx context.Context, userID, token string) (*Setup
 
 // SetupComplete Completes setup of a Passbolt Account
 func (c *Client) SetupComplete(ctx context.Context, userID string, request SetupCompleteRequest) error {
-	_, err := c.DoCustomRequest(ctx, "POST", "/setup/complete/ "+userID+".json", "v2", request, nil)
+	_, err := c.DoCustomRequest(ctx, "POST", "/setup/complete/"+userID+".json", "v2", request, nil)
 	if err != nil {
 		return err
 	}
