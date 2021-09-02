@@ -319,4 +319,3 @@ func main() {
 - get a Passbolt Instance to Work in Github Actions
 - write Integration Tests
 - add ability to verify Server
-- add helper functions for updating Groups
