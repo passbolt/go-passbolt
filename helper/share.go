@@ -68,9 +68,13 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 		return fmt.Errorf("Simulate Share Resource: %w", err)
 	}
 
-	users, err := c.GetUsers(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("Get Users: %w", err)
+	// if no users where added then we can skip this
+	var users []api.User
+	if len(simulationResult.Changes.Added) != 0 {
+		users, err = c.GetUsers(ctx, nil)
+		if err != nil {
+			return fmt.Errorf("Get Users: %w", err)
+		}
 	}
 
 	shareRequest.Secrets = []api.Secret{}
@@ -206,13 +210,4 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 		}
 	}
 	return permissionChanges, nil
-}
-
-func getPublicKeyByUserID(userID string, Users []api.User) (string, error) {
-	for _, user := range Users {
-		if user.ID == userID {
-			return user.GPGKey.ArmoredKey, nil
-		}
-	}
-	return "", fmt.Errorf("Cannot Find Key for user id %v", userID)
 }
