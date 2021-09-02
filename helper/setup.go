@@ -11,21 +11,25 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
-// SetupAccount Setup a Account for a Invited User
-func SetupAccount(ctx context.Context, c *api.Client, inviteURL, password string) (string, error) {
-	split := strings.Split(inviteURL, "/")
+// ParseInviteUrl Parses a Passbolt Invite URL into a user id and token
+func ParseInviteUrl(url string) (string, string, error) {
+	split := strings.Split(url, "/")
 	if len(split) < 4 {
-		return "", fmt.Errorf("Invite URL does not have enough slashes")
+		return "", "", fmt.Errorf("Invite URL does not have enough slashes")
 	}
-	userID := split[len(split)-2]
-	token := strings.TrimSuffix(split[len(split)-1], ".json")
+	return split[len(split)-2], strings.TrimSuffix(split[len(split)-1], ".json"), nil
+}
+
+// SetupAccount Setup a Account for a Invited User.
+// (Use ParseInviteUrl to get the userid and token from a Invite URL)
+func SetupAccount(ctx context.Context, c *api.Client, userID, token, password string) (string, error) {
 
 	install, err := c.SetupInstall(ctx, userID, token)
 	if err != nil {
 		return "", fmt.Errorf("Get Setup Install Data: %w", err)
 	}
 
-	keyName := install.Profile.FirstName + " " + install.Profile.LastName + " <" + install.Username + ">"
+	keyName := install.Profile.FirstName + " " + install.Profile.LastName + " " + install.Username
 
 	privateKey, err := helper.GenerateKey(keyName, install.Username, []byte(password), "rsa", 2048)
 	if err != nil {
