@@ -12,7 +12,7 @@ func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string,
 	return helper.EncryptSignMessageArmored(publickey, c.userPrivateKey, c.userPassword, message)
 }
 
-// DecryptMessage decrypts a message using the users Private Key and Validates its Signature using the users public key
+// DecryptMessage decrypts a message using the users Private Key
 func (c *Client) DecryptMessage(message string) (string, error) {
 	// We cant Verify the signature as we don't store other users public keys locally and don't know which user did encrypt it
 	//return helper.DecryptVerifyMessageArmored(c.userPublicKey, c.userPrivateKey, c.userPassword, message)
