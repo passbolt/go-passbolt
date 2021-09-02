@@ -36,6 +36,8 @@ type Client struct {
 // NewClient Returns a new Passbolt Client.
 // if httpClient is nil http.DefaultClient will be used.
 // if UserAgent is "" "goPassboltClient/1.0" will be used.
+// if UserPrivateKey is "" Key Setup is Skipped to Enable using the Client for User Registration, Most other function will be broken.
+// After Registration a new Client Should be Created.
 func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, UserPassword string) (*Client, error) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
@@ -49,22 +51,24 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		return nil, fmt.Errorf("Parsing Base URL: %w", err)
 	}
 
-	// Verify that the Given Privatekey and Password are valid and work Together
-	privateKeyObj, err := crypto.NewKeyFromArmored(UserPrivateKey)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to Create Key From UserPrivateKey string: %w", err)
-	}
-	unlockedKeyObj, err := privateKeyObj.Unlock([]byte(UserPassword))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to Unlock UserPrivateKey using UserPassword: %w", err)
-	}
-	privateKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to Create a new Key Ring using the unlocked UserPrivateKey: %w", err)
-	}
+	// Verify that the Given Privatekey and Password are valid and work Together if we were provieded one
+	if UserPrivateKey != "" {
+		privateKeyObj, err := crypto.NewKeyFromArmored(UserPrivateKey)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to Create Key From UserPrivateKey string: %w", err)
+		}
+		unlockedKeyObj, err := privateKeyObj.Unlock([]byte(UserPassword))
+		if err != nil {
+			return nil, fmt.Errorf("Unable to Unlock UserPrivateKey using UserPassword: %w", err)
+		}
+		privateKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to Create a new Key Ring using the unlocked UserPrivateKey: %w", err)
+		}
 
-	// Cleanup Secrets
-	privateKeyRing.ClearPrivateParams()
+		// Cleanup Secrets
+		privateKeyRing.ClearPrivateParams()
+	}
 
 	// Create Client Object
 	c := &Client{
