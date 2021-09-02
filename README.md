@@ -232,6 +232,18 @@ err := client.MoveResource(ctx, "resource id", "parent folder id")
 err := client.MoveFolder(ctx, "folder id", "parent folder id")
 ```
 
+## Groups
+Groups are extra complicated, it doesen't help that the Passbolt Documentation is wrong and missing important details.
+Since helper functions for Groups were added you can now create, get, update and delete Groups easily:
+```go
+err := helper.UpdateGroup(ctx, client, "group id", "group name", []helper.GroupMembershipOperation{
+	{
+		UserID:         "user id",
+		IsGroupManager: true,
+	},
+})
+```
+
 ## Other
 These Examples are just the main Usecases of this Modules, there are many more API calls that are supported. Look at the [Reference](https://pkg.go.dev/github.com/speatzle/go-passbolt) for more information.
 
