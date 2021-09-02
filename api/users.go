@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 )
 
+const UserLocaleENUK = "en-UK"
+
 // User contains information about a passbolt User
 type User struct {
 	ID           string    `json:"id,omitempty"`
@@ -20,6 +22,7 @@ type User struct {
 	Role         *Role     `json:"role,omitempty"`
 	GPGKey       *GPGKey   `json:"gpgKey,omitempty"`
 	LastLoggedIn string    `json:"last_logged_in,omitempty"`
+	Locale       string    `json:"locale,omitempty"`
 }
 
 // Profile is a Profile
