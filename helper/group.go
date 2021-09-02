@@ -9,8 +9,9 @@ import (
 
 // GroupMembershipOperation creates/modifies/deletes a group membership
 type GroupMembershipOperation struct {
-	GroupMembership
-	Delete bool
+	UserID         string
+	IsGroupManager bool
+	Delete         bool
 }
 
 // GroupMembership containes who and what kind of membership they have with a group
