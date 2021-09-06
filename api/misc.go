@@ -1,25 +1,15 @@
 package api
 
 import (
-	"crypto/rand"
-	"math/big"
+	"math/rand"
 )
 
-func randStringBytesRmndr(length int) (string, error) {
-	result := ""
-	for {
-		if len(result) >= length {
-			return result, nil
-		}
-		num, err := rand.Int(rand.Reader, big.NewInt(int64(127)))
-		if err != nil {
-			return "", err
-		}
-		n := num.Int64()
-		// Make sure that the number/byte/letter is inside
-		// the range of printable ASCII characters (excluding space and DEL)
-		if n > 32 && n < 127 {
-			result += string(n)
-		}
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randStringBytesRmndr(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
+	return string(b)
 }

@@ -146,10 +146,7 @@ func (c *Client) Login(ctx context.Context) error {
 	}
 
 	// Validate that this Publickey that the Server gave us actually Matches our Privatekey
-	randomString, err := randStringBytesRmndr(50)
-	if err != nil {
-		return fmt.Errorf("Generating Random String as PublicKey Validation Message: %w", err)
-	}
+	randomString := randStringBytesRmndr(50)
 	armor, err := helper.EncryptMessageArmored(user.GPGKey.ArmoredKey, randomString)
 	if err != nil {
 		return fmt.Errorf("Encryping PublicKey Validation Message: %w", err)
