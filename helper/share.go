@@ -168,6 +168,7 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 		for _, oldPerm := range oldPermissions {
 			if oldPerm.ARO == change.ARO && oldPerm.AROForeignKey == change.AROID {
 				oldPermission = &oldPerm
+				break
 			}
 		}
 		// Check Whether Matching Permission Already Exists and needs to be adjusted or is a new one can be created
