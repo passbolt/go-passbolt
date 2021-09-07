@@ -1,15 +1,19 @@
 # go-passbolt
 [![Go Reference](https://pkg.go.dev/badge/github.com/speatzle/go-passbolt.svg)](https://pkg.go.dev/github.com/speatzle/go-passbolt)
 
-A Go Module to interact with [Passbolt](https://www.passbolt.com/), a Open source Password Manager for Teams
+A Go module to interact with [Passbolt](https://www.passbolt.com/), an open-source password manager for teams
 
-This Module tries to Support the Latest Passbolt Community/PRO Server Release, PRO Features Such as Folders are Supported.
-Older Versions of Passbolt such as v2 are unsupported (it's a Password Manager, please update it)
+This module tries to support the latest Passbolt Community/PRO server release, PRO Features such as folders are supported. Older versions of Passbolt such as v2 are unsupported (it's a password manager, please update it)
 
-This Module is split into 2 packages: api and helper, in the api package you will find everything to directly interact with the API. The helper Package has simplified functions that use the api package to perform common but complicated tasks such as Sharing a Password. To use the API Package please read the Passbolt API [Docs](https://help.passbolt.com/api).
-Sadly the Docs aren't Complete so many Things here have been found by looking at the source of Passbolt or through trial and error, if you have a Question just ask.
+This module is divided into two packages: API and helper. 
 
-PR's are Welcome, if it's something bigger / fundamental: Please make a Issue and ask first.
+In the API package, you will find everything to directly interact with the API. 
+
+The helper package has simplified functions that use the API package to perform common but complicated tasks such as sharing a password. 
+
+To use the API package, please read the [Passbolt API docs](https://help.passbolt.com/api). Sadly the docs aren't complete so many things here have been found by looking at the source of Passbolt or through trial and error. If you have a question just ask.
+
+PR's are welcome. But be gentle: if it's something bigger or fundamental: please [create an issue](https://github.com/speatzle/go-passbolt/issues/new) and ask first.
 
 # Install
 
@@ -17,7 +21,8 @@ PR's are Welcome, if it's something bigger / fundamental: Please make a Issue an
 
 # Examples
 ## Login
-First you will need to Create a Client, and then Login on the Server using the Client
+
+First, you will need to create a client and then log in on the server using the client:
 
 ```go
 package main
@@ -54,11 +59,14 @@ func main() {
 }
 ```
 
-Note: if you want to use the client for some time then you'll have to make sure it is still logged in.
+Note: if you want to use the client for a long time then you'll have to make sure it is still logged in.
+
 You can do this using the `client.CheckSession()` function.
 
 ## Create a Resource
-Creating a Resource using the helper package is simple, first add `"github.com/speatzle/go-passbolt/helper"` to your imports.
+
+Creating a resource using the helper package is simple. First, add `"github.com/speatzle/go-passbolt/helper"` to your imports.
+
 Then you can simply:
 
 ```go
@@ -70,11 +78,11 @@ resourceID, err := helper.CreateResource(
 	"user123",                  // Username
 	"https://test.example.com", // URI
 	"securePassword123",        // Password
-	"This is a Account for the example test portal", // Description
+	"This is an Account for the example test portal", // Description
 )
 ```
 
-Creating a (Legacy) Resource Without the helper package would look like this:
+Creating a (legacy) resource without the helper package would look like this:
 
 ```go
 enc, err := client.EncryptMessage("securePassword123")
@@ -86,7 +94,7 @@ res := api.Resource{
 	Name:           "Example Account",
 	Username:       "user123",
 	URI:            "https://test.example.com",
-	Description:    "This is a Account for the example test portal",
+	Description:    "This is an Account for the example test portal",
 	Secrets: []api.Secret{
 		{Data: enc},
 	},
@@ -98,13 +106,15 @@ if err != nil {
 }
 ```
 
-Note: Since Passbolt v3 There are Resource Types, this Manual Example just creates a "password-string" Type Password where the Description is Unencrypted, Read More [Here](https://help.passbolt.com/api/resource-types).
+Note: Since Passbolt v3 there are resource types. This manual example creates a "password-string" type password where the description is unencrypted. Read more [here](https://help.passbolt.com/api/resource-types).
 
 ## Getting
-Generally API Get Calls will have options (opts) that allow for specifing filters and contains, if you dont want to specify options just pass nil.
-Filters just filter by whatever is given, contains on the otherhand specify what to include in the response. Many Filters And Contains are undocumented in the Passbolt Docs.
 
-Here We Specify that we want to Filter by Favorites and that the Response Should Contain the Permissions for each Resource:
+Generally, API GET calls will have parameters that allow specifying `filters` and `contains`, if you don't want to define those parameters just pass nil.
+
+`Filters` just filter by whatever is given, `contains` on the other hand specify what information you want to include in the response. Many `filters` and `contains` are undocumented in the Passbolt docs.
+
+Here we specify that we want to filter by favorites and that the response should contain the permissions for each resource:
 
 ```go
 favorites, err := client.GetResources(ctx, &api.GetResourcesOptions{
@@ -113,7 +123,7 @@ favorites, err := client.GetResources(ctx, &api.GetResourcesOptions{
 })
 ```
 
-We Can do the Same for Users:
+We can do the same for users:
 
 ```go
 users, err := client.GetUsers(ctx, &api.GetUsersOptions{
@@ -131,7 +141,7 @@ groups, err := client.GetGroups(ctx, &api.GetGroupsOptions{
 })
 ```
 
-And also for Folders (PRO Only):
+And also for folders (PRO only):
 
 ```go
 folders, err := client.GetFolders(ctx, &api.GetFolderOptions{
@@ -140,28 +150,29 @@ folders, err := client.GetFolders(ctx, &api.GetFolderOptions{
 })
 ```
 
-Getting by ID is also Supported Using the Singular Form:
+Getting by ID is also supported using the singular form:
 
 ```go
 resource, err := client.GetResource(ctx, "resource ID")
 ```
 
-Since the Password is Encrypted (and sometimes the description too) the helper package has a function to decrypt all encrypted fields Automatically:
+Since the password is encrypted (and sometimes the description too) the helper package has a function to decrypt all encrypted fields automatically:
 
 ```go
 folderParentID, name, username, uri, password, description, err := helper.GetResource(ctx, client, "resource id")
 ```
 
 ## Updating
-The Helper Package has a function to save you needing to deal with Resource Types When Updating a Resource:
+
+The helper package has a function to save you from dealing with resource types when updating a resource:
 
 ```go
 err := helper.UpdateResource(ctx, client,"resource id", "name", "username", "https://test.example.com", "pass123", "very descriptive")
 ```
 
-Note: As Groups are also Complicated to Update there will be a helper function for them in the future.
+Note: As groups are also complicated to update there will be a helper function for them in the future.
 
-For other less Complicated Updates you can Simply use the Client directly:
+For other less complicated updates you can simply use the client directly:
 
 ```go
 client.UpdateUser(ctx, "user id", api.User{
@@ -173,45 +184,55 @@ client.UpdateUser(ctx, "user id", api.User{
 ```
 
 ## Sharing
-As Sharing Resources is very Complicated there are multipe helper Functions. During Sharing you will encounter the permissionType.
 
-The permissionType can be 1 for Read only, 7 for Can Update, 15 for Owner or -1 if you want to delete Existing Permissions.
+As sharing resources is very complicated there are multiple helper functions. 
 
-The ShareResourceWithUsersAndGroups function Shares the Resource With all Provided Users and Groups with the Given permissionType.
+During sharing you will encounter the [permission type](https://github.com/passbolt/passbolt_api/blob/858971516c5e61e1f1be37b007693f0869a70486/src/Model/Entity/Permission.php#L43-L45).
+
+The `permissionType` can be:
+
+| Code | Meaning | 
+| --- | --- | 
+| `1` | "Read-only" | 
+| `7` | "Can update" | 
+| `15` | "Owner" |
+| `-1` | If you want to delete existing permissions | 
+
+The `ShareResourceWithUsersAndGroups` function shares the resource with all provided users and groups with the given `permissionType`.
 
 ```go
 err := helper.ShareResourceWithUsersAndGroups(ctx, client, "resource id", []string{"user 1 id"}, []string{"group 1 id"}, 7)
 ```
 
-Note: Existing Permission of Users and Groups will be adjusted to be of the Provided permissionType.
+Note: Existing permission of users and groups will be adjusted to be of the provided `permissionType`.
 
-If you need to do something more Complicated like setting Users/Groups to different Type then you can Use ShareResource directly:
+If you need to do something more complicated like setting users/groups to different types then you can use `ShareResource` directly:
 
 ```go
 changes := []helper.ShareOperation{}
 
-// Make this User Owner
+// Make this user Owner
 changes = append(changes, ShareOperation{
 	Type:  15,
 	ARO:   "User",
 	AROID: "user 1 id",
 })
 
-// Make this User Can Update
+// Make this user "Can Update"
 changes = append(changes, ShareOperation{
 	Type:  5,
 	ARO:   "User",
 	AROID: "user 2 id",
 })
 
-// Delete This Users Current Permission
+// Delete this users current permission
 changes = append(changes, ShareOperation{
 	Type:  -1,
 	ARO:   "User",
 	AROID: "user 3 id",
 })
 
-// Make this Group Read Only
+// Make this group "Read-only"
 changes = append(changes, ShareOperation{
 	Type:  1,
 	ARO:   "Group",
@@ -221,20 +242,27 @@ changes = append(changes, ShareOperation{
 err := helper.ShareResource(ctx, c, resourceID, changes)
 ```
 
-Note: These Functions are Also Availabe for Folders (PRO)
+Note: These functions are also available for folders (PRO)
 
-## Moveing (PRO)
-In Passbolt PRO there are Folders, during Creation of Resources and Folders you can Specify in which Folder you want to create the Resource / Folder inside of. But if you want to change which Folder the Resource / Folder is in then you can't use the Update function (it is / was possible to update the parent Folder using the Update function but that breaks things). Instead you use the Move function.
-```
+## Moving (PRO)
+
+In Passbolt PRO there are folders, during the creation of resources and folders you can specify in which folder you want to create the resource/folder inside. But if you want to change which folder the resource/folder is in then you can't use the `Update` function (it is/was possible to update the parent folder using the `Update` function but that breaks things). Instead, you use the `Move` function.
+
+```go
 err := client.MoveResource(ctx, "resource id", "parent folder id")
 ```
-```
+
+```go
 err := client.MoveFolder(ctx, "folder id", "parent folder id")
 ```
 
 ## Groups
-Groups are extra complicated, it doesen't help that the Passbolt Documentation is wrong and missing important details.
-Since helper functions for Groups were added you can now create, get, update and delete Groups easily:
+
+
+Groups are extra complicated, it doesn't help that the Passbolt documentation is wrong and missing important details. 
+
+Since helper functions for groups were added you can now create, get, update and delete groups easily:
+
 ```go
 err := helper.UpdateGroup(ctx, client, "group id", "group name", []helper.GroupMembershipOperation{
 	{
@@ -245,10 +273,18 @@ err := helper.UpdateGroup(ctx, client, "group id", "group name", []helper.GroupM
 ```
 
 ## Other
-These Examples are just the main Usecases of this Modules, there are many more API calls that are supported. Look at the [Reference](https://pkg.go.dev/github.com/speatzle/go-passbolt) for more information.
+
+These examples are just the main use cases of these Modules, many more API calls are supported. Look at the [reference](https://pkg.go.dev/github.com/speatzle/go-passbolt) for more information.
+
 
 ## Full Example
-This Example Creates a Resource, Searches for a User Named Test User, Checks that its Not itself and Shares the Password with the Test User if Nessesary:
+
+This example:
+
+1. Creates a resource; 
+2. Searches for a user named "Test User";
+3. Checks that it's not itself; and,
+4. Shares the password with the "Test User" if necessary:
 
 ```go
 package main
@@ -292,7 +328,7 @@ func main() {
 		"user123",                  // Username
 		"https://test.example.com", // URI
 		"securePassword123",        // Password
-		"This is a Account for the example test portal", // Description
+		"This is an Account for the example test portal", // Description
 	)
 	if err != nil {
 		panic(err)
@@ -328,6 +364,6 @@ func main() {
 ```
 
 # TODO
-- get a Passbolt Instance to Work in Github Actions
-- write Integration Tests
-- add ability to verify Server
+- get a Passbolt instance to work in Github Actions
+- write integration tests
+- add the ability to verify a server
