@@ -3,6 +3,8 @@
 
 A Go module to interact with [Passbolt](https://www.passbolt.com/), an open-source password manager for teams
 
+There also is a CLI Tool to interact with Passbolt using this module [here](https://speatzle/go-passbolt-cli).
+
 This module tries to support the latest Passbolt Community/PRO server release, PRO Features such as folders are supported. Older versions of Passbolt such as v2 are unsupported (it's a password manager, please update it)
 
 This module is divided into two packages: API and helper. 
@@ -119,7 +121,7 @@ Here we specify that we want to filter by favorites and that the response should
 ```go
 favorites, err := client.GetResources(ctx, &api.GetResourcesOptions{
 	FilterIsFavorite: true,
-    	ContainPermissions: true,
+    ContainPermissions: true,
 })
 ```
 
@@ -136,7 +138,7 @@ Groups:
 
 ```go
 groups, err := client.GetGroups(ctx, &api.GetGroupsOptions{
-    	FilterHasUsers: []string{"id of user", "id of other user"},
+    FilterHasUsers: []string{"id of user", "id of other user"},
 	ContainUser: true,
 })
 ```
@@ -167,21 +169,51 @@ folderParentID, name, username, uri, password, description, err := helper.GetRes
 The helper package has a function to save you from dealing with resource types when updating a resource:
 
 ```go
-err := helper.UpdateResource(ctx, client,"resource id", "name", "username", "https://test.example.com", "pass123", "very descriptive")
+err = helper.UpdateResource(
+	ctx,           // Context
+	client,        // API Client
+	"id",          // Resource ID
+	"name",        // Name
+	"username",    // Username
+	"url",         // URI
+	"strong",      // Password
+	"very strong", // Description
+)
 ```
 
-Note: As groups are also complicated to update there will be a helper function for them in the future.
-
-For other less complicated updates you can simply use the client directly:
+The same goes for Groups:
 
 ```go
-client.UpdateUser(ctx, "user id", api.User{
-	Profile: &api.Profile{
-		FirstName: "Test",
-		LastName:  "User",
-	},
-})
+err = helper.UpdateGroup(
+	ctx,    // Context
+	client, // API Client
+	"id",   // Group ID
+	"name", // Group Name
+	[]helper.GroupMembershipOperation{
+		{
+			UserID:         "id",  // ID of User to Add/Modify/Delete
+			IsGroupManager: true,  // Should User be a Group Manager
+			Delete:         false, // Should this User be Remove from the Group
+		},
+	}
+)
 ```
+
+And for Users:
+
+```go
+err = helper.UpdateUser(
+	ctx,         // Context
+	client,      // API Client
+	"id",        // User ID
+	"user",      // Role (user or admin)
+	"firstname", // FirstName
+	"lastname",  // LastName
+)
+```
+Note: These helpers will only update fields that are not "".
+
+Helper update functions also exists for Folders.
 
 ## Sharing
 
@@ -196,7 +228,7 @@ The `permissionType` can be:
 | `1` | "Read-only" | 
 | `7` | "Can update" | 
 | `15` | "Owner" |
-| `-1` | If you want to delete existing permissions | 
+| `-1` | Delete existing permission | 
 
 The `ShareResourceWithUsersAndGroups` function shares the resource with all provided users and groups with the given `permissionType`.
 
@@ -256,20 +288,18 @@ err := client.MoveResource(ctx, "resource id", "parent folder id")
 err := client.MoveFolder(ctx, "folder id", "parent folder id")
 ```
 
-## Groups
+## Setup
 
-
-Groups are extra complicated, it doesn't help that the Passbolt documentation is wrong and missing important details. 
-
-Since helper functions for groups were added you can now create, get, update and delete groups easily:
-
+You can setup a Account using a Invite Link like this:
 ```go
-err := helper.UpdateGroup(ctx, client, "group id", "group name", []helper.GroupMembershipOperation{
-	{
-		UserID:         "user id",
-		IsGroupManager: true,
-	},
-})
+// Get the UserID and Token from the Invite Link
+userID, token, err := ParseInviteUrl(url)
+
+// Make a Client for Registration
+rClient, err := api.NewClient(nil, "", "https://localhost", "", "")
+
+// Complete Account Setup
+privkey, err := SetupAccount(ctx, rClient, userID, token, "password123")
 ```
 
 ## Other
@@ -362,7 +392,3 @@ func main() {
     	client.Logout(ctx)
 }
 ```
-
-# TODO
-- write more integration tests
-- add the ability to verify a server
