@@ -349,7 +349,7 @@ func main() {
 
 	if client.GetUserID() == users[0].ID {
 		fmt.Println("I am the Test User, No Need to Share Password With myself")
-        client.Logout(ctx)
+        	client.Logout(ctx)
 		return
 	}
 
@@ -364,6 +364,5 @@ func main() {
 ```
 
 # TODO
-- get a Passbolt instance to work in Github Actions
-- write integration tests
+- write more integration tests
 - add the ability to verify a server
