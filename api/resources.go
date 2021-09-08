@@ -38,21 +38,23 @@ type Tag struct {
 
 // GetResourcesOptions are all available query parameters
 type GetResourcesOptions struct {
-	FilterIsFavorite        bool   `url:"filter[is-favorite],omitempty"`
-	FilterIsSharedWithMe    bool   `url:"filter[is-shared-with-me],omitempty"`
-	FilterIsSharedWithGroup string `url:"filter[is-shared-with-group],omitempty"`
-	FilterHasID             string `url:"filter[has-id],omitempty"`
+	FilterIsFavorite        bool     `url:"filter[is-favorite],omitempty"`
+	FilterIsSharedWithGroup []string `url:"filter[is-shared-with-group][],omitempty"`
+	FilterIsOwnedByMe       bool     `url:"filter[is-owned-by-me],omitempty"`
+	FilterIsSharedWithMe    bool     `url:"filter[is-shared-with-me],omitempty"`
+	FilterHasID             []string `url:"filter[has-id][],omitempty"`
 	// Parent Folder id
-	FilterHasParent string `url:"filter[has-parent],omitempty"`
-	FilterHasTag    string `url:"filter[has-tag],omitempty"`
+	FilterHasParent []string `url:"filter[has-parent][],omitempty"`
+	FilterHasTag    string   `url:"filter[has-tag],omitempty"`
 
 	ContainCreator                bool `url:"contain[creator],omitempty"`
 	ContainFavorites              bool `url:"contain[favorite],omitempty"`
 	ContainModifier               bool `url:"contain[modifier],omitempty"`
+	ContainSecret                 bool `url:"contain[secret],omitempty"`
+	ContainResourceType           bool `url:"contain[resource-type],omitempty"`
 	ContainPermissions            bool `url:"contain[permission],omitempty"`
 	ContainPermissionsUserProfile bool `url:"contain[permissions.user.profile],omitempty"`
 	ContainPermissionsGroup       bool `url:"contain[permissions.group],omitempty"`
-	ContainSecret                 bool `url:"contain[secret],omitempty"`
 	ContainTags                   bool `url:"contain[tag],omitempty"`
 }
 
