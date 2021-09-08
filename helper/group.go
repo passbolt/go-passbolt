@@ -17,6 +17,9 @@ type GroupMembershipOperation struct {
 // GroupMembership containes who and what kind of membership they have with a group
 type GroupMembership struct {
 	UserID         string
+	Username       string
+	UserFirstName  string
+	UserLastName   string
 	IsGroupManager bool
 }
 
@@ -58,6 +61,9 @@ func GetGroup(ctx context.Context, c *api.Client, groupID string) (string, []Gro
 			for _, m := range g.GroupUsers {
 				memberships = append(memberships, GroupMembership{
 					UserID:         m.UserID,
+					Username:       m.User.Username,
+					UserFirstName:  m.User.Profile.FirstName,
+					UserLastName:   m.User.Profile.LastName,
 					IsGroupManager: m.IsAdmin,
 				})
 			}
