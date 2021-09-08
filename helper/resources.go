@@ -147,20 +147,65 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		ID: resourceID,
 		// This needs to be specified or it will revert to a legacy password
 		ResourceTypeID: resource.ResourceTypeID,
-		Name:           name,
-		Username:       username,
-		URI:            uri,
+		Name:           resource.Name,
+		Username:       resource.Username,
+		URI:            resource.URI,
+	}
+
+	if name != "" {
+		newResource.Name = name
+	}
+	if username != "" {
+		newResource.Username = username
+	}
+	if uri != "" {
+		newResource.URI = uri
 	}
 
 	var secretData string
 	switch rType.Slug {
 	case "password-string":
-		newResource.Description = description
-		secretData = password
+		newResource.Description = resource.Description
+		if description != "" {
+			newResource.Description = description
+		}
+		if password != "" {
+			secretData = password
+		} else {
+			secret, err := c.GetSecret(ctx, resourceID)
+			if err != nil {
+				return fmt.Errorf("Getting Secret: %w", err)
+			}
+			secretData, err = c.DecryptMessage(secret.Data)
+			if err != nil {
+				return fmt.Errorf("Decrypting Secret: %w", err)
+			}
+		}
 	case "password-and-description":
 		tmp := api.SecretDataTypePasswordAndDescription{
 			Password:    password,
 			Description: description,
+		}
+		if password != "" || description != "" {
+			secret, err := c.GetSecret(ctx, resourceID)
+			if err != nil {
+				return fmt.Errorf("Getting Secret: %w", err)
+			}
+			oldSecretData, err := c.DecryptMessage(secret.Data)
+			if err != nil {
+				return fmt.Errorf("Decrypting Secret: %w", err)
+			}
+			var oldSecret api.SecretDataTypePasswordAndDescription
+			err = json.Unmarshal([]byte(oldSecretData), &oldSecret)
+			if err != nil {
+				return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			if password == "" {
+				tmp.Password = oldSecret.Password
+			}
+			if description == "" {
+				tmp.Description = oldSecret.Description
+			}
 		}
 		res, err := json.Marshal(&tmp)
 		if err != nil {

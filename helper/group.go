@@ -84,9 +84,11 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 	}
 
 	var currentMemberships []api.GroupMembership
+	var currentName string
 	for _, g := range groups {
 		if g.ID == groupID {
 			currentMemberships = g.GroupUsers
+			currentName = g.Name
 			break
 		}
 	}
@@ -98,6 +100,10 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		Name:         name,
 		GroupChanges: []api.GroupMembership{},
 		Secrets:      []api.Secret{},
+	}
+
+	if name == "" {
+		request.Name = currentName
 	}
 
 	// Generate Group Membership changes based on current Group Memberships
