@@ -37,10 +37,10 @@ type Profile struct {
 
 // GetUsersOptions are all available query parameters
 type GetUsersOptions struct {
-	FilterSearch    string `url:"filter[search],omitempty"`
-	FilterHasGroup  string `url:"filter[has-group],omitempty"`
-	FilterHasAccess string `url:"filter[has-access],omitempty"`
-	FilterIsAdmin   bool   `url:"filter[is-admin],omitempty"`
+	FilterSearch    string   `url:"filter[search],omitempty"`
+	FilterHasGroup  []string `url:"filter[has-group][],omitempty"`
+	FilterHasAccess []string `url:"filter[has-access][],omitempty"`
+	FilterIsAdmin   bool     `url:"filter[is-admin],omitempty"`
 
 	ContainLastLoggedIn bool `url:"contain[LastLoggedIn],omitempty"`
 }
