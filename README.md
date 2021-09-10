@@ -3,7 +3,7 @@
 
 A Go module to interact with [Passbolt](https://www.passbolt.com/), an open-source password manager for teams
 
-There also is a CLI Tool to interact with Passbolt using this module [here](https://speatzle/go-passbolt-cli).
+There also is a CLI Tool to interact with Passbolt using this module [here](https://github.com/speatzle/go-passbolt-cli).
 
 This module tries to support the latest Passbolt Community/PRO server release, PRO Features such as folders are supported. Older versions of Passbolt such as v2 are unsupported (it's a password manager, please update it)
 
