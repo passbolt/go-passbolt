@@ -94,8 +94,14 @@ func GetResource(ctx context.Context, c *api.Client, resourceID string) (folderP
 	if err != nil {
 		return "", "", "", "", "", "", fmt.Errorf("Getting Resource Secret: %w", err)
 	}
+	return GetResourceFromData(c, *resource, *secret, *rType)
+}
+
+// GetResourceFromData Decrypts Resources using only local data, the Resource object must inlude the secret
+func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret, rType api.ResourceType) (folderParentID, name, username, uri, password, description string, err error) {
 	var pw string
 	var desc string
+
 	switch rType.Slug {
 	case "password-string":
 		pw, err = c.DecryptMessage(secret.Data)
