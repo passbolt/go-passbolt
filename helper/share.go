@@ -126,12 +126,14 @@ func ShareFolderWithUsersAndGroups(ctx context.Context, c *api.Client, folderID 
 // ShareFolder Shares a Folder as Specified in the Passed ShareOperation Struct Slice.
 // Note Resources Permissions in the Folder are not Adjusted
 func ShareFolder(ctx context.Context, c *api.Client, folderID string, changes []ShareOperation) error {
-	oldPermissions, err := c.GetFolderPermissions(ctx, folderID)
+	oldFolder, err := c.GetFolder(ctx, folderID, &api.GetFolderOptions{
+		ContainPermissions: true,
+	})
 	if err != nil {
 		return fmt.Errorf("Getting Folder Permissions: %w", err)
 	}
 
-	permissionChanges, err := GeneratePermissionChanges(oldPermissions, changes)
+	permissionChanges, err := GeneratePermissionChanges(oldFolder.Permissions, changes)
 	if err != nil {
 		return fmt.Errorf("Generating Folder Permission Changes: %w", err)
 	}
