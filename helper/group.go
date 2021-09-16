@@ -120,6 +120,9 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 			})
 		} else {
 			// Membership Exists so we can modify or delete it
+			if !operation.Delete && membership.IsAdmin == operation.IsGroupManager {
+				return fmt.Errorf("Membership for User %v already Exists with Same Role", operation.UserID)
+			}
 			request.GroupChanges = append(request.GroupChanges, api.GroupMembership{
 				ID:      membership.ID,
 				IsAdmin: operation.IsGroupManager,
