@@ -17,6 +17,9 @@ To use the API package, please read the [Passbolt API docs](https://help.passbol
 
 PR's are welcome. But be gentle: if it's something bigger or fundamental: please [create an issue](https://github.com/speatzle/go-passbolt/issues/new) and ask first.
 
+Disclaimer: This project is community driven and not associated with Passbolt SA
+
+
 # Install
 
 `go get github.com/speatzle/go-passbolt`
