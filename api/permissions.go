@@ -33,18 +33,3 @@ func (c *Client) GetResourcePermissions(ctx context.Context, resourceID string) 
 	}
 	return permissions, nil
 }
-
-// GetFolderPermissions gets a Folders Permissions
-func (c *Client) GetFolderPermissions(ctx context.Context, folderID string) ([]Permission, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/permissions/folder/"+folderID+".json", "v2", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var permissions []Permission
-	err = json.Unmarshal(msg.Body, &permissions)
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
-}
