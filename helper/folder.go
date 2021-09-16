@@ -21,7 +21,7 @@ func CreateFolder(ctx context.Context, c *api.Client, folderParentID, name strin
 
 // GetFolder Gets a Folder
 func GetFolder(ctx context.Context, c *api.Client, folderID string) (string, string, error) {
-	f, err := c.GetFolder(ctx, folderID)
+	f, err := c.GetFolder(ctx, folderID, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("Getting Folder: %w", err)
 	}
