@@ -38,6 +38,20 @@ type GetFoldersOptions struct {
 	FilterSearch    string   `url:"filter[search],omitempty"`
 }
 
+// GetFolderOptions are all available query parameters
+type GetFolderOptions struct {
+	ContainChildrenResources     bool `url:"contain[children_resources],omitempty"`
+	ContainChildrenFolders       bool `url:"contain[children_folders],omitempty"`
+	ContainCreator               bool `url:"contain[creator],omitempty"`
+	ContainCreatorProfile        bool `url:"contain[creator.profile],omitempty"`
+	ContainModifier              bool `url:"contain[modifier],omitempty"`
+	ContainModiferProfile        bool `url:"contain[modifier.profile],omitempty"`
+	ContainPermission            bool `url:"contain[permission],omitempty"`
+	ContainPermissions           bool `url:"contain[permissions],omitempty"`
+	ContainPermissionUserProfile bool `url:"contain[permissions.user.profile],omitempty"`
+	ContainPermissionGroup       bool `url:"contain[permissions.group],omitempty"`
+}
+
 // GetFolders gets all Folders from the Passboltserver
 func (c *Client) GetFolders(ctx context.Context, opts *GetFoldersOptions) ([]Folder, error) {
 	msg, err := c.DoCustomRequest(ctx, "GET", "/folders.json", "v2", nil, opts)
@@ -68,8 +82,8 @@ func (c *Client) CreateFolder(ctx context.Context, folder Folder) (*Folder, erro
 }
 
 // GetFolder gets a Passbolt Folder
-func (c *Client) GetFolder(ctx context.Context, folderID string) (*Folder, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/folders/"+folderID+".json", "v2", nil, nil)
+func (c *Client) GetFolder(ctx context.Context, folderID string, opts *GetFolderOptions) (*Folder, error) {
+	msg, err := c.DoCustomRequest(ctx, "GET", "/folders/"+folderID+".json", "v2", nil, opts)
 	if err != nil {
 		return nil, err
 	}
