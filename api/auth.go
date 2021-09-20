@@ -56,6 +56,7 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 
 // Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar
 func (c *Client) Login(ctx context.Context) error {
+	c.csrfToken = http.Cookie{}
 
 	if c.userPrivateKey == "" {
 		return fmt.Errorf("Client has no Private Key")
@@ -119,24 +120,23 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("Cannot Find Session Cookie!")
 	}
 
-	// Do Mfa Here if ever
-
 	// You have to get a make GET Request to get the CSRF Token which is Required for Write Operations
-	msg, apiMsg, err := c.DoCustomRequestAndReturnRawResponse(ctx, "GET", "/users/me.json", "v2", nil, nil)
+	apiMsg, err := c.DoCustomRequest(ctx, "GET", "/users/me.json", "v2", nil, nil)
 	if err != nil {
-		c.log("is MFA Enabled? That is not yet Supported!")
 		return fmt.Errorf("Getting CSRF Token: %w", err)
 	}
 
-	for _, cookie := range msg.Cookies() {
-		if cookie.Name == "csrfToken" {
-			c.csrfToken = *cookie
+	// Because of MFA, the custom Request Functin now Fetches the CSRF token, we still need the user for his public key
+	/*
+		for _, cookie := range msg.Cookies() {
+			if cookie.Name == "csrfToken" {
+				c.csrfToken = *cookie
+			}
 		}
-	}
 
-	if c.csrfToken.Name == "" {
-		return fmt.Errorf("Cannot Find csrfToken Cookie!")
-	}
+		if c.csrfToken.Name == "" {
+			return fmt.Errorf("Cannot Find csrfToken Cookie!")
+		}*/
 
 	// Get Users Own Public Key from Server
 	var user User

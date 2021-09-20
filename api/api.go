@@ -50,6 +50,15 @@ start:
 		return r, &res, fmt.Errorf("Doing Request: %w", err)
 	}
 
+	// Because of MFA i need to do the csrf token stuff here
+	if c.csrfToken.Name == "" {
+		for _, cookie := range r.Cookies() {
+			if cookie.Name == "csrfToken" {
+				c.csrfToken = *cookie
+			}
+		}
+	}
+
 	if res.Header.Status == "success" {
 		return r, &res, nil
 	} else if res.Header.Status == "error" {
@@ -59,7 +68,7 @@ start:
 				return r, &res, fmt.Errorf("Got MFA challenge twice in a row, is your MFA Callback broken? Bailing to prevent loop...:")
 			}
 			if c.MFACallback != nil {
-				err = c.MFACallback(ctx, c, &res)
+				c.mfaToken, err = c.MFACallback(ctx, c, &res)
 				if err != nil {
 					return r, &res, fmt.Errorf("MFA Callback: %w", err)
 				}
