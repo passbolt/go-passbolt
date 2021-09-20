@@ -29,7 +29,8 @@ type Client struct {
 	userPublicKey  string
 	userID         string
 
-	mfaCallback func(c *Client, res *APIResponse) error
+	// used for solving MFA challanges. You can block this to for example wait for user input. You shouden't run any unrelated API Calls while you are in this callback.
+	MFACallback func(ctx context.Context, c *Client, res *APIResponse) error
 
 	// Enable Debug Logging
 	Debug bool

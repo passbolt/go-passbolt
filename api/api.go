@@ -58,8 +58,8 @@ start:
 				// if we are here this probably means that the MFA callback is broken, to prevent a infinit loop lets error here
 				return r, &res, fmt.Errorf("Got MFA challenge twice in a row, is your MFA Callback broken? Bailing to prevent loop...:")
 			}
-			if c.mfaCallback != nil {
-				err = c.mfaCallback(c, &res)
+			if c.MFACallback != nil {
+				err = c.MFACallback(ctx, c, &res)
 				if err != nil {
 					return r, &res, fmt.Errorf("MFA Callback: %w", err)
 				}
