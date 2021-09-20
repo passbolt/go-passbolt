@@ -22,6 +22,7 @@ type Client struct {
 
 	sessionToken http.Cookie
 	csrfToken    http.Cookie
+	mfaToken     http.Cookie
 
 	// for some reason []byte is used for Passwords in gopenpgp instead of string like they do for keys...
 	userPassword   []byte
@@ -29,8 +30,10 @@ type Client struct {
 	userPublicKey  string
 	userID         string
 
-	// used for solving MFA challanges. You can block this to for example wait for user input. You shouden't run any unrelated API Calls while you are in this callback.
-	MFACallback func(ctx context.Context, c *Client, res *APIResponse) error
+	// used for solving MFA challanges. You can block this to for example wait for user input.
+	// You shouden't run any unrelated API Calls while you are in this callback.
+	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
+	MFACallback func(ctx context.Context, c *Client, res *APIResponse) (http.Cookie, error)
 
 	// Enable Debug Logging
 	Debug bool
@@ -111,6 +114,9 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	req.Header.Set("X-CSRF-Token", c.csrfToken.Value)
 	req.AddCookie(&c.sessionToken)
 	req.AddCookie(&c.csrfToken)
+	if c.mfaToken.Name != "" {
+		req.AddCookie(&c.mfaToken)
+	}
 
 	// Debugging
 	c.log("Request URL: %v", req.URL.String())
