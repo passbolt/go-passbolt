@@ -29,6 +29,8 @@ type Client struct {
 	userPublicKey  string
 	userID         string
 
+	mfaCallback func(c *Client, res *APIResponse) error
+
 	// Enable Debug Logging
 	Debug bool
 }
@@ -147,6 +149,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 	if err != nil {
 		return resp, fmt.Errorf("Unable to Parse JSON API Response with HTTP Status Code %v: %w", resp.StatusCode, err)
 	}
+
 	return resp, nil
 }
 

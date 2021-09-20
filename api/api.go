@@ -32,6 +32,8 @@ func (c *Client) DoCustomRequest(ctx context.Context, method, path, version stri
 
 // DoCustomRequestAndReturnRawResponse Executes a Custom Request and returns a APIResponse and the Raw HTTP Response
 func (c *Client) DoCustomRequestAndReturnRawResponse(ctx context.Context, method, path, version string, body interface{}, opts interface{}) (*http.Response, *APIResponse, error) {
+	firstTime := true
+start:
 	u, err := addOptions(path, version, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Adding Request Options: %w", err)
@@ -51,6 +53,23 @@ func (c *Client) DoCustomRequestAndReturnRawResponse(ctx context.Context, method
 	if res.Header.Status == "success" {
 		return r, &res, nil
 	} else if res.Header.Status == "error" {
+		if res.Header.Code == 403 && res.Header.Message == "MFA authentication is required." {
+			if !firstTime {
+				// if we are here this probably means that the MFA callback is broken, to prevent a infinit loop lets error here
+				return r, &res, fmt.Errorf("Got MFA challenge twice in a row, is your MFA Callback broken? Bailing to prevent loop...:")
+			}
+			if c.mfaCallback != nil {
+				err = c.mfaCallback(c, &res)
+				if err != nil {
+					return r, &res, fmt.Errorf("MFA Callback: %w", err)
+				}
+				// ok, we got the MFA challange and the callback presumably handeld it so we can retry the original request
+				firstTime = false
+				goto start
+			} else {
+				return r, &res, fmt.Errorf("Got MFA Challange but the MFA callback is not defined")
+			}
+		}
 		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseErrorStatusCode, res.Header.Message, string(res.Body))
 	} else {
 		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseUnknownStatusCode, res.Header.Message, string(res.Body))
