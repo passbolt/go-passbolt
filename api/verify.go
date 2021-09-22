@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// GPGVerifyContainer is used for verification
 type GPGVerifyContainer struct {
 	Req GPGVerify `json:"gpg_auth"`
 }
