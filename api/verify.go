@@ -20,6 +20,7 @@ type GPGVerify struct {
 	Token string `json:"server_verify_token,omitempty"`
 }
 
+// SetupServerVerification sets up Server Verification, Only works before login
 func (c *Client) SetupServerVerification(ctx context.Context) (string, string, error) {
 	serverKey, _, err := c.GetPublicKey(ctx)
 	if err != nil {
@@ -41,6 +42,7 @@ func (c *Client) SetupServerVerification(ctx context.Context) (string, string, e
 	return token, encToken, err
 }
 
+// VerifyServer verifys that the Server is still the same one as during the Setup, Only works before login
 func (c *Client) VerifyServer(ctx context.Context, token, encToken string) error {
 	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
 	if err != nil {

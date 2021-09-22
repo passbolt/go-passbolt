@@ -307,7 +307,7 @@ privkey, err := SetupAccount(ctx, rClient, userID, token, "password123")
 
 ## Verification
 
-You can Verify that the Server hasen't changed, for that you need to initially setup the Verification and save the returned values. Then you can Verify that the serverkey hasen't changed since you setup the Verification.
+You can Verify that the Server hasen't changed, for that you need to initially setup the Verification and save the returned values. Then you can Verify that the serverkey hasen't changed since you setup the Verification. Note this Only Works if the client is not logged in. 
 
 ```go
 // Setup the Verification
