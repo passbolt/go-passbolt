@@ -39,6 +39,12 @@ type Client struct {
 	Debug bool
 }
 
+// PublicKeyReponse the Body of a Public Key Api Request
+type PublicKeyReponse struct {
+	Fingerprint string `json:"fingerprint"`
+	Keydata     string `json:"keydata"`
+}
+
 // NewClient Returns a new Passbolt Client.
 // if httpClient is nil http.DefaultClient will be used.
 // if UserAgent is "" "goPassboltClient/1.0" will be used.
@@ -182,4 +188,30 @@ func addOptions(s, version string, opt interface{}) (string, error) {
 	}
 	u.RawQuery = vs.Encode()
 	return u.String(), nil
+}
+
+// GetUserID Gets the ID of the Current User
+func (c *Client) GetUserID() string {
+	return c.userID
+}
+
+// GetPublicKey gets the Public Key and Fingerprint of the Passbolt instance
+func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
+	msg, err := c.DoCustomRequest(ctx, "GET", "auth/verify.json", "v2", nil, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("Doing Request: %w", err)
+	}
+
+	var body PublicKeyReponse
+	err = json.Unmarshal(msg.Body, &body)
+	if err != nil {
+		return "", "", fmt.Errorf("Parsing JSON: %w", err)
+	}
+
+	// Lets get the actual Fingerprint instead of trusting the Server
+	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
+	if err != nil {
+		return "", "", fmt.Errorf("Parsing Server Key: %w", err)
+	}
+	return body.Keydata, privateKeyObj.GetFingerprint(), nil
 }

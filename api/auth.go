@@ -6,18 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
-
-// PublicKeyReponse the Body of a Public Key Api Request
-type PublicKeyReponse struct {
-	Fingerprint string `json:"fingerprint"`
-	Keydata     string `json:"keydata"`
-}
 
 // Login is used for login
 type Login struct {
@@ -28,24 +21,6 @@ type Login struct {
 type GPGAuth struct {
 	KeyID string `json:"keyid"`
 	Token string `json:"user_token_result,omitempty"`
-}
-
-// TODO add Server Verification Function
-
-// GetPublicKey gets the Public Key and Fingerprint of the Passbolt instance
-func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "auth/verify.json", "v2", nil, nil)
-	if err != nil {
-		return "", "", fmt.Errorf("Doing Request: %w", err)
-	}
-
-	var body PublicKeyReponse
-	err = json.Unmarshal(msg.Body, &body)
-	if err != nil {
-		return "", "", fmt.Errorf("Parsing JSON: %w", err)
-	}
-	// TODO check if that Fingerpirnt is actually from the Publickey
-	return body.Keydata, body.Fingerprint, nil
 }
 
 // CheckSession Check to see if you have a Valid Session
@@ -120,23 +95,11 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("Cannot Find Session Cookie!")
 	}
 
-	// You have to get a make GET Request to get the CSRF Token which is Required for Write Operations
+	// Because of MFA, the custom Request Function now Fetches the CSRF token, we still need the user for his public key
 	apiMsg, err := c.DoCustomRequest(ctx, "GET", "/users/me.json", "v2", nil, nil)
 	if err != nil {
 		return fmt.Errorf("Getting CSRF Token: %w", err)
 	}
-
-	// Because of MFA, the custom Request Functin now Fetches the CSRF token, we still need the user for his public key
-	/*
-		for _, cookie := range msg.Cookies() {
-			if cookie.Name == "csrfToken" {
-				c.csrfToken = *cookie
-			}
-		}
-
-		if c.csrfToken.Name == "" {
-			return fmt.Errorf("Cannot Find csrfToken Cookie!")
-		}*/
 
 	// Get Users Own Public Key from Server
 	var user User
@@ -174,35 +137,5 @@ func (c *Client) Logout(ctx context.Context) error {
 	}
 	c.sessionToken = http.Cookie{}
 	c.csrfToken = http.Cookie{}
-	return nil
-}
-
-// GetUserID Gets the ID of the Current User
-func (c *Client) GetUserID() string {
-	return c.userID
-}
-
-func checkAuthTokenFormat(authToken string) error {
-	splitAuthToken := strings.Split(authToken, "|")
-	if len(splitAuthToken) != 4 {
-		return fmt.Errorf("Auth Token Has Wrong amount of Fields")
-	}
-
-	if splitAuthToken[0] != splitAuthToken[3] {
-		return fmt.Errorf("Auth Token Version Fields Don't match")
-	}
-
-	if !strings.HasPrefix(splitAuthToken[0], "gpgauth") {
-		return fmt.Errorf("Auth Token Version does not start with 'gpgauth'")
-	}
-
-	length, err := strconv.Atoi(splitAuthToken[1])
-	if err != nil {
-		return fmt.Errorf("Cannot Convert Auth Token Length Field to int: %w", err)
-	}
-
-	if len(splitAuthToken[2]) != length {
-		return fmt.Errorf("Auth Token Data Length does not Match Length Field")
-	}
 	return nil
 }
