@@ -305,6 +305,30 @@ rClient, err := api.NewClient(nil, "", "https://localhost", "", "")
 privkey, err := SetupAccount(ctx, rClient, userID, token, "password123")
 ```
 
+## Verification
+
+You can Verify that the Server hasen't changed, for that you need to initially setup the Verification and save the returned values. Then you can Verify that the serverkey hasen't changed since you setup the Verification.
+
+```go
+// Setup the Verification
+token, encToken, err := client.SetupServerVerification(ctx)
+if err != nil {
+	panic(err)
+}
+// You Need to save these
+fmt.Println("Token: ", token)
+fmt.Println("enc Token: ", encToken)
+// Now you can Verify the Server
+err = client.VerifyServer(ctx, token, encToken)
+if err != nil {
+	panic(err)
+}
+```
+
+## MFA
+
+go-passbolt now supports MFA! You can set it up using the Client's `MFACallback` function, it will provide everything you need to complete any MFA challanges. When your done you just need to return the new MFA Cookie (usually called passbolt_mfa). The helper package has a example implementation for a noninteractive TOTP Setup under helper/mfa.go in the function `AddMFACallbackTOTP`.
+
 ## Other
 
 These examples are just the main use cases of these Modules, many more API calls are supported. Look at the [reference](https://pkg.go.dev/github.com/speatzle/go-passbolt) for more information.
