@@ -34,9 +34,9 @@ func (c *Client) DoCustomRequest(ctx context.Context, method, path, version stri
 func (c *Client) DoCustomRequestAndReturnRawResponse(ctx context.Context, method, path, version string, body interface{}, opts interface{}) (*http.Response, *APIResponse, error) {
 	firstTime := true
 start:
-	u, err := addOptions(path, version, opts)
+	u, err := generateURL(*c.baseURL, path, version, opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Adding Request Options: %w", err)
+		return nil, nil, fmt.Errorf("Generating Path: %w", err)
 	}
 
 	req, err := c.newRequest(method, u, body)

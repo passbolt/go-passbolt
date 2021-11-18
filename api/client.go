@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/google/go-querystring/query"
@@ -93,13 +94,7 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 	return c, err
 }
 
-func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
-	rel, err := url.Parse(path)
-	if err != nil {
-		return nil, fmt.Errorf("Parsing URL: %w", err)
-	}
-	u := c.baseURL.ResolveReference(rel)
-
+func (c *Client) newRequest(method, url string, body interface{}) (*http.Request, error) {
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
@@ -108,7 +103,8 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 			return nil, fmt.Errorf("JSON Encoding Request: %w", err)
 		}
 	}
-	req, err := http.NewRequest(method, u.String(), buf)
+
+	req, err := http.NewRequest(method, url, buf)
 	if err != nil {
 		return nil, fmt.Errorf("Creating HTTP Request: %w", err)
 	}
@@ -173,21 +169,18 @@ func (c *Client) log(msg string, args ...interface{}) {
 	fmt.Printf("[go-passbolt] "+msg+"\n", args...)
 }
 
-func addOptions(s, version string, opt interface{}) (string, error) {
-	u, err := url.Parse(s)
-	if err != nil {
-		return s, fmt.Errorf("Parsing URL: %w", err)
-	}
+func generateURL(base url.URL, p, version string, opt interface{}) (string, error) {
+	base.Path = path.Join(base.Path, p)
 
 	vs, err := query.Values(opt)
 	if err != nil {
-		return s, fmt.Errorf("Getting URL Query Values: %w", err)
+		return "", fmt.Errorf("Getting URL Query Values: %w", err)
 	}
 	if version != "" {
 		vs.Add("api-version", version)
 	}
-	u.RawQuery = vs.Encode()
-	return u.String(), nil
+	base.RawQuery = vs.Encode()
+	return base.String(), nil
 }
 
 // GetUserID Gets the ID of the Current User
@@ -197,7 +190,7 @@ func (c *Client) GetUserID() string {
 
 // GetPublicKey gets the Public Key and Fingerprint of the Passbolt instance
 func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "auth/verify.json", "v2", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/auth/verify.json", "v2", nil, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("Doing Request: %w", err)
 	}
