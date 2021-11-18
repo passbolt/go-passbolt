@@ -89,6 +89,9 @@ func (c *Client) Login(ctx context.Context) error {
 			// Session Cookie in older Passbolt Versions
 		} else if cookie.Name == "CAKEPHP" {
 			c.sessionToken = *cookie
+			// Session Cookie in Cloud version?
+		} else if cookie.Name == "PHPSESSID" {
+			c.sessionToken = *cookie
 		}
 	}
 	if c.sessionToken.Name == "" {
