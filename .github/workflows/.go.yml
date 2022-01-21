@@ -22,8 +22,8 @@ jobs:
             docker ps -a
       - name: "Test"
         run: |
-            docker exec passbolt_docker_passbolt_1 sh -c '/usr/bin/wait-for.sh -t 30 localhost:443'
-            output=$(docker exec passbolt_docker_passbolt_1 sh -c 'su -m -c "/usr/share/php/passbolt/bin/cake \
+            docker exec docker-compose_passbolt_1 sh -c '/usr/bin/wait-for.sh -t 30 localhost:443'
+            output=$(docker exec docker-compose_passbolt_1 sh -c 'su -m -c "/usr/share/php/passbolt/bin/cake \
               passbolt register_user \
               -u your@email.com \
               -f yourname \
