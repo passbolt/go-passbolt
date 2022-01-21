@@ -7,14 +7,30 @@ import (
 
 //Group is a Group
 type Group struct {
-	ID         string            `json:"id,omitempty"`
-	Name       string            `json:"name,omitempty"`
-	Created    *Time             `json:"created,omitempty"`
-	CreatedBy  string            `json:"created_by,omitempty"`
-	Deleted    bool              `json:"deleted,omitempty"`
-	Modified   *Time             `json:"modified,omitempty"`
-	ModifiedBy string            `json:"modified_by,omitempty"`
+	ID         string `json:"id,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Created    *Time  `json:"created,omitempty"`
+	CreatedBy  string `json:"created_by,omitempty"`
+	Deleted    bool   `json:"deleted,omitempty"`
+	Modified   *Time  `json:"modified,omitempty"`
+	ModifiedBy string `json:"modified_by,omitempty"`
+	// This does not Contain Profile for Users Anymore...
 	GroupUsers []GroupMembership `json:"groups_users,omitempty"`
+	// This is new and undocumented but as all the data
+	Users []GroupUser `json:"users,omitempty"`
+}
+
+type GroupUser struct {
+	User
+	JoinData GroupJoinData `json:"_join_data,omitempty"`
+}
+
+type GroupJoinData struct {
+	ID      string `json:"id,omitempty"`
+	GroupID string `json:"group_id,omitempty"`
+	UserID  string `json:"user_id,omitempty"`
+	IsAdmin bool   `json:"is_admin,omitempty"`
+	Created *Time  `json:"created,omitempty"`
 }
 
 type GroupMembership struct {
@@ -38,11 +54,14 @@ type GetGroupsOptions struct {
 	FilterHasUsers    []string `url:"filter[has_users],omitempty"`
 	FilterHasManagers []string `url:"filter[has-managers],omitempty"`
 
-	ContainModifier        bool `url:"contain[modifier],omitempty"`
-	ContainModifierProfile bool `url:"contain[modifier.profile],omitempty"`
-	ContainUser            bool `url:"contain[user],omitempty"`
-	ContainGroupUser       bool `url:"contain[group_user],omitempty"`
-	ContainMyGroupUser     bool `url:"contain[my_group_user],omitempty"`
+	ContainModifier               bool `url:"contain[modifier],omitempty"`
+	ContainModifierProfile        bool `url:"contain[modifier.profile],omitempty"`
+	ContainMyGroupUser            bool `url:"contain[my_group_user],omitempty"`
+	ContainUsers                  bool `url:"contain[users],omitempty"`
+	ContainGroupsUsers            bool `url:"contain[groups_users],omitempty"`
+	ContainGroupsUsersUser        bool `url:"contain[groups_users.user],omitempty"`
+	ContainGroupsUsersUserProfile bool `url:"contain[groups_users.user.profile],omitempty"`
+	ContainGroupsUsersUserGPGKey  bool `url:"contain[groups_users.user.gpgkey],omitempty"`
 }
 
 // UpdateGroupDryRunResult is the Result of a Update Group DryRun
