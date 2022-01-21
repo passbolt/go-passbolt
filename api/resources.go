@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Resource is a Resource.
@@ -89,6 +90,10 @@ func (c *Client) CreateResource(ctx context.Context, resource Resource) (*Resour
 
 // GetResource gets a Passbolt Resource
 func (c *Client) GetResource(ctx context.Context, resourceID string) (*Resource, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/resources/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err
@@ -104,6 +109,10 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*Resource,
 
 // UpdateResource Updates a existing Passbolt Resource
 func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource Resource) (*Resource, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/resources/"+resourceID+".json", "v2", resource, nil)
 	if err != nil {
 		return nil, err
@@ -118,7 +127,11 @@ func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource
 
 // DeleteResource Deletes a Passbolt Resource
 func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/resources/"+resourceID+".json", "v2", nil, nil)
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/resources/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -127,7 +140,11 @@ func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 
 // MoveResource Moves a Passbolt Resource
 func (c *Client) MoveResource(ctx context.Context, resourceID, folderParentID string) error {
-	_, err := c.DoCustomRequest(ctx, "PUT", "/move/resource/"+resourceID+".json", "v2", Resource{
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "PUT", "/move/resource/"+resourceID+".json", "v2", Resource{
 		FolderParentID: folderParentID,
 	}, nil)
 	if err != nil {

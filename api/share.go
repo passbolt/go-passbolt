@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // ResourceShareRequest is a ResourceShareRequest
@@ -61,7 +62,11 @@ func (c *Client) SearchAROs(ctx context.Context, opts SearchAROsOptions) ([]ARO,
 
 // ShareResource Shares a Resource with AROs
 func (c *Client) ShareResource(ctx context.Context, resourceID string, shareRequest ResourceShareRequest) error {
-	_, err := c.DoCustomRequest(ctx, "PUT", "/share/resource/"+resourceID+".json", "v2", shareRequest, nil)
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "PUT", "/share/resource/"+resourceID+".json", "v2", shareRequest, nil)
 	if err != nil {
 		return err
 	}
@@ -71,8 +76,12 @@ func (c *Client) ShareResource(ctx context.Context, resourceID string, shareRequ
 
 // ShareFolder Shares a Folder with AROs
 func (c *Client) ShareFolder(ctx context.Context, folderID string, permissions []Permission) error {
+	err := checkUUIDFormat(folderID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
 	f := Folder{Permissions: permissions}
-	_, err := c.DoCustomRequest(ctx, "PUT", "/share/folder/"+folderID+".json", "v2", f, nil)
+	_, err = c.DoCustomRequest(ctx, "PUT", "/share/folder/"+folderID+".json", "v2", f, nil)
 	if err != nil {
 		return err
 	}
@@ -82,6 +91,10 @@ func (c *Client) ShareFolder(ctx context.Context, folderID string, permissions [
 
 // SimulateShareResource Simulates Shareing a Resource with AROs
 func (c *Client) SimulateShareResource(ctx context.Context, resourceID string, shareRequest ResourceShareRequest) (*ResourceShareSimulationResult, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/share/simulate/resource/"+resourceID+".json", "v2", shareRequest, nil)
 	if err != nil {
 		return nil, err

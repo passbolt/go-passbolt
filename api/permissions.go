@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Permission is a Permission
@@ -21,6 +22,10 @@ type Permission struct {
 
 // GetResourcePermissions gets a Resources Permissions
 func (c *Client) GetResourcePermissions(ctx context.Context, resourceID string) ([]Permission, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/permissions/resource/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err

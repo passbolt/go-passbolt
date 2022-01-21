@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Favorite is a Favorite
@@ -16,6 +17,10 @@ type Favorite struct {
 
 // CreateFavorite Creates a new Passbolt Favorite for the given Resource ID
 func (c *Client) CreateFavorite(ctx context.Context, resourceID string) (*Favorite, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/favorites/resource/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err
@@ -31,7 +36,11 @@ func (c *Client) CreateFavorite(ctx context.Context, resourceID string) (*Favori
 
 // DeleteFavorite Deletes a Passbolt Favorite
 func (c *Client) DeleteFavorite(ctx context.Context, favoriteID string) error {
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/favorites/"+favoriteID+".json", "v2", nil, nil)
+	err := checkUUIDFormat(favoriteID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/favorites/"+favoriteID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}

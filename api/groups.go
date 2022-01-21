@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 //Group is a Group
@@ -124,6 +125,10 @@ func (c *Client) CreateGroup(ctx context.Context, group Group) (*Group, error) {
 
 // GetGroup gets a Passbolt Group
 func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
+	err := checkUUIDFormat(groupID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/groups/"+groupID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err
@@ -139,6 +144,10 @@ func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
 
 // UpdateGroup Updates a existing Passbolt Group
 func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUpdate) (*Group, error) {
+	err := checkUUIDFormat(groupID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+".json", "v2", update, nil)
 	if err != nil {
 		return nil, err
@@ -153,6 +162,10 @@ func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUp
 
 // UpdateGroupDryRun Checks that a Passbolt Group update passes validation
 func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update GroupUpdate) (*UpdateGroupDryRunResult, error) {
+	err := checkUUIDFormat(groupID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+"/dry-run.json", "v2", update, nil)
 	if err != nil {
 		return nil, err
@@ -167,7 +180,11 @@ func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update G
 
 // DeleteGroup Deletes a Passbolt Group
 func (c *Client) DeleteGroup(ctx context.Context, groupID string) error {
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/groups/"+groupID+".json", "v2", nil, nil)
+	err := checkUUIDFormat(groupID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/groups/"+groupID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}

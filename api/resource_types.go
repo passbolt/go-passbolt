@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 //ResourceType is the Type of a Resource
@@ -36,6 +37,10 @@ func (c *Client) GetResourceTypes(ctx context.Context, opts *GetResourceTypesOpt
 
 // GetResourceType gets a Passbolt Type
 func (c *Client) GetResourceType(ctx context.Context, typeID string) (*ResourceType, error) {
+	err := checkUUIDFormat(typeID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/resource-types/"+typeID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err

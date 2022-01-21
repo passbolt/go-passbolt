@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Comment is a Comment
@@ -29,6 +30,10 @@ type GetCommentsOptions struct {
 
 // GetComments gets all Passbolt Comments an The Specified Resource
 func (c *Client) GetComments(ctx context.Context, resourceID string, opts *GetCommentsOptions) ([]Comment, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/comments/resource/"+resourceID+".json", "v2", nil, opts)
 	if err != nil {
 		return nil, err
@@ -44,6 +49,10 @@ func (c *Client) GetComments(ctx context.Context, resourceID string, opts *GetCo
 
 // CreateComment Creates a new Passbolt Comment
 func (c *Client) CreateComment(ctx context.Context, resourceID string, comment Comment) (*Comment, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/comments/resource/"+resourceID+".json", "v2", comment, nil)
 	if err != nil {
 		return nil, err
@@ -58,6 +67,10 @@ func (c *Client) CreateComment(ctx context.Context, resourceID string, comment C
 
 // UpdateComment Updates a existing Passbolt Comment
 func (c *Client) UpdateComment(ctx context.Context, commentID string, comment Comment) (*Comment, error) {
+	err := checkUUIDFormat(commentID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/comments/"+commentID+".json", "v2", comment, nil)
 	if err != nil {
 		return nil, err
@@ -72,7 +85,11 @@ func (c *Client) UpdateComment(ctx context.Context, commentID string, comment Co
 
 // DeleteComment Deletes a Passbolt Comment
 func (c *Client) DeleteComment(ctx context.Context, commentID string) error {
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/comments/"+commentID+".json", "v2", nil, nil)
+	err := checkUUIDFormat(commentID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/comments/"+commentID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}

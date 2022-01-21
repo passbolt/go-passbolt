@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Secret is a Secret
@@ -23,6 +24,10 @@ type SecretDataTypePasswordAndDescription struct {
 
 // GetSecret gets a Passbolt Secret
 func (c *Client) GetSecret(ctx context.Context, resourceID string) (*Secret, error) {
+	err := checkUUIDFormat(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/secrets/resource/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err

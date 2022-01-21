@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 const UserLocaleENUK = "en-UK"
@@ -81,6 +82,10 @@ func (c *Client) GetMe(ctx context.Context) (*User, error) {
 
 // GetUser gets a Passbolt User
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
+	err := checkUUIDFormat(userID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/users/"+userID+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err
@@ -96,6 +101,10 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
 
 // UpdateUser Updates a existing Passbolt User
 func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*User, error) {
+	err := checkUUIDFormat(userID)
+	if err != nil {
+		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/users/"+userID+".json", "v2", user, nil)
 	if err != nil {
 		return nil, err
@@ -110,7 +119,11 @@ func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*Use
 
 // DeleteUser Deletes a Passbolt User
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
+	err := checkUUIDFormat(userID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -119,7 +132,11 @@ func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 
 // DeleteUserDryrun Check if a Passbolt User is Deleteable
 func (c *Client) DeleteUserDryrun(ctx context.Context, userID string) error {
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+"/dry-run.json", "v2", nil, nil)
+	err := checkUUIDFormat(userID)
+	if err != nil {
+		return fmt.Errorf("Checking ID format: %w", err)
+	}
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+"/dry-run.json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}

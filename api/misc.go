@@ -3,11 +3,14 @@ package api
 import (
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var isUUID = regexp.MustCompile("^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$")
 
 func randStringBytesRmndr(length int) string {
 	b := make([]byte, length)
@@ -38,6 +41,13 @@ func checkAuthTokenFormat(authToken string) error {
 
 	if len(splitAuthToken[2]) != length {
 		return fmt.Errorf("Auth Token Data Length does not Match Length Field")
+	}
+	return nil
+}
+
+func checkUUIDFormat(data string) error {
+	if !isUUID.MatchString(data) {
+		return fmt.Errorf("UUID is not in the valid format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
 	}
 	return nil
 }
