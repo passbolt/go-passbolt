@@ -18,7 +18,7 @@ jobs:
         run: |
             git clone https://github.com/passbolt/passbolt_docker.git ../passbolt_docker
             cd ../passbolt_docker
-            docker-compose up -d
+            docker-compose up -d -f docker-compose/docker-compose-ce.yaml
             docker ps -a
       - name: "Test"
         run: |
