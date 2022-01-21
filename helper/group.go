@@ -49,7 +49,9 @@ func CreateGroup(ctx context.Context, c *api.Client, name string, operations []G
 func GetGroup(ctx context.Context, c *api.Client, groupID string) (string, []GroupMembership, error) {
 	// for some reason the groups index api call does not give back the groups_users even though it is supposed to, so i have to do this...
 	groups, err := c.GetGroups(ctx, &api.GetGroupsOptions{
-		ContainGroupUser: true,
+		ContainGroupsUsers:            true,
+		ContainGroupsUsersUser:        true,
+		ContainGroupsUsersUserProfile: true,
 	})
 	if err != nil {
 		return "", nil, fmt.Errorf("Getting Groups: %w", err)
@@ -77,7 +79,7 @@ func GetGroup(ctx context.Context, c *api.Client, groupID string) (string, []Gro
 func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, operations []GroupMembershipOperation) error {
 	// for some reason the groups index api call does not give back the groups_users even though it is supposed to, so i have to do this...
 	groups, err := c.GetGroups(ctx, &api.GetGroupsOptions{
-		ContainGroupUser: true,
+		ContainGroupsUsers: true,
 	})
 	if err != nil {
 		return fmt.Errorf("Getting Groups: %w", err)
