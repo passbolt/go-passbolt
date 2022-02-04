@@ -8,7 +8,7 @@ import (
 
 // Resource is a Resource.
 // Warning: Since Passbolt v3 some fields here may not be populated as they may be in the Secret depending on the ResourceType,
-// for now the only Field like that is the Decription.
+// for now the only Field like that is the Description.
 type Resource struct {
 	ID             string       `json:"id,omitempty"`
 	Created        *Time        `json:"created,omitempty"`
