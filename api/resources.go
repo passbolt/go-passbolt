@@ -10,24 +10,25 @@ import (
 // Warning: Since Passbolt v3 some fields here may not be populated as they may be in the Secret depending on the ResourceType,
 // for now the only Field like that is the Decription.
 type Resource struct {
-	ID             string      `json:"id,omitempty"`
-	Created        *Time       `json:"created,omitempty"`
-	CreatedBy      string      `json:"created_by,omitempty"`
-	Creator        *User       `json:"creator,omitempty"`
-	Deleted        bool        `json:"deleted,omitempty"`
-	Description    string      `json:"description,omitempty"`
-	Favorite       *Favorite   `json:"favorite,omitempty"`
-	Modified       *Time       `json:"modified,omitempty"`
-	ModifiedBy     string      `json:"modified_by,omitempty"`
-	Modifier       *User       `json:"modifier,omitempty"`
-	Name           string      `json:"name,omitempty"`
-	Permission     *Permission `json:"permission,omitempty"`
-	URI            string      `json:"uri,omitempty"`
-	Username       string      `json:"username,omitempty"`
-	FolderParentID string      `json:"folder_parent_id,omitempty"`
-	ResourceTypeID string      `json:"resource_type_id,omitempty"`
-	Secrets        []Secret    `json:"secrets,omitempty"`
-	Tags           []Tag       `json:"tags,omitempty"`
+	ID             string       `json:"id,omitempty"`
+	Created        *Time        `json:"created,omitempty"`
+	CreatedBy      string       `json:"created_by,omitempty"`
+	Creator        *User        `json:"creator,omitempty"`
+	Deleted        bool         `json:"deleted,omitempty"`
+	Description    string       `json:"description,omitempty"`
+	Favorite       *Favorite    `json:"favorite,omitempty"`
+	Modified       *Time        `json:"modified,omitempty"`
+	ModifiedBy     string       `json:"modified_by,omitempty"`
+	Modifier       *User        `json:"modifier,omitempty"`
+	Name           string       `json:"name,omitempty"`
+	Permission     *Permission  `json:"permission,omitempty"`
+	URI            string       `json:"uri,omitempty"`
+	Username       string       `json:"username,omitempty"`
+	FolderParentID string       `json:"folder_parent_id,omitempty"`
+	ResourceTypeID string       `json:"resource_type_id,omitempty"`
+	ResourceType   ResourceType `json:"resource_type,omitempty"`
+	Secrets        []Secret     `json:"secrets,omitempty"`
+	Tags           []Tag        `json:"tags,omitempty"`
 }
 
 // Tag is a Passbolt Password Tag
