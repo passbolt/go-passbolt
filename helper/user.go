@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 )
 
 // CreateUser Creates a new User

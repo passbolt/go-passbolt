@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 )
 
 // CreateFolder Creates a new Folder

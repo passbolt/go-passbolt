@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 )
 
 // GroupMembershipOperation creates/modifies/deletes a group membership

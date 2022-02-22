@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/ProtonMail/gopenpgp/v2/helper"

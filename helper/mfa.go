@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 )
 
 // AddMFACallbackTOTP adds a MFA callback to the client that generates OTP Codes on demand using a Token with configurable retries and delay

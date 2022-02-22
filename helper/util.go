@@ -3,7 +3,7 @@ package helper
 import (
 	"fmt"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 )
 
 func getPublicKeyByUserID(userID string, Users []api.User) (string, error) {

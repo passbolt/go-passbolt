@@ -1,4 +1,4 @@
-module github.com/speatzle/go-passbolt
+module github.com/passbolt/go-passbolt
 
 go 1.16
 

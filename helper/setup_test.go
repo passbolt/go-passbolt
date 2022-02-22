@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/speatzle/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/api"
 )
 
 var client *api.Client
