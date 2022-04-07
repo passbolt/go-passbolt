@@ -62,7 +62,7 @@ start:
 	if res.Header.Status == "success" {
 		return r, &res, nil
 	} else if res.Header.Status == "error" {
-		if res.Header.Code == 403 && res.Header.Message == "MFA authentication is required." {
+		if res.Header.Code == 403 && res.Header.URL == "/mfa/verify/error.json" {
 			if !firstTime {
 				// if we are here this probably means that the MFA callback is broken, to prevent a infinit loop lets error here
 				return r, &res, fmt.Errorf("Got MFA challenge twice in a row, is your MFA Callback broken? Bailing to prevent loop...:")
