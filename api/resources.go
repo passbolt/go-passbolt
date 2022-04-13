@@ -41,7 +41,7 @@ type Tag struct {
 // GetResourcesOptions are all available query parameters
 type GetResourcesOptions struct {
 	FilterIsFavorite        bool     `url:"filter[is-favorite],omitempty"`
-	FilterIsSharedWithGroup []string `url:"filter[is-shared-with-group][],omitempty"`
+	FilterIsSharedWithGroup string   `url:"filter[is-shared-with-group],omitempty"`
 	FilterIsOwnedByMe       bool     `url:"filter[is-owned-by-me],omitempty"`
 	FilterIsSharedWithMe    bool     `url:"filter[is-shared-with-me],omitempty"`
 	FilterHasID             []string `url:"filter[has-id][],omitempty"`
