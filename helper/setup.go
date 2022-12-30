@@ -31,7 +31,7 @@ func SetupAccount(ctx context.Context, c *api.Client, userID, token, password st
 
 	keyName := install.Profile.FirstName + " " + install.Profile.LastName + " " + install.Username
 
-	privateKey, err := helper.GenerateKey(keyName, install.Username, []byte(password), "rsa", 2048)
+	privateKey, err := helper.GenerateKey(keyName, install.Username, []byte(password), "rsa", 4096)
 	if err != nil {
 		return "", fmt.Errorf("Generating Private Key: %w", err)
 	}
