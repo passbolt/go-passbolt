@@ -1,6 +1,6 @@
 package api
 
-type MFAChallange struct {
+type MFAChallenge struct {
 	Provider MFAProviders `json:"providers,omitempty"`
 }
 
@@ -8,6 +8,6 @@ type MFAProviders struct {
 	TOTP string `json:"totp,omitempty"`
 }
 
-type MFAChallangeResponse struct {
+type MFAChallengeResponse struct {
 	TOTP string `json:"totp,omitempty"`
 }

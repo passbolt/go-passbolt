@@ -64,7 +64,7 @@ start:
 	} else if res.Header.Status == "error" {
 		if res.Header.Code == 403 && res.Header.URL == "/mfa/verify/error.json" {
 			if !firstTime {
-				// if we are here this probably means that the MFA callback is broken, to prevent a infinit loop lets error here
+				// if we are here this probably means that the MFA callback is broken, to prevent a infinite loop lets error here
 				return r, &res, fmt.Errorf("Got MFA challenge twice in a row, is your MFA Callback broken? Bailing to prevent loop...:")
 			}
 			if c.MFACallback != nil {
@@ -72,11 +72,11 @@ start:
 				if err != nil {
 					return r, &res, fmt.Errorf("MFA Callback: %w", err)
 				}
-				// ok, we got the MFA challange and the callback presumably handeld it so we can retry the original request
+				// ok, we got the MFA challenge and the callback presumably handled it so we can retry the original request
 				firstTime = false
 				goto start
 			} else {
-				return r, &res, fmt.Errorf("Got MFA Challange but the MFA callback is not defined")
+				return r, &res, fmt.Errorf("Got MFA Challenge but the MFA callback is not defined")
 			}
 		}
 		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseErrorStatusCode, res.Header.Message, string(res.Body))

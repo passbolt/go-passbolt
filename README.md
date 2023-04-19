@@ -1,4 +1,5 @@
 # go-passbolt
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/passbolt/go-passbolt.svg)](https://pkg.go.dev/github.com/passbolt/go-passbolt)
 
 A Go module to interact with [Passbolt](https://www.passbolt.com/), an open-source password manager for teams
@@ -7,11 +8,11 @@ There also is a CLI Tool to interact with Passbolt using this module [here](http
 
 This module tries to support the latest Passbolt Community/PRO server release, PRO Features such as folders are supported. Older versions of Passbolt such as v2 are unsupported (it's a password manager, please update it)
 
-This module is divided into two packages: API and helper. 
+This module is divided into two packages: API and helper.
 
-In the API package, you will find everything to directly interact with the API. 
+In the API package, you will find everything to directly interact with the API.
 
-The helper package has simplified functions that use the API package to perform common but complicated tasks such as sharing a password. 
+The helper package has simplified functions that use the API package to perform common but complicated tasks such as sharing a password.
 
 To use the API package, please read the [Passbolt API docs](https://help.passbolt.com/api). Sadly the docs aren't complete so many things here have been found by looking at the source of Passbolt or through trial and error. If you have a question just ask.
 
@@ -19,12 +20,12 @@ PR's are welcome. But be gentle: if it's something bigger or fundamental: please
 
 Disclaimer: This project is community driven and not associated with Passbolt SA
 
-
 # Install
 
 `go get github.com/passbolt/go-passbolt`
 
 # Examples
+
 ## Login
 
 First, you will need to create a client and then log in on the server using the client:
@@ -214,24 +215,25 @@ err = helper.UpdateUser(
 	"lastname",  // LastName
 )
 ```
+
 Note: These helpers will only update fields that are not "".
 
 Helper update functions also exists for Folders.
 
 ## Sharing
 
-As sharing resources is very complicated there are multiple helper functions. 
+As sharing resources is very complicated there are multiple helper functions.
 
 During sharing you will encounter the [permission type](https://github.com/passbolt/passbolt_api/blob/858971516c5e61e1f1be37b007693f0869a70486/src/Model/Entity/Permission.php#L43-L45).
 
 The `permissionType` can be:
 
-| Code | Meaning | 
-| --- | --- | 
-| `1` | "Read-only" | 
-| `7` | "Can update" | 
-| `15` | "Owner" |
-| `-1` | Delete existing permission | 
+| Code | Meaning                    |
+| ---- | -------------------------- |
+| `1`  | "Read-only"                |
+| `7`  | "Can update"               |
+| `15` | "Owner"                    |
+| `-1` | Delete existing permission |
 
 The `ShareResourceWithUsersAndGroups` function shares the resource with all provided users and groups with the given `permissionType`.
 
@@ -294,6 +296,7 @@ err := client.MoveFolder(ctx, "folder id", "parent folder id")
 ## Setup
 
 You can setup a Account using a Invite Link like this:
+
 ```go
 // Get the UserID and Token from the Invite Link
 userID, token, err := ParseInviteUrl(url)
@@ -307,7 +310,7 @@ privkey, err := SetupAccount(ctx, rClient, userID, token, "password123")
 
 ## Verification
 
-You can Verify that the Server hasen't changed, for that you need to initially setup the Verification and save the returned values. Then you can Verify that the serverkey hasen't changed since you setup the Verification. Note this Only Works if the client is not logged in. 
+You can Verify that the Server hasen't changed, for that you need to initially setup the Verification and save the returned values. Then you can Verify that the serverkey hasen't changed since you setup the Verification. Note this Only Works if the client is not logged in.
 
 ```go
 // Setup the Verification
@@ -327,18 +330,17 @@ if err != nil {
 
 ## MFA
 
-go-passbolt now supports MFA! You can set it up using the Client's `MFACallback` function, it will provide everything you need to complete any MFA challanges. When your done you just need to return the new MFA Cookie (usually called passbolt_mfa). The helper package has a example implementation for a noninteractive TOTP Setup under helper/mfa.go in the function `AddMFACallbackTOTP`.
+go-passbolt now supports MFA! You can set it up using the Client's `MFACallback` function, it will provide everything you need to complete any MFA challenges. When your done you just need to return the new MFA Cookie (usually called passbolt_mfa). The helper package has a example implementation for a noninteractive TOTP Setup under helper/mfa.go in the function `AddMFACallbackTOTP`.
 
 ## Other
 
 These examples are just the main use cases of these Modules, many more API calls are supported. Look at the [reference](https://pkg.go.dev/github.com/passbolt/go-passbolt) for more information.
 
-
 ## Full Example
 
 This example:
 
-1. Creates a resource; 
+1. Creates a resource;
 2. Searches for a user named "Test User";
 3. Checks that it's not itself; and,
 4. Shares the password with the "Test User" if necessary:
