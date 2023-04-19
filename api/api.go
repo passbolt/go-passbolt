@@ -72,11 +72,11 @@ start:
 				if err != nil {
 					return r, &res, fmt.Errorf("MFA Callback: %w", err)
 				}
-				// ok, we got the MFA challange and the callback presumably handeld it so we can retry the original request
+				// ok, we got the MFA challenge and the callback presumably handeld it so we can retry the original request
 				firstTime = false
 				goto start
 			} else {
-				return r, &res, fmt.Errorf("Got MFA Challange but the MFA callback is not defined")
+				return r, &res, fmt.Errorf("Got MFA Challenge but the MFA callback is not defined")
 			}
 		}
 		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseErrorStatusCode, res.Header.Message, string(res.Body))

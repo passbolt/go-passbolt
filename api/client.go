@@ -31,7 +31,7 @@ type Client struct {
 	userPublicKey  string
 	userID         string
 
-	// used for solving MFA challanges. You can block this to for example wait for user input.
+	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.
 	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
 	MFACallback func(ctx context.Context, c *Client, res *APIResponse) (http.Cookie, error)

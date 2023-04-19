@@ -33,7 +33,7 @@ func (c *Client) SetupServerVerification(ctx context.Context) (string, string, e
 	token := "gpgauthv1.3.0|36|" + uuid.String() + "|gpgauthv1.3.0"
 	encToken, err := c.EncryptMessageWithPublicKey(serverKey, token)
 	if err != nil {
-		return "", "", fmt.Errorf("Encrypting Challange: %w", err)
+		return "", "", fmt.Errorf("Encrypting Challenge: %w", err)
 	}
 	err = c.VerifyServer(ctx, token, encToken)
 	if err != nil {
@@ -57,7 +57,7 @@ func (c *Client) VerifyServer(ctx context.Context, token, encToken string) error
 	}
 	raw, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/verify.json", "v2", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "The authentication failed.") {
-		return fmt.Errorf("Sending Verification Challange: %w", err)
+		return fmt.Errorf("Sending Verification Challenge: %w", err)
 	}
 
 	if raw.Header.Get("X-GPGAuth-Verify-Response") != token {
