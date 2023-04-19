@@ -14,7 +14,7 @@ type GroupMembershipOperation struct {
 	Delete         bool
 }
 
-// GroupMembership containes who and what kind of membership they have with a group
+// GroupMembership contains who and what kind of membership they have with a group
 type GroupMembership struct {
 	UserID         string
 	Username       string
