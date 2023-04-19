@@ -72,7 +72,7 @@ start:
 				if err != nil {
 					return r, &res, fmt.Errorf("MFA Callback: %w", err)
 				}
-				// ok, we got the MFA challenge and the callback presumably handeld it so we can retry the original request
+				// ok, we got the MFA challenge and the callback presumably handled it so we can retry the original request
 				firstTime = false
 				goto start
 			} else {
