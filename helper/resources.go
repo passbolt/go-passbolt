@@ -18,6 +18,7 @@ func CreateResource(ctx context.Context, c *api.Client, folderParentID, name, us
 	for _, tmp := range types {
 		if tmp.Slug == "password-and-description" {
 			rType = &tmp
+			break
 		}
 	}
 	if rType == nil {
