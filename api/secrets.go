@@ -22,6 +22,25 @@ type SecretDataTypePasswordAndDescription struct {
 	Description string `json:"description,omitempty"`
 }
 
+type SecretDataTOTP struct {
+	Algorithm string `json:"algorithm"`
+	SecretKey string `json:"secret_key"`
+	Digits    int    `json:"digits"`
+	Period    int    `json:"period"`
+}
+
+// SecretDataTypeTOTP is the format a secret of resource type "totp" is stored in
+type SecretDataTypeTOTP struct {
+	TOTP SecretDataTOTP `json:"totp"`
+}
+
+// SecretDataTypePasswordDescriptionTOTP is the format a secret of resource type "password-description-totp" is stored in
+type SecretDataTypePasswordDescriptionTOTP struct {
+	Password    string         `json:"password"`
+	Description string         `json:"description,omitempty"`
+	TOTP        SecretDataTOTP `json:"totp"`
+}
+
 // GetSecret gets a Passbolt Secret
 func (c *Client) GetSecret(ctx context.Context, resourceID string) (*Secret, error) {
 	err := checkUUIDFormat(resourceID)

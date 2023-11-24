@@ -128,6 +128,21 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		}
 		pw = secretData.Password
 		desc = secretData.Description
+	case "password-description-totp":
+		rawSecretData, err := c.DecryptMessage(secret.Data)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
+		}
+
+		var secretData api.SecretDataTypePasswordDescriptionTOTP
+		err = json.Unmarshal([]byte(rawSecretData), &secretData)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+		}
+		pw = secretData.Password
+		desc = secretData.Description
+	case "totp":
+		// nothing fits into the interface in this case
 	default:
 		return "", "", "", "", "", "", fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 	}
@@ -220,6 +235,53 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			}
 		}
 		res, err := json.Marshal(&tmp)
+		if err != nil {
+			return fmt.Errorf("Marshalling Secret Data: %w", err)
+		}
+		secretData = string(res)
+	case "password-description-totp":
+		secret, err := c.GetSecret(ctx, resourceID)
+		if err != nil {
+			return fmt.Errorf("Getting Secret: %w", err)
+		}
+		oldSecretData, err := c.DecryptMessage(secret.Data)
+		if err != nil {
+			return fmt.Errorf("Decrypting Secret: %w", err)
+		}
+		var oldSecret api.SecretDataTypePasswordDescriptionTOTP
+		err = json.Unmarshal([]byte(oldSecretData), &secretData)
+		if err != nil {
+			return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+		}
+		if password != "" {
+			oldSecret.Password = password
+		}
+		if description != "" {
+			oldSecret.Description = description
+		}
+
+		res, err := json.Marshal(&oldSecret)
+		if err != nil {
+			return fmt.Errorf("Marshalling Secret Data: %w", err)
+		}
+		secretData = string(res)
+	case "totp":
+		secret, err := c.GetSecret(ctx, resourceID)
+		if err != nil {
+			return fmt.Errorf("Getting Secret: %w", err)
+		}
+		oldSecretData, err := c.DecryptMessage(secret.Data)
+		if err != nil {
+			return fmt.Errorf("Decrypting Secret: %w", err)
+		}
+		var oldSecret api.SecretDataTypeTOTP
+		err = json.Unmarshal([]byte(oldSecretData), &secretData)
+		if err != nil {
+			return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+		}
+		// since we don't have totp parameters we don't do anything
+
+		res, err := json.Marshal(&oldSecret)
 		if err != nil {
 			return fmt.Errorf("Marshalling Secret Data: %w", err)
 		}
