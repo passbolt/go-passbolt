@@ -41,7 +41,22 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 	var schemaDefinition api.ResourceTypeSchema
 	err := json.Unmarshal([]byte(rType.Definition), &schemaDefinition)
 	if err != nil {
-		return fmt.Errorf("Unmarshal Json Schema: %w", err)
+		// Workaround for inconsistant API Responses where sometime the Schema is embedded directly and sometimes it's escaped as a string
+		if err.Error() == "json: cannot unmarshal string into Go value of type api.ResourceTypeSchema" {
+			var tmp string
+			err = json.Unmarshal([]byte(rType.Definition), &tmp)
+			if err != nil {
+				return fmt.Errorf("Workaround Unmarshal Json Schema String: %w", err)
+			}
+
+			err = json.Unmarshal([]byte(tmp), &schemaDefinition)
+			if err != nil {
+				return fmt.Errorf("Workaround Unmarshal Json Schema: %w", err)
+			}
+
+		} else {
+			return fmt.Errorf("Unmarshal Json Schema: %w", err)
+		}
 	}
 
 	comp := jsonschema.NewCompiler()
