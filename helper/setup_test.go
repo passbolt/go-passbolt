@@ -31,6 +31,9 @@ func TestMain(m *testing.M) {
 		panic(fmt.Errorf("Creating Registration Client: %w", err))
 	}
 
+	// Debug Output
+	rc.Debug = true
+
 	ctx := context.TODO()
 
 	privkey, err := SetupAccount(ctx, rc, userID, token, "password123")
@@ -42,6 +45,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(fmt.Errorf("Setup Client: %w", err))
 	}
+
+	// Debug Output
+	c.Debug = true
 
 	c.Login(ctx)
 	if err != nil {
