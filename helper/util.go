@@ -1,9 +1,13 @@
 package helper
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/passbolt/go-passbolt/api"
+	"github.com/santhosh-tekuri/jsonschema"
 )
 
 func getPublicKeyByUserID(userID string, Users []api.User) (string, error) {
@@ -31,4 +35,30 @@ func getSecretByResourceID(secrets []api.Secret, resourceID string) (*api.Secret
 		}
 	}
 	return nil, fmt.Errorf("Cannot Find Secret for id %v", resourceID)
+}
+
+func validateSecretData(rType *api.ResourceType, secretData string) error {
+	var schemaDefinition api.ResourceTypeSchema
+	err := json.Unmarshal([]byte(rType.Definition), &schemaDefinition)
+	if err != nil {
+		return fmt.Errorf("Unmarshal Json Schema: %w", err)
+	}
+
+	comp := jsonschema.NewCompiler()
+
+	err = comp.AddResource("secret.json", bytes.NewReader(schemaDefinition.Secret))
+	if err != nil {
+		return fmt.Errorf("Adding Json Schema: %w", err)
+	}
+
+	schema, err := comp.Compile("secret.json")
+	if err != nil {
+		return fmt.Errorf("Compiling Json Schema: %w", err)
+	}
+
+	err = schema.Validate(strings.NewReader(secretData))
+	if err != nil {
+		return fmt.Errorf("Validating Secret Data: %w", err)
+	}
+	return nil
 }

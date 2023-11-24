@@ -6,14 +6,19 @@ import (
 	"fmt"
 )
 
-//ResourceType is the Type of a Resource
+// ResourceType is the Type of a Resource
 type ResourceType struct {
-	ID          string          `json:"id,omitempty"`
-	Slug        string          `json:"slug,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Definition  json.RawMessage `json:"definition,omitempty"`
-	Created     *Time           `json:"created,omitempty"`
-	Modified    *Time           `json:"modified,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Slug        string `json:"slug,omitempty"`
+	Description string `json:"description,omitempty"`
+	Definition  string `json:"definition,omitempty"`
+	Created     *Time  `json:"created,omitempty"`
+	Modified    *Time  `json:"modified,omitempty"`
+}
+
+type ResourceTypeSchema struct {
+	Resource json.RawMessage `json:"resource"`
+	Secret   json.RawMessage `json:"secret"`
 }
 
 // GetResourceTypesOptions is a placeholder for future options

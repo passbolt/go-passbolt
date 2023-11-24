@@ -42,6 +42,11 @@ func CreateResource(ctx context.Context, c *api.Client, folderParentID, name, us
 		return "", fmt.Errorf("Marshalling Secret Data: %w", err)
 	}
 
+	err = validateSecretData(rType, string(secretData))
+	if err != nil {
+		return "", fmt.Errorf("Validating Secret Data: %w", err)
+	}
+
 	encSecretData, err := c.EncryptMessage(string(secretData))
 	if err != nil {
 		return "", fmt.Errorf("Encrypting Secret Data for User me: %w", err)
@@ -221,6 +226,11 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		secretData = string(res)
 	default:
 		return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
+	}
+
+	err = validateSecretData(rType, secretData)
+	if err != nil {
+		return fmt.Errorf("Validating Secret Data: %w", err)
 	}
 
 	newResource.Secrets = []api.Secret{}

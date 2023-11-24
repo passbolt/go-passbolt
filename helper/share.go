@@ -63,6 +63,22 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 		return fmt.Errorf("Decrypting Resource Secret: %w", err)
 	}
 
+	// Secret Validation
+	resource, err := c.GetResource(ctx, resourceID)
+	if err != nil {
+		return fmt.Errorf("Getting Resource: %w", err)
+	}
+
+	rType, err := c.GetResourceType(ctx, resource.ResourceTypeID)
+	if err != nil {
+		return fmt.Errorf("Getting ResourceType: %w", err)
+	}
+
+	err = validateSecretData(rType, secretData)
+	if err != nil {
+		return fmt.Errorf("Validating Secret Data: %w", err)
+	}
+
 	simulationResult, err := c.SimulateShareResource(ctx, resourceID, shareRequest)
 	if err != nil {
 		return fmt.Errorf("Simulate Share Resource: %w", err)
