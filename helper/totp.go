@@ -33,6 +33,9 @@ func GenerateOTPCode(token string, when time.Time) (string, error) {
 	// It should be uppercase always
 	token = strings.ToUpper(token)
 
+	// Remove all the extra "=" padding at the end
+	token = strings.TrimRight(token, "=")
+
 	secretBytes, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(token)
 	if err != nil {
 		return "", fmt.Errorf("Decoding token string: %w", err)
