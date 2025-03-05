@@ -31,6 +31,9 @@ type Client struct {
 	userPublicKey  string
 	userID         string
 
+	// Server Settings Determining which Resource Types we can use
+	metadataTypeSettings MetadataTypeSettings
+
 	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.
 	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
@@ -207,4 +210,27 @@ func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
 		return "", "", fmt.Errorf("Parsing Server Key: %w", err)
 	}
 	return body.Keydata, privateKeyObj.GetFingerprint(), nil
+}
+
+// setMetadataTypeSettings Gets and configures the Client to use the Types the Server wants us to use
+func (c *Client) setMetadataTypeSettings(ctx context.Context) error {
+	settings, err := c.GetServerSettings(ctx)
+	if err != nil {
+		return fmt.Errorf("Getting Server Settings: %w", err)
+	}
+
+	if settings.Passbolt.IsPluginEnabled("metadata") {
+		c.log("Server has metadata plugin enabled, is v5 or Higher")
+		metadataTypeSettings, err := c.GetMetadataTypeSettings(ctx)
+		if err != nil {
+			return fmt.Errorf("Getting Metadata Type Settings: %w", err)
+		}
+
+		c.log("metadataTypeSettings: %+v", metadataTypeSettings)
+		c.metadataTypeSettings = *metadataTypeSettings
+	} else {
+		c.log("Server has metadata plugin disabled or not installed, Server is v4")
+		c.metadataTypeSettings = getV4DefaultMetadataTypeSettings()
+	}
+	return nil
 }
