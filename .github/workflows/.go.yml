@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, v5]
   pull_request:
-    branches: [ main ]
+    branches: [main, v5]
 
 jobs:
   test:
@@ -16,19 +16,19 @@ jobs:
           go-version: 1.23
       - name: "Setup Passbolt"
         run: |
-            git clone https://github.com/passbolt/passbolt_docker.git ../passbolt_docker
-            cd ../passbolt_docker
-            docker compose -f docker-compose/docker-compose-ce.yaml up -d
-            docker ps -a
+          git clone https://github.com/passbolt/passbolt_docker.git ../passbolt_docker
+          cd ../passbolt_docker
+          docker compose -f docker-compose/docker-compose-ce.yaml up -d
+          docker ps -a
       - name: "Test"
         run: |
-            docker exec docker-compose-passbolt-1 sh -c '/usr/bin/wait-for.sh -t 30 localhost:443'
-            output=$(docker exec docker-compose-passbolt-1 sh -c 'su -m -c "/usr/share/php/passbolt/bin/cake \
-              passbolt register_user \
-              -u your@email.com \
-              -f yourname \
-              -l surname \
-              -r admin" -s /bin/sh www-data')
-            export REG_URL=$(echo ${output##* your mailbox or here: } | tr -d '\n')
-            echo "Register with $REG_URL"
-            go test -v ./...
+          docker exec docker-compose-passbolt-1 sh -c '/usr/bin/wait-for.sh -t 30 localhost:443'
+          output=$(docker exec docker-compose-passbolt-1 sh -c 'su -m -c "/usr/share/php/passbolt/bin/cake \
+            passbolt register_user \
+            -u your@email.com \
+            -f yourname \
+            -l surname \
+            -r admin" -s /bin/sh www-data')
+          export REG_URL=$(echo ${output##* your mailbox or here: } | tr -d '\n')
+          echo "Register with $REG_URL"
+          go test -v ./...
