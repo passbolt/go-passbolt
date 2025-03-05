@@ -169,17 +169,14 @@ func (c *Client) log(msg string, args ...interface{}) {
 	fmt.Printf("[go-passbolt] "+msg+"\n", args...)
 }
 
-func generateURL(base url.URL, p, version string, opt interface{}) (string, error) {
+func generateURL(base url.URL, p string, opt interface{}) (string, error) {
 	base.Path = path.Join(base.Path, p)
-
 	vs, err := query.Values(opt)
 	if err != nil {
 		return "", fmt.Errorf("Getting URL Query Values: %w", err)
 	}
-	if version != "" {
-		vs.Add("api-version", version)
-	}
 	base.RawQuery = vs.Encode()
+
 	return base.String(), nil
 }
 
