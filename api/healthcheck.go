@@ -7,7 +7,7 @@ import (
 
 // PerformHealthCheck performs a Health Check
 func (c *Client) PerformHealthCheck(ctx context.Context) (json.RawMessage, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/healthcheck.json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/healthcheck.json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -17,7 +17,7 @@ func (c *Client) PerformHealthCheck(ctx context.Context) (json.RawMessage, error
 
 // GetHealthCheckStatus gets the Server Status
 func (c *Client) GetHealthCheckStatus(ctx context.Context) (string, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/healthcheck/status.json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/healthcheck/status.json", nil, nil)
 	if err != nil {
 		return "", err
 	}

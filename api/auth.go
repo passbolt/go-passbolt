@@ -25,7 +25,7 @@ type GPGAuth struct {
 
 // CheckSession Check to see if you have a Valid Session
 func (c *Client) CheckSession(ctx context.Context) bool {
-	_, err := c.DoCustomRequestV5(ctx, "GET", "auth/is-authenticated.json", nil, nil)
+	_, err := c.DoCustomRequest(ctx, "GET", "auth/is-authenticated.json", nil, nil)
 	return err == nil
 }
 
@@ -99,7 +99,7 @@ func (c *Client) Login(ctx context.Context) error {
 	}
 
 	// Because of MFA, the custom Request Function now Fetches the CSRF token, we still need the user for his public key
-	apiMsg, err := c.DoCustomRequestV5(ctx, "GET", "/users/me.json", nil, nil)
+	apiMsg, err := c.DoCustomRequest(ctx, "GET", "/users/me.json", nil, nil)
 	if err != nil {
 		return fmt.Errorf("Getting CSRF Token: %w", err)
 	}
@@ -134,7 +134,7 @@ func (c *Client) Login(ctx context.Context) error {
 
 // Logout closes the current Session on the Passbolt server
 func (c *Client) Logout(ctx context.Context) error {
-	_, err := c.DoCustomRequestV5(ctx, "GET", "/auth/logout.json", nil, nil)
+	_, err := c.DoCustomRequest(ctx, "GET", "/auth/logout.json", nil, nil)
 	if err != nil {
 		return fmt.Errorf("Doing Logout Request: %w", err)
 	}

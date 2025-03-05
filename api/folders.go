@@ -55,7 +55,7 @@ type GetFolderOptions struct {
 
 // GetFolders gets all Folders from the Passboltserver
 func (c *Client) GetFolders(ctx context.Context, opts *GetFoldersOptions) ([]Folder, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/folders.json", nil, opts)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/folders.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c *Client) GetFolders(ctx context.Context, opts *GetFoldersOptions) ([]Fol
 
 // CreateFolder Creates a new Passbolt Folder
 func (c *Client) CreateFolder(ctx context.Context, folder Folder) (*Folder, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "POST", "/folders.json", folder, nil)
+	msg, err := c.DoCustomRequest(ctx, "POST", "/folders.json", folder, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (c *Client) GetFolder(ctx context.Context, folderID string, opts *GetFolder
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/folders/"+folderID+".json", nil, opts)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/folders/"+folderID+".json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (c *Client) UpdateFolder(ctx context.Context, folderID string, folder Folde
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "PUT", "/folders/"+folderID+".json", folder, nil)
+	msg, err := c.DoCustomRequest(ctx, "PUT", "/folders/"+folderID+".json", folder, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (c *Client) DeleteFolder(ctx context.Context, folderID string) error {
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/folders/"+folderID+".json", nil, nil)
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/folders/"+folderID+".json", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (c *Client) MoveFolder(ctx context.Context, folderID, folderParentID string
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequestV5(ctx, "PUT", "/move/folder/"+folderID+".json", Folder{
+	_, err = c.DoCustomRequest(ctx, "PUT", "/move/folder/"+folderID+".json", Folder{
 		FolderParentID: folderParentID,
 	}, nil)
 	if err != nil {

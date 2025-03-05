@@ -47,7 +47,7 @@ type SearchAROsOptions struct {
 // SearchAROs gets all Passbolt AROs
 func (c *Client) SearchAROs(ctx context.Context, opts SearchAROsOptions) ([]ARO, error) {
 	//set is_new to true in permission
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/share/search-aros.json", nil, opts)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/share/search-aros.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (c *Client) ShareResource(ctx context.Context, resourceID string, shareRequ
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequestV5(ctx, "PUT", "/share/resource/"+resourceID+".json", shareRequest, nil)
+	_, err = c.DoCustomRequest(ctx, "PUT", "/share/resource/"+resourceID+".json", shareRequest, nil)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (c *Client) ShareFolder(ctx context.Context, folderID string, permissions [
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
 	f := Folder{Permissions: permissions}
-	_, err = c.DoCustomRequestV5(ctx, "PUT", "/share/folder/"+folderID+".json", f, nil)
+	_, err = c.DoCustomRequest(ctx, "PUT", "/share/folder/"+folderID+".json", f, nil)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (c *Client) SimulateShareResource(ctx context.Context, resourceID string, s
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "POST", "/share/simulate/resource/"+resourceID+".json", shareRequest, nil)
+	msg, err := c.DoCustomRequest(ctx, "POST", "/share/simulate/resource/"+resourceID+".json", shareRequest, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -47,7 +47,7 @@ func (c *Client) GetSecret(ctx context.Context, resourceID string) (*Secret, err
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/secrets/resource/"+resourceID+".json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/secrets/resource/"+resourceID+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}

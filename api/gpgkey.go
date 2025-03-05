@@ -29,7 +29,7 @@ type GetGPGKeysOptions struct {
 
 // GetGPGKeys gets all Passbolt GPGKeys
 func (c *Client) GetGPGKeys(ctx context.Context, opts *GetGPGKeysOptions) ([]GPGKey, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/gpgkeys.json", nil, opts)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/gpgkeys.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *Client) GetGPGKey(ctx context.Context, gpgkeyID string) (*GPGKey, error
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/gpgkeys/"+gpgkeyID+".json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/gpgkeys/"+gpgkeyID+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}

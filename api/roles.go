@@ -41,7 +41,7 @@ type URL struct {
 
 // GetRoles gets all Passbolt Roles
 func (c *Client) GetRoles(ctx context.Context) ([]Role, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/roles.json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/roles.json", nil, nil)
 	if err != nil {
 		return nil, err
 	}

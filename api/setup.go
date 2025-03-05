@@ -30,7 +30,7 @@ func (c *Client) SetupInstall(ctx context.Context, userID, token string) (*Setup
 	if err != nil {
 		return nil, fmt.Errorf("Checking Token format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/setup/install/"+userID+"/"+token+".json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/setup/install/"+userID+"/"+token+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *Client) SetupComplete(ctx context.Context, userID string, request Setup
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequestV5(ctx, "POST", "/setup/complete/"+userID+".json", request, nil)
+	_, err = c.DoCustomRequest(ctx, "POST", "/setup/complete/"+userID+".json", request, nil)
 	if err != nil {
 		return err
 	}

@@ -96,7 +96,7 @@ type UpdateGroupDryRunSecretsNeeded struct {
 
 // GetGroups gets all Passbolt Groups
 func (c *Client) GetGroups(ctx context.Context, opts *GetGroupsOptions) ([]Group, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/groups.json", nil, opts)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/groups.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (c *Client) GetGroups(ctx context.Context, opts *GetGroupsOptions) ([]Group
 
 // CreateGroup Creates a new Passbolt Group
 func (c *Client) CreateGroup(ctx context.Context, group Group) (*Group, error) {
-	msg, err := c.DoCustomRequestV5(ctx, "POST", "/groups.json", group, nil)
+	msg, err := c.DoCustomRequest(ctx, "POST", "/groups.json", group, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "GET", "/groups/"+groupID+".json", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/groups/"+groupID+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUp
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "PUT", "/groups/"+groupID+".json", update, nil)
+	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+".json", update, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update G
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequestV5(ctx, "PUT", "/groups/"+groupID+"/dry-run.json", update, nil)
+	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+"/dry-run.json", update, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (c *Client) DeleteGroup(ctx context.Context, groupID string) error {
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/groups/"+groupID+".json", nil, nil)
+	_, err = c.DoCustomRequest(ctx, "DELETE", "/groups/"+groupID+".json", nil, nil)
 	if err != nil {
 		return err
 	}
