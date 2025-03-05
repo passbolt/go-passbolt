@@ -48,7 +48,7 @@ type GetUsersOptions struct {
 
 // GetUsers gets all Passbolt Users
 func (c *Client) GetUsers(ctx context.Context, opts *GetUsersOptions) ([]User, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/users.json", "v2", nil, opts)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/users.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (c *Client) GetUsers(ctx context.Context, opts *GetUsersOptions) ([]User, e
 
 // CreateUser Creates a new Passbolt User
 func (c *Client) CreateUser(ctx context.Context, user User) (*User, error) {
-	msg, err := c.DoCustomRequest(ctx, "POST", "/users.json", "v2", user, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "POST", "/users.json", user, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/users/"+userID+".json", "v2", nil, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/users/"+userID+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*Use
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/users/"+userID+".json", "v2", user, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "PUT", "/users/"+userID+".json", user, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
+	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/users/"+userID+".json", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (c *Client) DeleteUserDryrun(ctx context.Context, userID string) error {
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+"/dry-run.json", "v2", nil, nil)
+	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/users/"+userID+"/dry-run.json", nil, nil)
 	if err != nil {
 		return err
 	}

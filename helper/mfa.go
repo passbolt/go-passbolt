@@ -32,7 +32,7 @@ func AddMFACallbackTOTP(c *api.Client, retrys uint, retryDelay, offset time.Dura
 				TOTP: code,
 			}
 			var raw *http.Response
-			raw, _, err = c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "mfa/verify/totp.json", "v2", req, nil)
+			raw, _, err = c.DoCustomRequestAndReturnRawResponseV5(ctx, "POST", "mfa/verify/totp.json", req, nil)
 			if err != nil {
 				if errors.Unwrap(err) != api.ErrAPIResponseErrorStatusCode {
 					return http.Cookie{}, fmt.Errorf("Doing MFA Challenge Response: %w", err)

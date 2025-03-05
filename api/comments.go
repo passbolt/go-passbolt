@@ -34,7 +34,7 @@ func (c *Client) GetComments(ctx context.Context, resourceID string, opts *GetCo
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/comments/resource/"+resourceID+".json", "v2", nil, opts)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/comments/resource/"+resourceID+".json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (c *Client) CreateComment(ctx context.Context, resourceID string, comment C
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "POST", "/comments/resource/"+resourceID+".json", "v2", comment, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "POST", "/comments/resource/"+resourceID+".json", comment, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (c *Client) UpdateComment(ctx context.Context, commentID string, comment Co
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/comments/"+commentID+".json", "v2", comment, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "PUT", "/comments/"+commentID+".json", comment, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (c *Client) DeleteComment(ctx context.Context, commentID string) error {
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/comments/"+commentID+".json", "v2", nil, nil)
+	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/comments/"+commentID+".json", nil, nil)
 	if err != nil {
 		return err
 	}

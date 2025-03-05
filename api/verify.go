@@ -55,7 +55,7 @@ func (c *Client) VerifyServer(ctx context.Context, token, encToken string) error
 			KeyID: privateKeyObj.GetFingerprint(),
 		},
 	}
-	raw, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/verify.json", "v2", data, nil)
+	raw, _, err := c.DoCustomRequestAndReturnRawResponseV5(ctx, "POST", "/auth/verify.json", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "The authentication failed.") {
 		return fmt.Errorf("Sending Verification Challenge: %w", err)
 	}

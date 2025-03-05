@@ -27,7 +27,7 @@ type GetResourceTypesOptions struct {
 
 // GetResourceTypes gets all Passbolt Resource Types
 func (c *Client) GetResourceTypes(ctx context.Context, opts *GetResourceTypesOptions) ([]ResourceType, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/resource-types.json", "v2", nil, opts)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/resource-types.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *Client) GetResourceType(ctx context.Context, typeID string) (*ResourceT
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/resource-types/"+typeID+".json", "v2", nil, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/resource-types/"+typeID+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}

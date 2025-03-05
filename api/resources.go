@@ -62,7 +62,7 @@ type GetResourcesOptions struct {
 
 // GetResources gets all Passbolt Resources
 func (c *Client) GetResources(ctx context.Context, opts *GetResourcesOptions) ([]Resource, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/resources.json", "v2", nil, opts)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/resources.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (c *Client) GetResources(ctx context.Context, opts *GetResourcesOptions) ([
 
 // CreateResource Creates a new Passbolt Resource
 func (c *Client) CreateResource(ctx context.Context, resource Resource) (*Resource, error) {
-	msg, err := c.DoCustomRequest(ctx, "POST", "/resources.json", "v2", resource, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "POST", "/resources.json", resource, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*Resource,
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/resources/"+resourceID+".json", "v2", nil, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/resources/"+resourceID+".json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/resources/"+resourceID+".json", "v2", resource, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "PUT", "/resources/"+resourceID+".json", resource, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/resources/"+resourceID+".json", "v2", nil, nil)
+	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/resources/"+resourceID+".json", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (c *Client) MoveResource(ctx context.Context, resourceID, folderParentID st
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "PUT", "/move/resource/"+resourceID+".json", "v2", Resource{
+	_, err = c.DoCustomRequestV5(ctx, "PUT", "/move/resource/"+resourceID+".json", Resource{
 		FolderParentID: folderParentID,
 	}, nil)
 	if err != nil {
