@@ -15,6 +15,13 @@ var client *api.Client
 
 func TestMain(m *testing.M) {
 	url := os.Getenv("REG_URL")
+
+	// If we don't have a URL for Creating a user, Skip all integration tests by not Providing a client
+	if url == "" {
+		fmt.Println("REG_URL Env Variable Empty, Skipping integration tests")
+		os.Exit(m.Run())
+	}
+
 	fmt.Printf("Registering with url: %v\n", url)
 	userID, token, err := ParseInviteUrl(url)
 	if err != nil {
