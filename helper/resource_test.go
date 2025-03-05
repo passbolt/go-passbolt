@@ -6,6 +6,10 @@ import (
 )
 
 func TestResourceCreate(t *testing.T) {
+	// Skip integration tests if no client is available
+	if client == nil {
+		t.SkipNow()
+	}
 	id, err := CreateResource(context.TODO(), client, "", "name", "username", "https://url.lan", "password123", "a password description")
 	if err != nil {
 		t.Fatalf("Creating Resource %v", err)
