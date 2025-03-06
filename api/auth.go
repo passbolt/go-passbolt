@@ -129,6 +129,12 @@ func (c *Client) Login(ctx context.Context) error {
 	c.userPublicKey = user.GPGKey.ArmoredKey
 	c.userID = user.ID
 
+	// after Login, fetch MetadataTypeSettings to finish the Client Setup
+	c.setMetadataTypeSettings(ctx)
+	if err != nil {
+		return fmt.Errorf("Setup Metadata Type Settings: %w", err)
+	}
+
 	return nil
 }
 
