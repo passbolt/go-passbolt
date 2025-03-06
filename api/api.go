@@ -33,9 +33,14 @@ func (c *Client) DoCustomRequest(ctx context.Context, method, path, version stri
 
 // DoCustomRequestAndReturnRawResponse Executes a Custom Request and returns a APIResponse and the Raw HTTP Response
 func (c *Client) DoCustomRequestAndReturnRawResponse(ctx context.Context, method, path, version string, body interface{}, opts interface{}) (*http.Response, *APIResponse, error) {
+	// version is no longer used and is ignored.
+	return c.DoCustomRequestAndReturnRawResponseV5(ctx, method, path, body, opts)
+}
+
+func (c *Client) DoCustomRequestAndReturnRawResponseV5(ctx context.Context, method, path string, body interface{}, opts interface{}) (*http.Response, *APIResponse, error) {
 	firstTime := true
 start:
-	u, err := generateURL(*c.baseURL, path, version, opts)
+	u, err := generateURL(*c.baseURL, path, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Generating Path: %w", err)
 	}
