@@ -9,6 +9,7 @@ import (
 // Resource is a Resource.
 // Warning: Since Passbolt v3 some fields here may not be populated as they may be in the Secret depending on the ResourceType,
 // for now the only Field like that is the Description.
+// With Passbolt v5 it is now Possible that all Unencrypted User Supplied Fields are empty, and need to be decrypted from the Metadata Message
 type Resource struct {
 	ID             string       `json:"id,omitempty"`
 	Created        *Time        `json:"created,omitempty"`
@@ -27,8 +28,13 @@ type Resource struct {
 	FolderParentID string       `json:"folder_parent_id,omitempty"`
 	ResourceTypeID string       `json:"resource_type_id,omitempty"`
 	ResourceType   ResourceType `json:"resource_type,omitempty"`
-	Secrets        []Secret     `json:"secrets,omitempty"`
-	Tags           []Tag        `json:"tags,omitempty"`
+
+	MetadataKeyID   string          `json:"metadata_key_id,omitempty"`
+	MetadataKeyType MetadataKeyType `json:"metadata_key_type,omitempty"`
+	Metadata        string          `json:"metadata,omitempty"`
+
+	Secrets []Secret `json:"secrets,omitempty"`
+	Tags    []Tag    `json:"tags,omitempty"`
 }
 
 // Tag is a Passbolt Password Tag
@@ -48,6 +54,8 @@ type GetResourcesOptions struct {
 	// Parent Folder id
 	FilterHasParent []string `url:"filter[has-parent][],omitempty"`
 	FilterHasTag    string   `url:"filter[has-tag],omitempty"`
+	// TODO Are undescores correct heare?
+	MetadataKeyType MetadataKeyType `url:"filter[metadata_key_type],omitempty"`
 
 	ContainCreator                bool `url:"contain[creator],omitempty"`
 	ContainFavorites              bool `url:"contain[favorite],omitempty"`
