@@ -24,6 +24,9 @@ type User struct {
 	GPGKey       *GPGKey   `json:"gpgKey,omitempty"`
 	LastLoggedIn string    `json:"last_logged_in,omitempty"`
 	Locale       string    `json:"locale,omitempty"`
+
+	// Admin only, needs contains
+	MissingMetadataKeyIDs []string `json:"missing_metadata_key_ids,omitempty"`
 }
 
 // Profile is a Profile
@@ -42,6 +45,8 @@ type GetUsersOptions struct {
 	FilterHasGroup  []string `url:"filter[has-group][],omitempty"`
 	FilterHasAccess []string `url:"filter[has-access][],omitempty"`
 	FilterIsAdmin   bool     `url:"filter[is-admin],omitempty"`
+	// Admin only, TODO are underscores correct?
+	MissingMetadataKeyIDs bool `url:"filter[missing_metadata_key_ids],omitempty"`
 
 	ContainLastLoggedIn bool `url:"contain[LastLoggedIn],omitempty"`
 }
@@ -82,9 +87,11 @@ func (c *Client) GetMe(ctx context.Context) (*User, error) {
 
 // GetUser gets a Passbolt User
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
-	err := checkUUIDFormat(userID)
-	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+	if userID != "me" {
+		err := checkUUIDFormat(userID)
+		if err != nil {
+			return nil, fmt.Errorf("Checking ID format: %w", err)
+		}
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/users/"+userID+".json", "v2", nil, nil)
 	if err != nil {
@@ -101,9 +108,11 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
 
 // UpdateUser Updates a existing Passbolt User
 func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*User, error) {
-	err := checkUUIDFormat(userID)
-	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+	if userID != "me" {
+		err := checkUUIDFormat(userID)
+		if err != nil {
+			return nil, fmt.Errorf("Checking ID format: %w", err)
+		}
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/users/"+userID+".json", "v2", user, nil)
 	if err != nil {
@@ -119,11 +128,13 @@ func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*Use
 
 // DeleteUser Deletes a Passbolt User
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
-	err := checkUUIDFormat(userID)
-	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+	if userID != "me" {
+		err := checkUUIDFormat(userID)
+		if err != nil {
+			return fmt.Errorf("Checking ID format: %w", err)
+		}
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
+	_, err := c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}
