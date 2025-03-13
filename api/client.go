@@ -6,12 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/google/go-querystring/query"
 )
 
@@ -38,6 +37,9 @@ type Client struct {
 	// You shouden't run any unrelated API Calls while you are in this callback.
 	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
 	MFACallback func(ctx context.Context, c *Client, res *APIResponse) (http.Cookie, error)
+
+	// gopengpg Handler, allow for custom settings in the future
+	pgp *crypto.PGPHandle
 
 	// Enable Debug Logging
 	Debug bool
@@ -67,6 +69,8 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		return nil, fmt.Errorf("Parsing Base URL: %w", err)
 	}
 
+	pgp := crypto.PGP()
+
 	// Verify that the Given Privatekey and Password are valid and work Together if we were provieded one
 	if UserPrivateKey != "" {
 		privateKeyObj, err := crypto.NewKeyFromArmored(UserPrivateKey)
@@ -93,6 +97,7 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		userAgent:      UserAgent,
 		userPassword:   []byte(UserPassword),
 		userPrivateKey: UserPrivateKey,
+		pgp:            pgp,
 	}
 	return c, err
 }
@@ -150,7 +155,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 		resp.Body.Close()
 	}()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return resp, fmt.Errorf("Error Reading Resopnse Body: %w", err)
 	}
@@ -230,4 +235,9 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context) error {
 		c.metadataTypeSettings = getV4DefaultMetadataTypeSettings()
 	}
 	return nil
+}
+
+// GetPGPHandle Gets the Gopgenpgp Handler
+func (c *Client) GetPGPHandle() *crypto.PGPHandle {
+	return c.pgp
 }
