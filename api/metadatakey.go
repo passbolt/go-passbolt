@@ -64,8 +64,8 @@ type MetadataPrivateKeyData struct {
 
 // GetMetadataKeysOptions are all available query parameters
 type GetMetadataKeysOptions struct {
-	FilterDeleted bool `url:"filter[deleted,omitempty"`
-	FilterExpired bool `url:"filter[expired,omitempty"`
+	FilterDeleted bool `url:"filter[deleted],omitempty"`
+	FilterExpired bool `url:"filter[expired],omitempty"`
 
 	ContainMetadataPrivateKeys bool `url:"contain[metadata_private_keys],omitempty"`
 }
