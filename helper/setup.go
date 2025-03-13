@@ -6,9 +6,6 @@ import (
 	"strings"
 
 	"github.com/passbolt/go-passbolt/api"
-
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
 // ParseInviteUrl Parses a Passbolt Invite URL into a user id and token
@@ -31,19 +28,32 @@ func SetupAccount(ctx context.Context, c *api.Client, userID, token, password st
 
 	keyName := install.Profile.FirstName + " " + install.Profile.LastName + " " + install.Username
 
-	privateKey, err := helper.GenerateKey(keyName, install.Username, []byte(password), "rsa", 4096)
+	pgp := c.GetPGPHandle()
+
+	keyHandler := pgp.KeyGeneration().AddUserId(keyName, install.Username).New()
+
+	key, err := keyHandler.GenerateKey()
 	if err != nil {
 		return "", fmt.Errorf("Generating Private Key: %w", err)
 	}
 
-	key, err := crypto.NewKeyFromArmoredReader(strings.NewReader(privateKey))
-	if err != nil {
-		return "", fmt.Errorf("Reading Private Key: %w", err)
-	}
+	defer key.ClearPrivateParams()
 
 	publicKey, err := key.GetArmoredPublicKey()
 	if err != nil {
 		return "", fmt.Errorf("Get Public Key: %w", err)
+	}
+
+	lockedKey, err := pgp.LockKey(key, []byte(password))
+	if err != nil {
+		return "", fmt.Errorf("Locking Private Key: %w", err)
+	}
+
+	defer lockedKey.ClearPrivateParams()
+
+	privateKey, err := lockedKey.Armor()
+	if err != nil {
+		return "", fmt.Errorf("Get Private Key: %w", err)
 	}
 
 	request := api.SetupCompleteRequest{
