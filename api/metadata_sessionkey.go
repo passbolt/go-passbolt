@@ -22,7 +22,7 @@ type MetadataSessionKeyData struct {
 	SessionKeys []MetadataSessionKeyDataElement `json:"session_keys,omitempty"`
 }
 
-// MetadataSessionKeyData is a MetadataSessionKeyData
+// MetadataSessionKeyDataElement is a MetadataSessionKeyDataElement
 type MetadataSessionKeyDataElement struct {
 	ForeignModel ForeignModelTypes `json:"foreign_model"`
 	ForeignID    string            `json:"foreign_id"`
@@ -30,9 +30,9 @@ type MetadataSessionKeyDataElement struct {
 	Modified     Time              `json:"modified"`
 }
 
-// GetMetadataTypeSettings gets the Servers Settings about which Types to use
+// GetMetadataSessionKeys gets the Metadata Session Keys
 func (c *Client) GetMetadataSessionKeys(ctx context.Context) ([]MetadataSessionKey, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/metadata/session-keys.json", "v2", nil, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/metadata/session-keys.json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (c *Client) DeleteSessionKey(ctx context.Context, sessionKeyID string) erro
 	if err != nil {
 		return fmt.Errorf("Checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/metadata/session-keys/"+sessionKeyID+".json", "v2", nil, nil)
+	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/metadata/session-keys/"+sessionKeyID+".json", nil, nil)
 	if err != nil {
 		return err
 	}

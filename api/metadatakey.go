@@ -9,7 +9,7 @@ type MetadataKeyType string
 
 const (
 	MetadataKeyTypeUserKey   MetadataKeyType = "user_key"
-	MetadataKeyTypeSharedKey                 = "shared_key"
+	MetadataKeyTypeSharedKey MetadataKeyType = "shared_key"
 )
 
 func (s MetadataKeyType) IsValid() bool {
@@ -72,7 +72,7 @@ type GetMetadataKeysOptions struct {
 
 // GetMetadataKeys gets all Passbolt GetMetadataKeys
 func (c *Client) GetMetadataKeys(ctx context.Context, opts *GetMetadataKeysOptions) ([]MetadataKey, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/metadata/keys.json", "v2", nil, opts)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/metadata/keys.json", nil, opts)
 	if err != nil {
 		return nil, err
 	}
