@@ -9,7 +9,7 @@ type PassboltAPIVersionType string
 
 const (
 	PassboltAPIVersionTypeV4 PassboltAPIVersionType = "v4"
-	PassboltAPIVersionTypeV5                        = "v5"
+	PassboltAPIVersionTypeV5 PassboltAPIVersionType = "v5"
 )
 
 func (s PassboltAPIVersionType) IsValid() bool {
@@ -59,7 +59,7 @@ func getV4DefaultMetadataTypeSettings() MetadataTypeSettings {
 
 // GetMetadataTypeSettings gets the Servers Settings about which Types to use
 func (c *Client) GetMetadataTypeSettings(ctx context.Context) (*MetadataTypeSettings, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/metadata/types/settings.json", "v3", nil, nil)
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/metadata/types/settings.json", nil, nil)
 	if err != nil {
 		return nil, err
 	}
