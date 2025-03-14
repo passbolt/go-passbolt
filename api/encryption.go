@@ -69,53 +69,33 @@ func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string,
 
 // DecryptMessage decrypts a message using the users Private Key
 func (c *Client) DecryptMessage(message string) (string, error) {
-	key, err := c.getPrivateKey(c.userPrivateKey, c.userPassword)
-	if err != nil {
-		return "", fmt.Errorf("Get Private Key: %w", err)
-	}
-
-	defer key.ClearPrivateParams()
-
-	decHandle, err := c.pgp.Decryption().DecryptionKey(key).New()
-	if err != nil {
-		return "", fmt.Errorf("New Decryptor: %w", err)
-	}
-
-	defer decHandle.ClearPrivateParams()
-
-	res, err := decHandle.Decrypt([]byte(message), crypto.Armor)
-	if err != nil {
-		return "", fmt.Errorf("Decrypt Message: %w", err)
-	}
-
-	// We cant Verify the signature as we don't store other users public keys locally and don't know which user did encrypt it
-	//return helper.DecryptVerifyMessageArmored(c.userPublicKey, c.userPrivateKey, c.userPassword, message)
-
-	return res.String(), nil
+	message, _, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(c.userPrivateKey, c.userPassword, message)
+	return message, err
 }
 
-// TODO change []byte to string?
-func (c *Client) DecryptMessageWithPrivateKey(privateKey string, passphrase []byte, ciphertextArmored string) (string, error) {
+// DecryptMessageWithPrivateKey Decrypts a Message using the Provided Private Key
+// Returns the Session key so that it can be saved in a cache
+func (c *Client) DecryptMessageWithPrivateKeyAndReturnSessionKey(privateKey string, passphrase []byte, ciphertextArmored string) (string, *crypto.SessionKey, error) {
 	key, err := c.getPrivateKey(privateKey, passphrase)
 	if err != nil {
-		return "", fmt.Errorf("Get Private Key: %w", err)
+		return "", nil, fmt.Errorf("Get Private Key: %w", err)
 	}
 
 	defer key.ClearPrivateParams()
 
-	decHandle, err := c.pgp.Decryption().DecryptionKey(key).New()
+	decHandle, err := c.pgp.Decryption().DecryptionKey(key).RetrieveSessionKey().New()
 	if err != nil {
-		return "", fmt.Errorf("New Decryptor: %w", err)
+		return "", nil, fmt.Errorf("New Decryptor: %w", err)
 	}
 
 	defer decHandle.ClearPrivateParams()
 
 	res, err := decHandle.Decrypt([]byte(ciphertextArmored), crypto.Armor)
 	if err != nil {
-		return "", fmt.Errorf("Decrypt: %w", err)
+		return "", nil, fmt.Errorf("Decrypt: %w", err)
 	}
 
-	return string(res.Bytes()), nil
+	return res.String(), res.SessionKey(), nil
 }
 
 func (c *Client) getPrivateKey(privateKey string, passphrase []byte) (*crypto.Key, error) {
@@ -141,4 +121,21 @@ func (c *Client) getPrivateKey(privateKey string, passphrase []byte) (*crypto.Ke
 		return unlocked, nil
 	}
 	return key, nil
+}
+
+// DecryptMessageWithSessionKey Decrypts a Message using the Provided Session Key
+func (c *Client) DecryptMessageWithSessionKey(sessionKey *crypto.SessionKey, ciphertextArmored string) (string, error) {
+	decHandle, err := c.pgp.Decryption().SessionKey(sessionKey).New()
+	if err != nil {
+		return "", fmt.Errorf("New Decryptor: %w", err)
+	}
+
+	defer decHandle.ClearPrivateParams()
+
+	res, err := decHandle.Decrypt([]byte(ciphertextArmored), crypto.Armor)
+	if err != nil {
+		return "", fmt.Errorf("Decrypt: %w", err)
+	}
+
+	return res.String(), nil
 }
