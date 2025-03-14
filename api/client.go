@@ -24,10 +24,10 @@ type Client struct {
 	csrfToken    http.Cookie
 	mfaToken     http.Cookie
 
-	// for some reason []byte is used for Passwords in gopenpgp instead of string like they do for keys...
+	// userPublicKey has been removed since it can be gotten from the private userPrivateKey
+
 	userPassword   []byte
 	userPrivateKey string
-	userPublicKey  string
 	userID         string
 
 	// Server Settings Determining which Resource Types we can use
