@@ -26,6 +26,7 @@ type Client struct {
 
 	// userPublicKey has been removed since it can be gotten from the private userPrivateKey
 
+	// be sure to make a copy since using ClearPrivateParams on a handler also wipes the key...
 	userPrivateKey *crypto.Key
 	userID         string
 

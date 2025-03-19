@@ -8,7 +8,12 @@ import (
 
 // EncryptMessage encrypts a message using the users public key and then signes the message using the users private key
 func (c *Client) EncryptMessage(message string) (string, error) {
-	encHandle, err := c.pgp.Encryption().SigningKey(c.userPrivateKey).Recipient(c.userPrivateKey).New()
+	key, err := c.userPrivateKey.Copy()
+	if err != nil {
+		return "", fmt.Errorf("Get Private Key Copy: %w", err)
+	}
+
+	encHandle, err := c.pgp.Encryption().SigningKey(key).Recipient(c.userPrivateKey).New()
 	if err != nil {
 		return "", fmt.Errorf("New Encryptor: %w", err)
 	}
@@ -34,7 +39,12 @@ func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string,
 		return "", fmt.Errorf("Get Public Key: %w", err)
 	}
 
-	encHandle, err := c.pgp.Encryption().SigningKey(c.userPrivateKey).Recipient(publicKey).New()
+	key, err := c.userPrivateKey.Copy()
+	if err != nil {
+		return "", fmt.Errorf("Get Private Key Copy: %w", err)
+	}
+
+	encHandle, err := c.pgp.Encryption().SigningKey(key).Recipient(publicKey).New()
 	if err != nil {
 		return "", fmt.Errorf("New Encryptor: %w", err)
 	}
@@ -55,7 +65,12 @@ func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string,
 
 // DecryptMessage decrypts a message using the users Private Key
 func (c *Client) DecryptMessage(armoredCiphertext string) (string, error) {
-	message, _, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(c.userPrivateKey, armoredCiphertext)
+	key, err := c.userPrivateKey.Copy()
+	if err != nil {
+		return "", fmt.Errorf("Get Private Key Copy: %w", err)
+	}
+
+	message, _, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(key, armoredCiphertext)
 	return message, err
 }
 
