@@ -26,8 +26,7 @@ type Client struct {
 
 	// userPublicKey has been removed since it can be gotten from the private userPrivateKey
 
-	userPassword   []byte
-	userPrivateKey string
+	userPrivateKey *crypto.Key
 	userID         string
 
 	// Server Settings Determining which Resource Types we can use
@@ -71,23 +70,13 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 
 	pgp := crypto.PGP()
 
-	// Verify that the Given Privatekey and Password are valid and work Together if we were provieded one
+	var unlockedKey *crypto.Key = nil
 	if UserPrivateKey != "" {
-		privateKeyObj, err := crypto.NewKeyFromArmored(UserPrivateKey)
+		key, err := GetPrivateKeyFromArmor(UserPrivateKey, []byte(UserPassword))
 		if err != nil {
-			return nil, fmt.Errorf("Unable to Create Key From UserPrivateKey string: %w", err)
+			return nil, fmt.Errorf("Get Private Key: %w", err)
 		}
-		unlockedKeyObj, err := privateKeyObj.Unlock([]byte(UserPassword))
-		if err != nil {
-			return nil, fmt.Errorf("Unable to Unlock UserPrivateKey using UserPassword: %w", err)
-		}
-		privateKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to Create a new Key Ring using the unlocked UserPrivateKey: %w", err)
-		}
-
-		// Cleanup Secrets
-		privateKeyRing.ClearPrivateParams()
+		unlockedKey = key
 	}
 
 	// Create Client Object
@@ -95,8 +84,7 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		httpClient:     httpClient,
 		baseURL:        u,
 		userAgent:      UserAgent,
-		userPassword:   []byte(UserPassword),
-		userPrivateKey: UserPrivateKey,
+		userPrivateKey: unlockedKey,
 		pgp:            pgp,
 	}
 	return c, err
@@ -207,11 +195,11 @@ func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
 	}
 
 	// Lets get the actual Fingerprint instead of trusting the Server
-	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
+	serverKey, err := crypto.NewKeyFromArmored(body.Keydata)
 	if err != nil {
 		return "", "", fmt.Errorf("Parsing Server Key: %w", err)
 	}
-	return body.Keydata, privateKeyObj.GetFingerprint(), nil
+	return body.Keydata, serverKey.GetFingerprint(), nil
 }
 
 // setMetadataTypeSettings Gets and configures the Client to use the Types the Server wants us to use

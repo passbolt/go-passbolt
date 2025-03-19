@@ -30,14 +30,7 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 func (c *Client) Login(ctx context.Context) error {
 	c.csrfToken = http.Cookie{}
 
-	privateKey, err := c.getPrivateKey(c.userPrivateKey, c.userPassword)
-	if err != nil {
-		return fmt.Errorf("Parsing User Private Key: %w", err)
-	}
-
-	defer privateKey.ClearPrivateParams()
-
-	data := Login{&GPGAuth{KeyID: privateKey.GetFingerprint()}}
+	data := Login{&GPGAuth{KeyID: c.userPrivateKey.GetFingerprint()}}
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "Error API JSON Response Status: Message: The authentication failed.") {
