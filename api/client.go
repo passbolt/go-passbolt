@@ -6,12 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/google/go-querystring/query"
 )
 
@@ -25,10 +24,10 @@ type Client struct {
 	csrfToken    http.Cookie
 	mfaToken     http.Cookie
 
-	// for some reason []byte is used for Passwords in gopenpgp instead of string like they do for keys...
-	userPassword   []byte
-	userPrivateKey string
-	userPublicKey  string
+	// userPublicKey has been removed since it can be gotten from the private userPrivateKey
+
+	// be sure to make a copy since using ClearPrivateParams on a handler also wipes the key...
+	userPrivateKey *crypto.Key
 	userID         string
 
 	// Server Settings Determining which Resource Types we can use
@@ -38,6 +37,9 @@ type Client struct {
 	// You shouden't run any unrelated API Calls while you are in this callback.
 	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
 	MFACallback func(ctx context.Context, c *Client, res *APIResponse) (http.Cookie, error)
+
+	// gopengpg Handler, allow for custom settings in the future
+	pgp *crypto.PGPHandle
 
 	// Enable Debug Logging
 	Debug bool
@@ -67,23 +69,15 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		return nil, fmt.Errorf("Parsing Base URL: %w", err)
 	}
 
-	// Verify that the Given Privatekey and Password are valid and work Together if we were provieded one
-	if UserPrivateKey != "" {
-		privateKeyObj, err := crypto.NewKeyFromArmored(UserPrivateKey)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to Create Key From UserPrivateKey string: %w", err)
-		}
-		unlockedKeyObj, err := privateKeyObj.Unlock([]byte(UserPassword))
-		if err != nil {
-			return nil, fmt.Errorf("Unable to Unlock UserPrivateKey using UserPassword: %w", err)
-		}
-		privateKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to Create a new Key Ring using the unlocked UserPrivateKey: %w", err)
-		}
+	pgp := crypto.PGP()
 
-		// Cleanup Secrets
-		privateKeyRing.ClearPrivateParams()
+	var unlockedKey *crypto.Key = nil
+	if UserPrivateKey != "" {
+		key, err := GetPrivateKeyFromArmor(UserPrivateKey, []byte(UserPassword))
+		if err != nil {
+			return nil, fmt.Errorf("Get Private Key: %w", err)
+		}
+		unlockedKey = key
 	}
 
 	// Create Client Object
@@ -91,8 +85,8 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		httpClient:     httpClient,
 		baseURL:        u,
 		userAgent:      UserAgent,
-		userPassword:   []byte(UserPassword),
-		userPrivateKey: UserPrivateKey,
+		userPrivateKey: unlockedKey,
+		pgp:            pgp,
 	}
 	return c, err
 }
@@ -150,7 +144,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 		resp.Body.Close()
 	}()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return resp, fmt.Errorf("Error Reading Resopnse Body: %w", err)
 	}
@@ -202,11 +196,11 @@ func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
 	}
 
 	// Lets get the actual Fingerprint instead of trusting the Server
-	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
+	serverKey, err := crypto.NewKeyFromArmored(body.Keydata)
 	if err != nil {
 		return "", "", fmt.Errorf("Parsing Server Key: %w", err)
 	}
-	return body.Keydata, privateKeyObj.GetFingerprint(), nil
+	return body.Keydata, serverKey.GetFingerprint(), nil
 }
 
 // setMetadataTypeSettings Gets and configures the Client to use the Types the Server wants us to use
@@ -230,4 +224,9 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context) error {
 		c.metadataTypeSettings = getV4DefaultMetadataTypeSettings()
 	}
 	return nil
+}
+
+// GetPGPHandle Gets the Gopgenpgp Handler
+func (c *Client) GetPGPHandle() *crypto.PGPHandle {
+	return c.pgp
 }

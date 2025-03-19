@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/google/uuid"
 )
 
@@ -44,15 +43,10 @@ func (c *Client) SetupServerVerification(ctx context.Context) (string, string, e
 
 // VerifyServer verifys that the Server is still the same one as during the Setup, Only works before login
 func (c *Client) VerifyServer(ctx context.Context, token, encToken string) error {
-	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
-	if err != nil {
-		return fmt.Errorf("Parsing User Private Key: %w", err)
-	}
-
 	data := GPGVerifyContainer{
 		Req: GPGVerify{
 			Token: encToken,
-			KeyID: privateKeyObj.GetFingerprint(),
+			KeyID: c.userPrivateKey.GetFingerprint(),
 		},
 	}
 	raw, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/verify.json", "v2", data, nil)

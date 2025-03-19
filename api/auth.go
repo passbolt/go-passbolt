@@ -7,9 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
 // Login is used for login
@@ -33,15 +30,7 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 func (c *Client) Login(ctx context.Context) error {
 	c.csrfToken = http.Cookie{}
 
-	if c.userPrivateKey == "" {
-		return fmt.Errorf("Client has no Private Key")
-	}
-
-	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
-	if err != nil {
-		return fmt.Errorf("Parsing User Private Key: %w", err)
-	}
-	data := Login{&GPGAuth{KeyID: privateKeyObj.GetFingerprint()}}
+	data := Login{&GPGAuth{KeyID: c.userPrivateKey.GetFingerprint()}}
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "Error API JSON Response Status: Message: The authentication failed.") {
@@ -62,7 +51,7 @@ func (c *Client) Login(ctx context.Context) error {
 	}
 	encAuthToken = strings.ReplaceAll(encAuthToken, "\\ ", " ")
 
-	authToken, err := helper.DecryptMessageArmored(c.userPrivateKey, c.userPassword, encAuthToken)
+	authToken, err := c.DecryptMessage(encAuthToken)
 	if err != nil {
 		return fmt.Errorf("Decrypting User Auth Token: %w", err)
 	}
@@ -104,29 +93,13 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("Getting CSRF Token: %w", err)
 	}
 
-	// Get Users Own Public Key from Server
+	// Get Users ID from Server
 	var user User
 	err = json.Unmarshal(apiMsg.Body, &user)
 	if err != nil {
 		return fmt.Errorf("Parsing User 'Me' JSON from API Request: %w", err)
 	}
 
-	// Validate that this Publickey that the Server gave us actually Matches our Privatekey
-	randomString := randStringBytesRmndr(50)
-	armor, err := helper.EncryptMessageArmored(user.GPGKey.ArmoredKey, randomString)
-	if err != nil {
-		return fmt.Errorf("Encryping PublicKey Validation Message: %w", err)
-	}
-	decrypted, err := helper.DecryptMessageArmored(c.userPrivateKey, c.userPassword, armor)
-	if err != nil {
-		return fmt.Errorf("Decrypting PublicKey Validation Message (you might be getting Hacked): %w", err)
-	}
-	if decrypted != randomString {
-		return fmt.Errorf("Decrypted PublicKey Validation Message does not Match Original (you might be getting Hacked): %w", err)
-	}
-
-	// Insert PublicKey into Client after checking it to Prevent ignored errors leading to proceeding with a potentially Malicious PublicKey
-	c.userPublicKey = user.GPGKey.ArmoredKey
 	c.userID = user.ID
 
 	// after Login, fetch MetadataTypeSettings to finish the Client Setup
