@@ -6,12 +6,41 @@ import (
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 )
 
-// ResourceMetadataTypePasswordAndDescription
-type ResourceMetadataTypePasswordAndDescription struct {
+// ResourceMetadataTypeV5Default
+type ResourceMetadataTypeV5Default struct {
 	ObjectType     string   `json:"object_type"`
 	ResourceTypeID string   `json:"resource_type_id,omitempty"`
 	Name           string   `json:"name,omitempty"`
 	Username       string   `json:"username,omitempty"`
+	URIs           []string `json:"uris,omitempty"`
+	Description    string   `json:"description,omitempty"`
+}
+
+// ResourceMetadataTypeV5DefaultWithTOTP
+type ResourceMetadataTypeV5DefaultWithTOTP struct {
+	ObjectType     string   `json:"object_type"`
+	ResourceTypeID string   `json:"resource_type_id,omitempty"`
+	Name           string   `json:"name,omitempty"`
+	Username       string   `json:"username,omitempty"`
+	URIs           []string `json:"uris,omitempty"`
+	Description    string   `json:"description,omitempty"`
+}
+
+// ResourceMetadataTypeV5PasswordString
+type ResourceMetadataTypeV5PasswordString struct {
+	ObjectType     string   `json:"object_type"`
+	ResourceTypeID string   `json:"resource_type_id,omitempty"`
+	Name           string   `json:"name,omitempty"`
+	Username       string   `json:"username,omitempty"`
+	URIs           []string `json:"uris,omitempty"`
+	Description    string   `json:"description,omitempty"`
+}
+
+// ResourceMetadataTypeV5TOTPStandalone
+type ResourceMetadataTypeV5TOTPStandalone struct {
+	ObjectType     string   `json:"object_type"`
+	ResourceTypeID string   `json:"resource_type_id,omitempty"`
+	Name           string   `json:"name,omitempty"`
 	URIs           []string `json:"uris,omitempty"`
 	Description    string   `json:"description,omitempty"`
 }
