@@ -6,6 +6,9 @@ import (
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 )
 
+const PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA = "PASSBOLT_RESOURCE_METADATA"
+const PASSBOLT_OBJECT_TYPE_SECRET_DATA = "PASSBOLT_SECRET_DATA"
+
 // ResourceMetadataTypeV5Default
 type ResourceMetadataTypeV5Default struct {
 	ObjectType     string   `json:"object_type"`

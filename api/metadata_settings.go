@@ -38,6 +38,12 @@ type MetadataTypeSettings struct {
 	AllowV4V5Downgrade         bool                   `json:"allow_v5_v4_downgrade"`
 }
 
+// MetadataTypeSettings Contains the Servers Settings about which Types to use
+type MetadataKeySettings struct {
+	AllowUsageOfPersonalKeys   bool `json:"allow_usage_of_personal_keys"`
+	AllowZeroKnowledgeKeyShare bool `json:"zero_knowledge_key_share"`
+}
+
 func getV4DefaultMetadataTypeSettings() MetadataTypeSettings {
 	return MetadataTypeSettings{
 		DefaultResourceType:        PassboltAPIVersionTypeV4,
@@ -57,8 +63,13 @@ func getV4DefaultMetadataTypeSettings() MetadataTypeSettings {
 	}
 }
 
-// GetMetadataTypeSettings gets the Servers Settings about which Types to use
-func (c *Client) GetMetadataTypeSettings(ctx context.Context) (*MetadataTypeSettings, error) {
+// MetadataTypeSettings Gives the Current MetadataTypeSettings
+func (c *Client) MetadataTypeSettings() MetadataTypeSettings {
+	return c.metadataTypeSettings
+}
+
+// GetServerMetadataTypeSettings gets the Servers Settings about which Types to use, usually you should use MetadataTypeSettings instead
+func (c *Client) GetServerMetadataTypeSettings(ctx context.Context) (*MetadataTypeSettings, error) {
 	msg, err := c.DoCustomRequestV5(ctx, "GET", "/metadata/types/settings.json", nil, nil)
 	if err != nil {
 		return nil, err
@@ -70,4 +81,24 @@ func (c *Client) GetMetadataTypeSettings(ctx context.Context) (*MetadataTypeSett
 		return nil, err
 	}
 	return &metadataSettings, nil
+}
+
+// MetadataKeySettings Gives the Current MetadataKeySettings
+func (c *Client) MetadataKeySettings() MetadataKeySettings {
+	return c.metadataKeySettings
+}
+
+// GetServerMetadataKeySettings gets the Servers Settings about which Key to use, usually you should use MetadataKeySettings instead
+func (c *Client) GetServerMetadataKeySettings(ctx context.Context) (*MetadataKeySettings, error) {
+	msg, err := c.DoCustomRequestV5(ctx, "GET", "/metadata/keys/settings.json", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var metadataKeySettings MetadataKeySettings
+	err = json.Unmarshal(msg.Body, &metadataKeySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &metadataKeySettings, nil
 }

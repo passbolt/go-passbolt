@@ -140,3 +140,11 @@ func (c *Client) DecryptMessageWithSessionKey(sessionKey *crypto.SessionKey, cip
 
 	return res.String(), nil
 }
+
+func (c *Client) GetUserPrivateKeyCopy() (*crypto.Key, error) {
+	key, err := c.userPrivateKey.Copy()
+	if err != nil {
+		return nil, fmt.Errorf("Get Private Key Copy: %w", err)
+	}
+	return key, nil
+}

@@ -33,6 +33,9 @@ type Client struct {
 	// Server Settings Determining which Resource Types we can use
 	metadataTypeSettings MetadataTypeSettings
 
+	// Server Settings Determining which Metadata Keys to use
+	metadataKeySettings MetadataKeySettings
+
 	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.
 	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
@@ -212,16 +215,28 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context) error {
 
 	if settings.Passbolt.IsPluginEnabled("metadata") {
 		c.log("Server has metadata plugin enabled, is v5 or Higher")
-		metadataTypeSettings, err := c.GetMetadataTypeSettings(ctx)
+		metadataTypeSettings, err := c.GetServerMetadataTypeSettings(ctx)
 		if err != nil {
 			return fmt.Errorf("Getting Metadata Type Settings: %w", err)
 		}
 
 		c.log("metadataTypeSettings: %+v", metadataTypeSettings)
 		c.metadataTypeSettings = *metadataTypeSettings
+
+		metadataKeySettings, err := c.GetServerMetadataKeySettings(ctx)
+		if err != nil {
+			return fmt.Errorf("Getting Metadata Key Settings: %w", err)
+		}
+
+		c.log("metadataKeySettings: %+v", metadataKeySettings)
+		c.metadataKeySettings = *metadataKeySettings
 	} else {
 		c.log("Server has metadata plugin disabled or not installed, Server is v4")
 		c.metadataTypeSettings = getV4DefaultMetadataTypeSettings()
+		c.metadataKeySettings = MetadataKeySettings{
+			AllowUsageOfPersonalKeys:   true,
+			AllowZeroKnowledgeKeyShare: false,
+		}
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package helper
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -11,28 +10,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema"
 )
 
-func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resource, rType *api.ResourceType) (string, error) {
-	_, _, metadatakey, err := GetMetadataKey(ctx, c, resource.MetadataKeyType == api.MetadataKeyTypeUserKey)
-	if err != nil {
-		return "", fmt.Errorf("Get Metadata Key: %w", err)
-	}
-
-	// TODO should we instead get the Metadata key of this resource by id?
-
-	decMetadata, err := c.DecryptMetadata(metadatakey, resource.Metadata)
-	if err != nil {
-		return "", fmt.Errorf("Decrypt Metadata: %w", err)
-	}
-
-	err = validateMetadata(rType, string(decMetadata))
-	if err != nil {
-		return "", fmt.Errorf("Validate Metadata: %w", err)
-	}
-
-	return decMetadata, nil
-}
-
-func validateMetadata(rType *api.ResourceType, metadata string) error {
+func validateSecretData(rType *api.ResourceType, secretData string) error {
 	var schemaDefinition api.ResourceTypeSchema
 	definition := rType.Definition
 
@@ -59,6 +37,7 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 			if err != nil {
 				return fmt.Errorf("Workaround Unmarshal Json Schema: %w", err)
 			}
+
 		} else {
 			return fmt.Errorf("Unmarshal Json Schema: %w", err)
 		}
@@ -66,17 +45,17 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 
 	comp := jsonschema.NewCompiler()
 
-	err = comp.AddResource("metadata.json", bytes.NewReader(schemaDefinition.Resource))
+	err = comp.AddResource("secret.json", bytes.NewReader(schemaDefinition.Secret))
 	if err != nil {
 		return fmt.Errorf("Adding Json Schema: %w", err)
 	}
 
-	schema, err := comp.Compile("metadata.json")
+	schema, err := comp.Compile("secret.json")
 	if err != nil {
 		return fmt.Errorf("Compiling Json Schema: %w", err)
 	}
 
-	err = schema.Validate(strings.NewReader(metadata))
+	err = schema.Validate(strings.NewReader(secretData))
 	if err != nil {
 		return fmt.Errorf("Validating Secret Data: %w", err)
 	}
