@@ -47,10 +47,11 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	// Resource Metadata
 	meta := api.ResourceMetadataTypeV5Default{
-		ObjectType: api.PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA,
-		Name:       name,
-		Username:   username,
-		URIs:       []string{uri},
+		ObjectType:     api.PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA,
+		ResourceTypeID: rType.ID,
+		Name:           name,
+		Username:       username,
+		URIs:           []string{uri},
 	}
 
 	metaData, err := json.Marshal(&meta)
