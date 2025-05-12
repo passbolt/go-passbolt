@@ -68,3 +68,14 @@ func (c *Client) DecryptMetadata(metadataKey *crypto.Key, armoredCiphertext stri
 
 	return metadata, nil
 }
+
+func (c *Client) EncryptMetadata(metadataKey *crypto.Key, data string) (string, error) {
+	armoredCiphertext, err := c.EncryptMessageWithKey(metadataKey, data)
+	if err != nil {
+		return "", fmt.Errorf("Encrypting Metadata: %w", err)
+	}
+
+	// TODO save Session Key to cache
+
+	return armoredCiphertext, nil
+}

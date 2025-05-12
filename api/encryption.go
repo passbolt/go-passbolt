@@ -33,12 +33,19 @@ func (c *Client) EncryptMessage(message string) (string, error) {
 }
 
 // EncryptMessageWithPublicKey encrypts a message using the provided public key and then signes the message using the users private key
+//
+// Deprecated: EncryptMessageWithPublicKey is deprecated. Use EncryptMessageWithKey instead
 func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string, error) {
 	publicKey, err := crypto.NewKeyFromArmored(publickey)
 	if err != nil {
 		return "", fmt.Errorf("Get Public Key: %w", err)
 	}
 
+	return c.EncryptMessageWithKey(publicKey, message)
+}
+
+// EncryptMessageWithKey encrypts a message using the provided key and then signes the message using the users private key
+func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (string, error) {
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
 		return "", fmt.Errorf("Get Private Key Copy: %w", err)
