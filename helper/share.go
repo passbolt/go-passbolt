@@ -79,6 +79,33 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 		return fmt.Errorf("Validating Secret Data: %w", err)
 	}
 
+	// if Metadata has not been shared yet then we need to do that
+	// we assume that if MetadataKeyType is not null that this is a v5 Resource and that the other field are fine
+	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
+		metadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		if err != nil {
+			return fmt.Errorf("Get Metadata: %w", err)
+		}
+
+		metadataKeyID, metadataKeyType, publicMetadataKey, err := GetMetadataKey(ctx, c, true)
+		if err != nil {
+			return fmt.Errorf("Get Metadata Key: %w", err)
+		}
+		resource.MetadataKeyID = metadataKeyID
+		resource.MetadataKeyType = metadataKeyType
+
+		encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metadata))
+		if err != nil {
+			return fmt.Errorf("Encrypt Metadata: %w", err)
+		}
+		resource.Metadata = encMetadata
+
+		resource, err = c.UpdateResource(ctx, resource.ID, *resource)
+		if err != nil {
+			return fmt.Errorf("Update Resource Metadata to Shared key: %w", err)
+		}
+	}
+
 	simulationResult, err := c.SimulateShareResource(ctx, resourceID, shareRequest)
 	if err != nil {
 		return fmt.Errorf("Simulate Share Resource: %w", err)
