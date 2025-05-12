@@ -7,72 +7,24 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 	"github.com/santhosh-tekuri/jsonschema"
 )
 
-func GetResourceMetadata(ctx context.Context, c *api.Client, resource api.Resource, rType api.ResourceType) (string, error) {
-	var metadatakey *crypto.Key
-	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
-		key, err := c.GetUserPrivateKeyCopy()
-		if err != nil {
-			return "", fmt.Errorf("Get User Private Key Copy: %W", err)
-		}
-
-		metadatakey = key
-	} else {
-		// Must be a shared key
-		keys, err := c.GetMetadataKeys(ctx, &api.GetMetadataKeysOptions{
-			ContainMetadataPrivateKeys: true,
-		})
-		if err != nil {
-			return "", fmt.Errorf("Get Metadata Key: %w", err)
-		}
-
-		// TODO Get Key by id?
-		if len(keys) != 1 {
-			return "", fmt.Errorf("Not Exactly One Metadatakey Available")
-		}
-
-		if len(keys[0].MetadataPrivateKeys) == 0 {
-			return "", fmt.Errorf("No Metadata Private key for our user")
-		}
-
-		if len(keys[0].MetadataPrivateKeys) > 1 {
-			return "", fmt.Errorf("More than 1 metadata Private key for our user")
-		}
-
-		var privMetdata api.MetadataPrivateKey = keys[0].MetadataPrivateKeys[0]
-		if *privMetdata.UserID != c.GetUserID() {
-			return "", fmt.Errorf("MetadataPrivateKey is not for our user id: %v", privMetdata.UserID)
-		}
-
-		decPrivMetadatakey, err := c.DecryptMessage(privMetdata.Data)
-		if err != nil {
-			return "", fmt.Errorf("Decrypt Metadata Private Key Data: %w", err)
-		}
-
-		var data api.MetadataPrivateKeyData
-		err = json.Unmarshal([]byte(decPrivMetadatakey), &data)
-		if err != nil {
-			return "", fmt.Errorf("Parse Metadata Private Key Data")
-		}
-
-		metadataPrivateKeyObj, err := api.GetPrivateKeyFromArmor(data.ArmoredKey, []byte(data.Passphrase))
-		if err != nil {
-			return "", fmt.Errorf("Get Metadata Private Key: %w", err)
-		}
-
-		metadatakey = metadataPrivateKeyObj
+func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resource, rType *api.ResourceType) (string, error) {
+	_, _, metadatakey, err := GetMetadataKey(ctx, c, resource.MetadataKeyType == api.MetadataKeyTypeUserKey)
+	if err != nil {
+		return "", fmt.Errorf("Get Metadata Key: %w", err)
 	}
+
+	// TODO should we instead get the Metadata key of this resource by id?
 
 	decMetadata, err := c.DecryptMetadata(metadatakey, resource.Metadata)
 	if err != nil {
 		return "", fmt.Errorf("Decrypt Metadata: %w", err)
 	}
 
-	err = validateMetadata(&rType, string(decMetadata))
+	err = validateMetadata(rType, string(decMetadata))
 	if err != nil {
 		return "", fmt.Errorf("Validate Metadata: %w", err)
 	}

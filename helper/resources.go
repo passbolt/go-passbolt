@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -64,44 +63,12 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 		return "", fmt.Errorf("Validating metadata: %w", err)
 	}
 
-	var publicMetadataKey *crypto.Key
-	// Since we are not sharing, use the Personal Key if allowed
-	if c.MetadataKeySettings().AllowUsageOfPersonalKeys {
-		publicMetadataKey, err = c.GetUserPrivateKeyCopy()
-		if err != nil {
-			return "", fmt.Errorf("Get User Private Key: %w", err)
-		}
-
-		me, err := c.GetMe(ctx)
-		if err != nil {
-			return "", fmt.Errorf("Get User Me: %w", err)
-		}
-
-		if me.GPGKey == nil {
-			return "", fmt.Errorf("User Me GPG Key nil")
-		}
-
-		resource.MetadataKeyID = me.GPGKey.ID
-		resource.MetadataKeyType = api.MetadataKeyTypeUserKey
-	} else {
-		keys, err := c.GetMetadataKeys(ctx, nil)
-		if err != nil {
-			return "", fmt.Errorf("Get Metadata Key: %w", err)
-		}
-
-		// TODO Get Key by id?
-		if len(keys) != 1 {
-			return "", fmt.Errorf("Not Exactly One Metadatakey Available")
-		}
-
-		publicMetadataKey, err = crypto.NewKeyFromArmored(keys[0].ArmoredKey)
-		if err != nil {
-			return "", fmt.Errorf("Get Metadata Public Key: %w", err)
-		}
-
-		resource.MetadataKeyID = keys[0].ID
-		resource.MetadataKeyType = api.MetadataKeyTypeSharedKey
+	metadataKeyID, metadataKeyType, publicMetadataKey, err := GetMetadataKey(ctx, c, true)
+	if err != nil {
+		return "", fmt.Errorf("Get Metadata Key: %w", err)
 	}
+	resource.MetadataKeyID = metadataKeyID
+	resource.MetadataKeyType = metadataKeyType
 
 	encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metaData))
 	if err != nil {
@@ -303,7 +270,7 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		uri = resource.URI
 		// nothing fits into the interface in this case
 	case "v5-default":
-		rawMetadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
 			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
 		}
@@ -333,7 +300,7 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		pw = secretData.Password
 		desc = secretData.Description
 	case "v5-default-with-totp":
-		rawMetadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
 			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
 		}
@@ -363,7 +330,7 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		pw = secretData.Password
 		desc = secretData.Description
 	case "v5-password-string":
-		rawMetadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
 			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
 		}
