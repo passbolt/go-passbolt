@@ -41,6 +41,33 @@ type SecretDataTypePasswordDescriptionTOTP struct {
 	TOTP        SecretDataTOTP `json:"totp"`
 }
 
+// SecretDataTypeV5Default
+type SecretDataTypeV5Default struct {
+	ObjectType     string `json:"object_type"`
+	ResourceTypeID string `json:"resource_type_id,omitempty"`
+	Password       string `json:"password,omitempty"`
+	Description    string `json:"description,omitempty"`
+}
+
+// SecretDataTypeV5DefaultWithTOTP
+type SecretDataTypeV5DefaultWithTOTP struct {
+	ObjectType     string         `json:"object_type"`
+	ResourceTypeID string         `json:"resource_type_id,omitempty"`
+	Password       string         `json:"password,omitempty"`
+	Description    string         `json:"description,omitempty"`
+	TOTP           SecretDataTOTP `json:"totp"`
+}
+
+// SecretDataTypeV5PasswordString, is just the Password directly
+type SecretDataTypeV5PasswordString string
+
+// SecretDataTypeV5TOTPStandalone
+type SecretDataTypeV5TOTPStandalone struct {
+	ObjectType     string         `json:"object_type"`
+	ResourceTypeID string         `json:"resource_type_id,omitempty"`
+	TOTP           SecretDataTOTP `json:"totp"`
+}
+
 // GetSecret gets a Passbolt Secret
 func (c *Client) GetSecret(ctx context.Context, resourceID string) (*Secret, error) {
 	err := checkUUIDFormat(resourceID)
