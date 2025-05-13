@@ -32,7 +32,9 @@ func GetMetadataKey(ctx context.Context, c *api.Client, personal bool) (string, 
 		return me.GPGKey.ID, api.MetadataKeyTypeUserKey, key, nil
 	}
 
-	keys, err := c.GetMetadataKeys(ctx, nil)
+	keys, err := c.GetMetadataKeys(ctx, &api.GetMetadataKeysOptions{
+		ContainMetadataPrivateKeys: true,
+	})
 	if err != nil {
 		return "", "", nil, fmt.Errorf("Get Metadata Key: %w", err)
 	}
