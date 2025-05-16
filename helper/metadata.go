@@ -7,17 +7,26 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 	"github.com/santhosh-tekuri/jsonschema"
 )
 
 func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resource, rType *api.ResourceType) (string, error) {
-	_, _, metadatakey, err := GetMetadataKey(ctx, c, resource.MetadataKeyType == api.MetadataKeyTypeUserKey)
-	if err != nil {
-		return "", fmt.Errorf("Get Metadata Key: %w", err)
+	var metadatakey *crypto.Key
+	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
+		tmp, err := c.GetUserPrivateKeyCopy()
+		if err != nil {
+			return "", fmt.Errorf("Get Private Key Copy: %w", err)
+		}
+		metadatakey = tmp
+	} else {
+		key, err := GetMetadataKeyById(ctx, c, resource.MetadataKeyID)
+		if err != nil {
+			return "", fmt.Errorf("Get Metadata Key by ID: %w", err)
+		}
+		metadatakey = key
 	}
-
-	// TODO should we instead get the Metadata key of this resource by id?
 
 	decMetadata, err := c.DecryptMetadata(metadatakey, resource.Metadata)
 	if err != nil {
@@ -78,7 +87,7 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 
 	err = schema.Validate(strings.NewReader(metadata))
 	if err != nil {
-		return fmt.Errorf("Validating Secret Data: %w", err)
+		return fmt.Errorf("Validating Metadata with Schema: %w", err)
 	}
 	return nil
 }
