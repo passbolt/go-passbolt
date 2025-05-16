@@ -75,3 +75,55 @@ func GetMetadataKey(ctx context.Context, c *api.Client, personal bool) (string, 
 
 	return keys[0].ID, api.MetadataKeyTypeSharedKey, metadataPrivateKeyObj, nil
 }
+
+// GetMetadataKeyById is for fetching a specific metadatakey if needed for Decryption
+func GetMetadataKeyById(ctx context.Context, c *api.Client, id string) (*crypto.Key, error) {
+	keys, err := c.GetMetadataKeys(ctx, &api.GetMetadataKeysOptions{
+		ContainMetadataPrivateKeys: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Get Metadata Key: %w", err)
+	}
+	var key *api.MetadataKey
+	for _, k := range keys {
+		if k.ID == id {
+			key = &k
+			break
+		}
+	}
+
+	if key == nil {
+		return nil, fmt.Errorf("Metadata key not found: %v", id)
+	}
+
+	if len(key.MetadataPrivateKeys) == 0 {
+		return nil, fmt.Errorf("No Metadata Private key for our user")
+	}
+
+	if len(key.MetadataPrivateKeys) > 1 {
+		return nil, fmt.Errorf("More than 1 metadata Private key for our user")
+	}
+
+	var privMetdata api.MetadataPrivateKey = key.MetadataPrivateKeys[0]
+	if *privMetdata.UserID != c.GetUserID() {
+		return nil, fmt.Errorf("MetadataPrivateKey is not for our user id: %v", privMetdata.UserID)
+	}
+
+	decPrivMetadatakey, err := c.DecryptMessage(privMetdata.Data)
+	if err != nil {
+		return nil, fmt.Errorf("Decrypt Metadata Private Key Data: %w", err)
+	}
+
+	var data api.MetadataPrivateKeyData
+	err = json.Unmarshal([]byte(decPrivMetadatakey), &data)
+	if err != nil {
+		return nil, fmt.Errorf("Parse Metadata Private Key Data")
+	}
+
+	metadataPrivateKeyObj, err := api.GetPrivateKeyFromArmor(data.ArmoredKey, []byte(data.Passphrase))
+	if err != nil {
+		return nil, fmt.Errorf("Get Metadata Private Key: %w", err)
+	}
+
+	return metadataPrivateKeyObj, nil
+}
