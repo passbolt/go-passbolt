@@ -57,7 +57,7 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 
 	err = schema.Validate(strings.NewReader(secretData))
 	if err != nil {
-		return fmt.Errorf("Validating Secret Data: %w", err)
+		return fmt.Errorf("Validating Secret Data with Schema: %w", err)
 	}
 	return nil
 }
