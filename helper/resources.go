@@ -401,94 +401,65 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			return fmt.Errorf("Get Resource metadata: %w", err)
 		}
 
+		var metadataMap map[string]any
+		err = json.Unmarshal([]byte(orgMetadata), &metadataMap)
+		if err != nil {
+			return fmt.Errorf("Marshalling metadata: %w", err)
+		}
+
 		var newMetadata []byte
 		switch rType.Slug {
 		case "v5-default":
-			var metadataObj api.ResourceMetadataTypeV5DefaultWithTOTP
-			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
-			}
-
 			// Modify Metadata
 			if name != "" {
-				metadataObj.Name = name
+				metadataMap["name"] = name
 			}
 			if username != "" {
-				metadataObj.Username = username
+				metadataMap["username"] = username
 			}
 			if uri != "" {
-				metadataObj.URIs = []string{uri}
-			}
-			newMetadata, err = json.Marshal(&metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
+				metadataMap["uris"] = []string{uri}
 			}
 		case "v5-password-string":
-			var metadataObj api.ResourceMetadataTypeV5DefaultWithTOTP
-			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
-			}
-
 			// Modify Metadata
 			if name != "" {
-				metadataObj.Name = name
+				metadataMap["name"] = name
 			}
 			if username != "" {
-				metadataObj.Username = username
+				metadataMap["username"] = username
 			}
 			if uri != "" {
-				metadataObj.URIs = []string{uri}
+				metadataMap["uris"] = []string{uri}
 			}
 			if description != "" {
-				metadataObj.Description = description
-			}
-			newMetadata, err = json.Marshal(&metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
+				metadataMap["description"] = description
 			}
 		case "v5-default-with-totp":
-			var metadataObj api.ResourceMetadataTypeV5DefaultWithTOTP
-			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
-			}
-
 			// Modify Metadata
 			if name != "" {
-				metadataObj.Name = name
+				metadataMap["name"] = name
 			}
 			if username != "" {
-				metadataObj.Username = username
+				metadataMap["username"] = username
 			}
 			if uri != "" {
-				metadataObj.URIs = []string{uri}
-			}
-			newMetadata, err = json.Marshal(&metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
+				metadataMap["uris"] = []string{uri}
 			}
 		case "v5-totp-standalone":
-			var metadataObj api.ResourceMetadataTypeV5TOTPStandalone
-			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
-			}
-
 			// Modify Metadata
 			if name != "" {
-				metadataObj.Name = name
+				metadataMap["name"] = name
 			}
 			if uri != "" {
-				metadataObj.URIs = []string{uri}
-			}
-			newMetadata, err = json.Marshal(&metadataObj)
-			if err != nil {
-				return fmt.Errorf("Marshalling metadata: %w", err)
+				metadataMap["uris"] = []string{uri}
 			}
 		default:
 			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
+		}
+
+		newMetadata, err = json.Marshal(&metadataMap)
+		if err != nil {
+			return fmt.Errorf("Marshalling metadata: %w", err)
 		}
 
 		// Validate Metadata
