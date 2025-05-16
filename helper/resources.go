@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -389,46 +390,179 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		ID: resourceID,
 		// This needs to be specified or it will revert to a legacy password
 		ResourceTypeID: resource.ResourceTypeID,
-		Name:           resource.Name,
-		Username:       resource.Username,
-		URI:            resource.URI,
 	}
-
-	if name != "" {
-		newResource.Name = name
-	}
-	if username != "" {
-		newResource.Username = username
-	}
-	if uri != "" {
-		newResource.URI = uri
-	}
-
 	var secretData string
-	switch rType.Slug {
-	case "password-string":
-		newResource.Description = resource.Description
-		if description != "" {
-			newResource.Description = description
+
+	// Check if this is a v5 or Later Resource
+	if resource.Metadata != "" {
+		// Get Metadata
+		orgMetadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		if err != nil {
+			return fmt.Errorf("Get Resource metadata: %w", err)
 		}
-		if password != "" {
-			secretData = password
-		} else {
-			secret, err := c.GetSecret(ctx, resourceID)
+
+		var newMetadata []byte
+		switch rType.Slug {
+		case "v5-default":
+			var metadataObj api.ResourceMetadataTypeV5DefaultWithTOTP
+			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
 			if err != nil {
-				return fmt.Errorf("Getting Secret: %w", err)
+				return fmt.Errorf("Marshalling metadata: %w", err)
 			}
-			secretData, err = c.DecryptMessage(secret.Data)
+
+			// Modify Metadata
+			if name != "" {
+				metadataObj.Name = name
+			}
+			if username != "" {
+				metadataObj.Username = username
+			}
+			if uri != "" {
+				metadataObj.URIs = []string{uri}
+			}
+			newMetadata, err = json.Marshal(&metadataObj)
 			if err != nil {
-				return fmt.Errorf("Decrypting Secret: %w", err)
+				return fmt.Errorf("Marshalling metadata: %w", err)
 			}
+		case "v5-password-string":
+			var metadataObj api.ResourceMetadataTypeV5DefaultWithTOTP
+			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
+			if err != nil {
+				return fmt.Errorf("Marshalling metadata: %w", err)
+			}
+
+			// Modify Metadata
+			if name != "" {
+				metadataObj.Name = name
+			}
+			if username != "" {
+				metadataObj.Username = username
+			}
+			if uri != "" {
+				metadataObj.URIs = []string{uri}
+			}
+			if description != "" {
+				metadataObj.Description = description
+			}
+			newMetadata, err = json.Marshal(&metadataObj)
+			if err != nil {
+				return fmt.Errorf("Marshalling metadata: %w", err)
+			}
+		case "v5-default-with-totp":
+			var metadataObj api.ResourceMetadataTypeV5DefaultWithTOTP
+			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
+			if err != nil {
+				return fmt.Errorf("Marshalling metadata: %w", err)
+			}
+
+			// Modify Metadata
+			if name != "" {
+				metadataObj.Name = name
+			}
+			if username != "" {
+				metadataObj.Username = username
+			}
+			if uri != "" {
+				metadataObj.URIs = []string{uri}
+			}
+			newMetadata, err = json.Marshal(&metadataObj)
+			if err != nil {
+				return fmt.Errorf("Marshalling metadata: %w", err)
+			}
+		case "v5-totp-standalone":
+			var metadataObj api.ResourceMetadataTypeV5TOTPStandalone
+			err = json.Unmarshal([]byte(orgMetadata), &metadataObj)
+			if err != nil {
+				return fmt.Errorf("Marshalling metadata: %w", err)
+			}
+
+			// Modify Metadata
+			if name != "" {
+				metadataObj.Name = name
+			}
+			if uri != "" {
+				metadataObj.URIs = []string{uri}
+			}
+			newMetadata, err = json.Marshal(&metadataObj)
+			if err != nil {
+				return fmt.Errorf("Marshalling metadata: %w", err)
+			}
+		default:
+			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 		}
-	case "password-and-description":
-		tmp := api.SecretDataTypePasswordAndDescription{
-			Password:    password,
-			Description: description,
+
+		// Validate Metadata
+		err = validateMetadata(rType, string(newMetadata))
+		if err != nil {
+			return fmt.Errorf("Validating metadata: %w", err)
 		}
-		if password != "" || description != "" {
+
+		metadataKeyID, metadataKeyType, publicMetadataKey, err := GetMetadataKey(ctx, c, true)
+		if err != nil {
+			return fmt.Errorf("Get Metadata Key: %w", err)
+		}
+		newResource.MetadataKeyID = metadataKeyID
+		newResource.MetadataKeyType = metadataKeyType
+
+		encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(newMetadata))
+		if err != nil {
+			return fmt.Errorf("Encrypt Metadata: %w", err)
+		}
+		newResource.Metadata = encMetadata
+
+		// Modify Secret
+		switch rType.Slug {
+		case "v5-default":
+			tmp := api.SecretDataTypeV5Default{
+				Password:    password,
+				Description: description,
+			}
+			tmp.ObjectType = api.PASSBOLT_OBJECT_TYPE_SECRET_DATA
+			tmp.ResourceTypeID = rType.ID
+			if password != "" || description != "" {
+				secret, err := c.GetSecret(ctx, resourceID)
+				if err != nil {
+					return fmt.Errorf("Getting Secret: %w", err)
+				}
+				oldSecretData, err := c.DecryptMessage(secret.Data)
+				if err != nil {
+					return fmt.Errorf("Decrypting Secret: %w", err)
+				}
+				var oldSecret api.SecretDataTypeV5Default
+				err = json.Unmarshal([]byte(oldSecretData), &oldSecret)
+				if err != nil {
+					return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+				}
+				if password == "" {
+					tmp.Password = oldSecret.Password
+				}
+				if description == "" {
+					tmp.Description = oldSecret.Description
+				}
+			}
+			res, err := json.Marshal(&tmp)
+			if err != nil {
+				return fmt.Errorf("Marshalling Secret Data: %w", err)
+			}
+			secretData = string(res)
+		case "v5-password-string":
+			newResource.Description = resource.Description
+			if description != "" {
+				newResource.Description = description
+			}
+			if password != "" {
+				secretData = password
+			} else {
+				secret, err := c.GetSecret(ctx, resourceID)
+				if err != nil {
+					return fmt.Errorf("Getting Secret: %w", err)
+				}
+				secretData, err = c.DecryptMessage(secret.Data)
+				if err != nil {
+					return fmt.Errorf("Decrypting Secret: %w", err)
+				}
+			}
+		case "v5-default-with-totp":
 			secret, err := c.GetSecret(ctx, resourceID)
 			if err != nil {
 				return fmt.Errorf("Getting Secret: %w", err)
@@ -437,72 +571,163 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			if err != nil {
 				return fmt.Errorf("Decrypting Secret: %w", err)
 			}
-			var oldSecret api.SecretDataTypePasswordAndDescription
-			err = json.Unmarshal([]byte(oldSecretData), &oldSecret)
+			var oldSecret api.SecretDataTypeV5DefaultWithTOTP
+			err = json.Unmarshal([]byte(oldSecretData), &secretData)
 			if err != nil {
 				return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
 			}
-			if password == "" {
-				tmp.Password = oldSecret.Password
+			if password != "" {
+				oldSecret.Password = password
 			}
-			if description == "" {
-				tmp.Description = oldSecret.Description
+			if description != "" {
+				oldSecret.Description = description
 			}
+
+			res, err := json.Marshal(&oldSecret)
+			if err != nil {
+				return fmt.Errorf("Marshalling Secret Data: %w", err)
+			}
+			secretData = string(res)
+		case "v5-totp-standalone":
+			secret, err := c.GetSecret(ctx, resourceID)
+			if err != nil {
+				return fmt.Errorf("Getting Secret: %w", err)
+			}
+			oldSecretData, err := c.DecryptMessage(secret.Data)
+			if err != nil {
+				return fmt.Errorf("Decrypting Secret: %w", err)
+			}
+			var oldSecret api.SecretDataTypeTOTP
+			err = json.Unmarshal([]byte(oldSecretData), &secretData)
+			if err != nil {
+				return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			// since we don't have totp parameters we don't do anything
+
+			res, err := json.Marshal(&oldSecret)
+			if err != nil {
+				return fmt.Errorf("Marshalling Secret Data: %w", err)
+			}
+			secretData = string(res)
+		default:
+			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 		}
-		res, err := json.Marshal(&tmp)
-		if err != nil {
-			return fmt.Errorf("Marshalling Secret Data: %w", err)
+	} else {
+		// V4 Resource
+		newResource.Name = resource.Name
+		newResource.Username = resource.Username
+		newResource.URI = resource.URI
+
+		if name != "" {
+			newResource.Name = name
 		}
-		secretData = string(res)
-	case "password-description-totp":
-		secret, err := c.GetSecret(ctx, resourceID)
-		if err != nil {
-			return fmt.Errorf("Getting Secret: %w", err)
+		if username != "" {
+			newResource.Username = username
 		}
-		oldSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return fmt.Errorf("Decrypting Secret: %w", err)
-		}
-		var oldSecret api.SecretDataTypePasswordDescriptionTOTP
-		err = json.Unmarshal([]byte(oldSecretData), &secretData)
-		if err != nil {
-			return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
-		}
-		if password != "" {
-			oldSecret.Password = password
-		}
-		if description != "" {
-			oldSecret.Description = description
+		if uri != "" {
+			newResource.URI = uri
 		}
 
-		res, err := json.Marshal(&oldSecret)
-		if err != nil {
-			return fmt.Errorf("Marshalling Secret Data: %w", err)
-		}
-		secretData = string(res)
-	case "totp":
-		secret, err := c.GetSecret(ctx, resourceID)
-		if err != nil {
-			return fmt.Errorf("Getting Secret: %w", err)
-		}
-		oldSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return fmt.Errorf("Decrypting Secret: %w", err)
-		}
-		var oldSecret api.SecretDataTypeTOTP
-		err = json.Unmarshal([]byte(oldSecretData), &secretData)
-		if err != nil {
-			return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
-		}
-		// since we don't have totp parameters we don't do anything
+		// Secret
+		switch rType.Slug {
+		case "password-string":
+			newResource.Description = resource.Description
+			if description != "" {
+				newResource.Description = description
+			}
+			if password != "" {
+				secretData = password
+			} else {
+				secret, err := c.GetSecret(ctx, resourceID)
+				if err != nil {
+					return fmt.Errorf("Getting Secret: %w", err)
+				}
+				secretData, err = c.DecryptMessage(secret.Data)
+				if err != nil {
+					return fmt.Errorf("Decrypting Secret: %w", err)
+				}
+			}
+		case "password-and-description":
+			tmp := api.SecretDataTypePasswordAndDescription{
+				Password:    password,
+				Description: description,
+			}
+			if password != "" || description != "" {
+				secret, err := c.GetSecret(ctx, resourceID)
+				if err != nil {
+					return fmt.Errorf("Getting Secret: %w", err)
+				}
+				oldSecretData, err := c.DecryptMessage(secret.Data)
+				if err != nil {
+					return fmt.Errorf("Decrypting Secret: %w", err)
+				}
+				var oldSecret api.SecretDataTypePasswordAndDescription
+				err = json.Unmarshal([]byte(oldSecretData), &oldSecret)
+				if err != nil {
+					return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+				}
+				if password == "" {
+					tmp.Password = oldSecret.Password
+				}
+				if description == "" {
+					tmp.Description = oldSecret.Description
+				}
+			}
+			res, err := json.Marshal(&tmp)
+			if err != nil {
+				return fmt.Errorf("Marshalling Secret Data: %w", err)
+			}
+			secretData = string(res)
+		case "password-description-totp":
+			secret, err := c.GetSecret(ctx, resourceID)
+			if err != nil {
+				return fmt.Errorf("Getting Secret: %w", err)
+			}
+			oldSecretData, err := c.DecryptMessage(secret.Data)
+			if err != nil {
+				return fmt.Errorf("Decrypting Secret: %w", err)
+			}
+			var oldSecret api.SecretDataTypePasswordDescriptionTOTP
+			err = json.Unmarshal([]byte(oldSecretData), &secretData)
+			if err != nil {
+				return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			if password != "" {
+				oldSecret.Password = password
+			}
+			if description != "" {
+				oldSecret.Description = description
+			}
 
-		res, err := json.Marshal(&oldSecret)
-		if err != nil {
-			return fmt.Errorf("Marshalling Secret Data: %w", err)
+			res, err := json.Marshal(&oldSecret)
+			if err != nil {
+				return fmt.Errorf("Marshalling Secret Data: %w", err)
+			}
+			secretData = string(res)
+		case "totp":
+			secret, err := c.GetSecret(ctx, resourceID)
+			if err != nil {
+				return fmt.Errorf("Getting Secret: %w", err)
+			}
+			oldSecretData, err := c.DecryptMessage(secret.Data)
+			if err != nil {
+				return fmt.Errorf("Decrypting Secret: %w", err)
+			}
+			var oldSecret api.SecretDataTypeTOTP
+			err = json.Unmarshal([]byte(oldSecretData), &secretData)
+			if err != nil {
+				return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			// since we don't have totp parameters we don't do anything
+
+			res, err := json.Marshal(&oldSecret)
+			if err != nil {
+				return fmt.Errorf("Marshalling Secret Data: %w", err)
+			}
+			secretData = string(res)
+		default:
+			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 		}
-		secretData = string(res)
-	default:
-		return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 	}
 
 	err = validateSecretData(rType, secretData)
@@ -520,7 +745,12 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 				return fmt.Errorf("Encrypting Secret Data for User me: %w", err)
 			}
 		} else {
-			encSecretData, err = c.EncryptMessageWithPublicKey(user.GPGKey.ArmoredKey, secretData)
+			publicKey, err := crypto.NewKeyFromArmored(user.GPGKey.ArmoredKey)
+			if err != nil {
+				return fmt.Errorf("Get Public Key: %w", err)
+			}
+
+			encSecretData, err = c.EncryptMessageWithKey(publicKey, secretData)
 			if err != nil {
 				return fmt.Errorf("Encrypting Secret Data for User %v: %w", user.ID, err)
 			}
