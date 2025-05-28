@@ -36,6 +36,9 @@ type Client struct {
 	// Server Settings Determining which Metadata Keys to use
 	metadataKeySettings MetadataKeySettings
 
+	// Server Settings for password expiry
+	passwordExpirySettings PasswordExpirySettings
+
 	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.
 	// You need to Return the Cookie that Passbolt expects to verify you MFA, usually it is called passbolt_mfa
@@ -207,12 +210,7 @@ func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
 }
 
 // setMetadataTypeSettings Gets and configures the Client to use the Types the Server wants us to use
-func (c *Client) setMetadataTypeSettings(ctx context.Context) error {
-	settings, err := c.GetServerSettings(ctx)
-	if err != nil {
-		return fmt.Errorf("Getting Server Settings: %w", err)
-	}
-
+func (c *Client) setMetadataTypeSettings(ctx context.Context, settings *ServerSettingsResponse) error {
 	if settings.Passbolt.IsPluginEnabled("metadata") {
 		c.log("Server has metadata plugin enabled, is v5 or Higher")
 		metadataTypeSettings, err := c.GetServerMetadataTypeSettings(ctx)
@@ -238,6 +236,25 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context) error {
 			AllowZeroKnowledgeKeyShare: false,
 		}
 	}
+	return nil
+}
+
+// setPasswordExpirySettings Gets and configures the Client to use the password expiry plugin
+func (c *Client) setPasswordExpirySettings(ctx context.Context, settings *ServerSettingsResponse) error {
+	if settings.Passbolt.IsPluginEnabled("passwordExpiry") && settings.Passbolt.IsPluginEnabled("passwordExpiryPolicies") {
+		c.log("Server has password expiry plugin enabled.")
+		passwordExpirySettings, err := c.GetServerPasswordExpirySettings(ctx)
+		if err != nil {
+			return fmt.Errorf("Getting Password Expiry Settings: %w", err)
+		}
+
+		c.log("passwordExpirySettings: %+v", passwordExpirySettings)
+		c.passwordExpirySettings = *passwordExpirySettings
+	} else {
+		c.log("Server has password expiry plugin disabled or not installed.")
+		c.passwordExpirySettings = getDefaultPasswordExpirySettings()
+	}
+
 	return nil
 }
 

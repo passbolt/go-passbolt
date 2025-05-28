@@ -102,10 +102,20 @@ func (c *Client) Login(ctx context.Context) error {
 
 	c.userID = user.ID
 
+	settings, err := c.GetServerSettings(ctx)
+	if err != nil {
+		return fmt.Errorf("Getting Server Settings: %w", err)
+	}
+
 	// after Login, fetch MetadataTypeSettings to finish the Client Setup
-	c.setMetadataTypeSettings(ctx)
+	err = c.setMetadataTypeSettings(ctx, settings)
 	if err != nil {
 		return fmt.Errorf("Setup Metadata Type Settings: %w", err)
+	}
+
+	err = c.setPasswordExpirySettings(ctx, settings)
+	if err != nil {
+		return fmt.Errorf("Setup Password Expiry Settings: %w", err)
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 // Resource is a Resource.
@@ -35,6 +36,7 @@ type Resource struct {
 
 	Secrets []Secret `json:"secrets,omitempty"`
 	Tags    []Tag    `json:"tags,omitempty"`
+	Expired *Time    `json:"expired,omitempty"`
 }
 
 // Tag is a Passbolt Password Tag
@@ -85,6 +87,10 @@ func (c *Client) GetResources(ctx context.Context, opts *GetResourcesOptions) ([
 
 // CreateResource Creates a new Passbolt Resource
 func (c *Client) CreateResource(ctx context.Context, resource Resource) (*Resource, error) {
+	if c.passwordExpirySettings.DefaultExpiryPeriod != 0 {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.passwordExpirySettings.DefaultExpiryPeriod))
+		resource.Expired = &Time{expiry}
+	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/resources.json", "v2", resource, nil)
 	if err != nil {
 		return nil, err
@@ -121,6 +127,11 @@ func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
+	}
+
+	if resource.Expired != nil && c.passwordExpirySettings.AutomaticUpdate {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.passwordExpirySettings.DefaultExpiryPeriod))
+		resource.Expired = &Time{expiry}
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/resources/"+resourceID+".json", "v2", resource, nil)
 	if err != nil {
