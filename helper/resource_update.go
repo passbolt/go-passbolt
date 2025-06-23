@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
@@ -374,6 +375,11 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			UserID: user.ID,
 			Data:   encSecretData,
 		})
+	}
+
+	if resource.Expired != nil && c.PasswordExpirySettings.AutomaticUpdate {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.PasswordExpirySettings.DefaultExpiryPeriod))
+		newResource.Expired = &api.Time{expiry}
 	}
 
 	_, err = c.UpdateResource(ctx, resourceID, newResource)

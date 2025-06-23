@@ -37,7 +37,7 @@ type Client struct {
 	metadataKeySettings MetadataKeySettings
 
 	// Server Settings for password expiry
-	passwordExpirySettings PasswordExpirySettings
+	PasswordExpirySettings PasswordExpirySettings
 
 	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.
@@ -249,10 +249,10 @@ func (c *Client) setPasswordExpirySettings(ctx context.Context, settings *Server
 		}
 
 		c.log("passwordExpirySettings: %+v", passwordExpirySettings)
-		c.passwordExpirySettings = *passwordExpirySettings
+		c.PasswordExpirySettings = *passwordExpirySettings
 	} else {
 		c.log("Server has password expiry plugin disabled or not installed.")
-		c.passwordExpirySettings = getDefaultPasswordExpirySettings()
+		c.PasswordExpirySettings = getDefaultPasswordExpirySettings()
 	}
 
 	return nil

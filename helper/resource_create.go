@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/passbolt/go-passbolt/api"
 )
@@ -99,6 +100,11 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
+	if c.PasswordExpirySettings.DefaultExpiryPeriod != 0 {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.PasswordExpirySettings.DefaultExpiryPeriod))
+		resource.Expired = &api.Time{Time: expiry}
+	}
+
 	newresource, err := c.CreateResource(ctx, resource)
 	if err != nil {
 		return "", fmt.Errorf("Creating Resource: %w", err)
@@ -153,6 +159,11 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 		return "", fmt.Errorf("Encrypting Secret Data for User me: %w", err)
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
+
+	if c.PasswordExpirySettings.DefaultExpiryPeriod != 0 {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.PasswordExpirySettings.DefaultExpiryPeriod))
+		resource.Expired = &api.Time{Time: expiry}
+	}
 
 	newresource, err := c.CreateResource(ctx, resource)
 	if err != nil {
