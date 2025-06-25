@@ -377,8 +377,9 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		})
 	}
 
-	if resource.Expired != nil && c.PasswordExpirySettings.AutomaticUpdate {
-		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.PasswordExpirySettings.DefaultExpiryPeriod))
+	passwordExpirySettings := c.GetPasswordExpirySettings()
+	if resource.Expired != nil && passwordExpirySettings.AutomaticUpdate {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(passwordExpirySettings.DefaultExpiryPeriod))
 		newResource.Expired = &api.Time{expiry}
 	}
 

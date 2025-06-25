@@ -20,8 +20,8 @@ type PasswordExpirySettings struct {
 	ModifiedBy               string    `json:"modified_by"`
 }
 
-// GetServerPasswordExpirySettings gets the servers password expiry settings
-func (c *Client) GetServerPasswordExpirySettings(ctx context.Context) (*PasswordExpirySettings, error) {
+// getServerPasswordExpirySettings gets the servers password expiry settings
+func (c *Client) getServerPasswordExpirySettings(ctx context.Context) (*PasswordExpirySettings, error) {
 	msg, err := c.DoCustomRequestV5(ctx, "GET", "/password-expiry/settings.json", nil, nil)
 	if err != nil {
 		return nil, err

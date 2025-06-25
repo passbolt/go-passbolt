@@ -100,8 +100,9 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
-	if c.PasswordExpirySettings.DefaultExpiryPeriod != 0 {
-		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.PasswordExpirySettings.DefaultExpiryPeriod))
+	passwordExpirySettings := c.GetPasswordExpirySettings()
+	if passwordExpirySettings.DefaultExpiryPeriod != 0 {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(passwordExpirySettings.DefaultExpiryPeriod))
 		resource.Expired = &api.Time{Time: expiry}
 	}
 
@@ -160,8 +161,9 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
-	if c.PasswordExpirySettings.DefaultExpiryPeriod != 0 {
-		expiry := time.Now().Add(time.Hour * 24 * time.Duration(c.PasswordExpirySettings.DefaultExpiryPeriod))
+	passwordExpirySettings := c.GetPasswordExpirySettings()
+	if passwordExpirySettings.DefaultExpiryPeriod != 0 {
+		expiry := time.Now().Add(time.Hour * 24 * time.Duration(passwordExpirySettings.DefaultExpiryPeriod))
 		resource.Expired = &api.Time{Time: expiry}
 	}
 

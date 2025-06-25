@@ -37,7 +37,7 @@ type Client struct {
 	metadataKeySettings MetadataKeySettings
 
 	// Server Settings for password expiry
-	PasswordExpirySettings PasswordExpirySettings
+	passwordExpirySettings PasswordExpirySettings
 
 	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.
@@ -239,20 +239,20 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context, settings *ServerSe
 	return nil
 }
 
-// setPasswordExpirySettings Gets and configures the Client to use the password expiry plugin
+// setPasswordExpirySettings fetches and configures the Client to use the password expiry plugin
 func (c *Client) setPasswordExpirySettings(ctx context.Context, settings *ServerSettingsResponse) error {
 	if settings.Passbolt.IsPluginEnabled("passwordExpiry") && settings.Passbolt.IsPluginEnabled("passwordExpiryPolicies") {
 		c.log("Server has password expiry plugin enabled.")
-		passwordExpirySettings, err := c.GetServerPasswordExpirySettings(ctx)
+		passwordExpirySettings, err := c.getServerPasswordExpirySettings(ctx)
 		if err != nil {
 			return fmt.Errorf("Getting Password Expiry Settings: %w", err)
 		}
 
 		c.log("passwordExpirySettings: %+v", passwordExpirySettings)
-		c.PasswordExpirySettings = *passwordExpirySettings
+		c.passwordExpirySettings = *passwordExpirySettings
 	} else {
 		c.log("Server has password expiry plugin disabled or not installed.")
-		c.PasswordExpirySettings = getDefaultPasswordExpirySettings()
+		c.passwordExpirySettings = getDefaultPasswordExpirySettings()
 	}
 
 	return nil
@@ -261,4 +261,9 @@ func (c *Client) setPasswordExpirySettings(ctx context.Context, settings *Server
 // GetPGPHandle Gets the Gopgenpgp Handler
 func (c *Client) GetPGPHandle() *crypto.PGPHandle {
 	return c.pgp
+}
+
+// GetPasswordExpirySettings returns the password expiry settings for the client
+func (c *Client) GetPasswordExpirySettings() PasswordExpirySettings {
+	return c.passwordExpirySettings
 }
