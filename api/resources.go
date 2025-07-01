@@ -35,6 +35,7 @@ type Resource struct {
 
 	Secrets []Secret `json:"secrets,omitempty"`
 	Tags    []Tag    `json:"tags,omitempty"`
+	Expired *Time    `json:"expired,omitempty"`
 }
 
 // Tag is a Passbolt Password Tag
@@ -122,6 +123,7 @@ func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource
 	if err != nil {
 		return nil, fmt.Errorf("Checking ID format: %w", err)
 	}
+
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/resources/"+resourceID+".json", "v2", resource, nil)
 	if err != nil {
 		return nil, err
