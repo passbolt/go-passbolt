@@ -81,13 +81,14 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 
 	// if Metadata has not been shared yet then we need to do that
 	// we assume that if MetadataKeyType is not null that this is a v5 Resource and that the other field are fine
+	// TODO Calculate if this should be the Shared Metadatakey or our Personal one (if we are unsharing)
 	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
 		metadata, err := GetResourceMetadata(ctx, c, resource, rType)
 		if err != nil {
 			return fmt.Errorf("Get Metadata: %w", err)
 		}
 
-		metadataKeyID, metadataKeyType, publicMetadataKey, err := GetMetadataKey(ctx, c, true)
+		metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, false)
 		if err != nil {
 			return fmt.Errorf("Get Metadata Key: %w", err)
 		}

@@ -64,7 +64,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 		return "", fmt.Errorf("Validating metadata: %w", err)
 	}
 
-	metadataKeyID, metadataKeyType, publicMetadataKey, err := GetMetadataKey(ctx, c, true)
+	metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, true)
 	if err != nil {
 		return "", fmt.Errorf("Get Metadata Key: %w", err)
 	}
