@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/google/go-querystring/query"
@@ -38,6 +39,15 @@ type Client struct {
 
 	// Server Settings for password expiry
 	passwordExpirySettings PasswordExpirySettings
+	// trusted metadatakey, Shared Metadata Keys which are trusted for encryption
+	trustedMetadataKeyFingerprint *string
+	trustedMetadataKeySigntime    *time.Time
+
+	// MetadataKeyUpdatedCallback is Called by the Client when the Metadatakey has changed
+	// trusted shows if this key has been signed and thus been trusted by another client of this user
+	// the consumer should prompt the user about the keychange and save the new fingerprint (may be skipped if it is trusted).
+	// If no error is returned then the new key will be accepted and its fingerpint set in the client
+	MetadataKeyUpdatedCallback func(ctx context.Context, trusted bool, fingerprint string, signTime time.Time) error
 
 	// used for solving MFA challenges. You can block this to for example wait for user input.
 	// You shouden't run any unrelated API Calls while you are in this callback.

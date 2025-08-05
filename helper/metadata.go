@@ -21,7 +21,7 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 		}
 		metadatakey = tmp
 	} else {
-		key, err := GetMetadataKeyById(ctx, c, resource.MetadataKeyID)
+		key, err := c.GetMetadataKeyById(ctx, resource.MetadataKeyID)
 		if err != nil {
 			return "", fmt.Errorf("Get Metadata Key by ID: %w", err)
 		}
