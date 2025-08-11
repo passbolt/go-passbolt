@@ -173,7 +173,21 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 
 		pw = rawSecretData
 	case "v5-totp-standalone":
-		// nothing fits into the interface in this case
+		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
+		}
+
+		var metadata api.ResourceMetadataTypeV5TOTPStandalone
+		err = json.Unmarshal([]byte(rawMetadata), &metadata)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Metadata: %w", err)
+		}
+
+		name = metadata.Name
+		if len(metadata.URIs) != 0 {
+			uri = metadata.URIs[0]
+		}
 	default:
 		return "", "", "", "", "", "", fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
 	}
