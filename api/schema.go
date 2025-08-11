@@ -15,22 +15,19 @@ var ResourceSchemas = map[string]json.RawMessage{
         "maxLength": 255
       },
       "username": {
-        "type": "string",
-        "maxLength": 255,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 255
       },
       "uris": {
         "type": "array",
         "items": {
           "type": "string",
-          "maxLength": 1024,
-          "nullable": true
+          "maxLength": 1024
         }
       },
       "description": {
-        "type": "string",
-        "maxLength": 10000,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 10000
       }
     }
   },
@@ -43,14 +40,12 @@ var ResourceSchemas = map[string]json.RawMessage{
         "enum": ["PASSBOLT_SECRET_DATA"]
       },
       "password": {
-        "type": "string",
-        "maxLength": 4096,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 4096
       },
       "description": {
-        "type": "string",
-        "maxLength": 10000,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 10000
       }
     }
   }
@@ -66,22 +61,19 @@ var ResourceSchemas = map[string]json.RawMessage{
         "maxLength": 255
       },
       "username": {
-        "type": "string",
-        "maxLength": 255,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 255
       },
       "uris": {
         "type": "array",
         "items": {
           "type": "string",
-          "maxLength": 1024,
-          "nullable": true
+          "maxLength": 1024
         }
       },
       "description": {
-        "type": "string",
-        "maxLength": 10000,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 10000
       }
     }
   },
@@ -101,22 +93,19 @@ var ResourceSchemas = map[string]json.RawMessage{
         "maxLength": 255
       },
       "username": {
-        "type": "string",
-        "maxLength": 255,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 255
       },
       "uris": {
         "type": "array",
         "items": {
           "type": "string",
-          "maxLength": 1024,
-          "nullable": true
+          "maxLength": 1024
         }
       },
       "description": {
-        "type": "string",
-        "maxLength": 10000,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 10000
       }
     }
   },
@@ -129,14 +118,12 @@ var ResourceSchemas = map[string]json.RawMessage{
         "enum": ["PASSBOLT_SECRET_DATA"]
       },
       "password": {
-        "type": "string",
-        "maxLength": 4096,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 4096
       },
       "description": {
-        "type": "string",
-        "maxLength": 10000,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 10000
       },
       "totp": {
         "type": "object",
@@ -174,23 +161,16 @@ var ResourceSchemas = map[string]json.RawMessage{
         "type": "string",
         "maxLength": 255
       },
-      "username": {
-        "type": "string",
-        "maxLength": 255,
-        "nullable": true
-      },
       "uris": {
         "type": "array",
         "items": {
           "type": "string",
-          "maxLength": 1024,
-          "nullable": true
+          "maxLength": 1024
         }
       },
       "description": {
-        "type": "string",
-        "maxLength": 10000,
-        "nullable": true
+        "type": ["string", "null"],
+        "maxLength": 10000
       }
     }
   },
