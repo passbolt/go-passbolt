@@ -37,23 +37,24 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 
 	ctx := context.TODO()
 
+	rawSecretData, err := c.DecryptMessage(secret.Data)
+	if err != nil {
+		return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
+	}
+
+	err = validateSecretData(&rType, rawSecretData)
+	if err != nil {
+		return "", "", "", "", "", "", fmt.Errorf("Validate Secret Data: %w", err)
+	}
+
 	switch rType.Slug {
 	case "password-string":
-		var err error
-		pw, err = c.DecryptMessage(secret.Data)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
-		}
+		pw = rawSecretData
 		name = resource.Name
 		username = resource.Username
 		uri = resource.URI
 		desc = resource.Description
 	case "password-and-description":
-		rawSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
-		}
-
 		var secretData api.SecretDataTypePasswordAndDescription
 		err = json.Unmarshal([]byte(rawSecretData), &secretData)
 		if err != nil {
@@ -65,11 +66,6 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		pw = secretData.Password
 		desc = secretData.Description
 	case "password-description-totp":
-		rawSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
-		}
-
 		var secretData api.SecretDataTypePasswordDescriptionTOTP
 		err = json.Unmarshal([]byte(rawSecretData), &secretData)
 		if err != nil {
@@ -103,11 +99,6 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 			uri = metadata.URIs[0]
 		}
 
-		rawSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
-		}
-
 		var secretData api.SecretDataTypeV5Default
 		err = json.Unmarshal([]byte(rawSecretData), &secretData)
 		if err != nil {
@@ -131,11 +122,6 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		username = metadata.Username
 		if len(metadata.URIs) != 0 {
 			uri = metadata.URIs[0]
-		}
-
-		rawSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
 		}
 
 		var secretData api.SecretDataTypeV5DefaultWithTOTP
@@ -165,11 +151,6 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 
 		// Not available in the Secret
 		desc = metadata.Description
-
-		rawSecretData, err := c.DecryptMessage(secret.Data)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
-		}
 
 		pw = rawSecretData
 	case "v5-totp-standalone":
