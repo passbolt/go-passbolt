@@ -17,8 +17,8 @@ type ResourceType struct {
 }
 
 type ResourceTypeSchema struct {
-	Resource json.RawMessage `json:"resource"`
-	Secret   json.RawMessage `json:"secret"`
+	Resource map[string]any `json:"resource"`
+	Secret   map[string]any `json:"secret"`
 }
 
 // GetResourceTypesOptions is a placeholder for future options

@@ -1,15 +1,13 @@
 package helper
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
-	"github.com/santhosh-tekuri/jsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resource, rType *api.ResourceType) (string, error) {
@@ -75,7 +73,7 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 
 	comp := jsonschema.NewCompiler()
 
-	err = comp.AddResource("metadata.json", bytes.NewReader(schemaDefinition.Resource))
+	err = comp.AddResource("metadata.json", schemaDefinition.Resource)
 	if err != nil {
 		return fmt.Errorf("Adding Json Schema: %w", err)
 	}
@@ -85,7 +83,13 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 		return fmt.Errorf("Compiling Json Schema: %w", err)
 	}
 
-	err = schema.Validate(strings.NewReader(metadata))
+	var parsedMetadata map[string]any
+	err = json.Unmarshal([]byte(metadata), &parsedMetadata)
+	if err != nil {
+		return fmt.Errorf("Unmarshal Secret: %w", err)
+	}
+
+	err = schema.Validate(parsedMetadata)
 	if err != nil {
 		return fmt.Errorf("Validating Metadata with Schema: %w", err)
 	}
