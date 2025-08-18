@@ -1,13 +1,11 @@
 package helper
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/passbolt/go-passbolt/api"
-	"github.com/santhosh-tekuri/jsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 func validateSecretData(rType *api.ResourceType, secretData string) error {
@@ -54,7 +52,7 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 
 	comp := jsonschema.NewCompiler()
 
-	err = comp.AddResource("secret.json", bytes.NewReader(schemaDefinition.Secret))
+	err = comp.AddResource("secret.json", schemaDefinition.Secret)
 	if err != nil {
 		return fmt.Errorf("Adding Json Schema: %w", err)
 	}
@@ -64,7 +62,13 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 		return fmt.Errorf("Compiling Json Schema: %w", err)
 	}
 
-	err = schema.Validate(strings.NewReader(secretData))
+	var parsedSecretData map[string]any
+	err = json.Unmarshal([]byte(secretData), &parsedSecretData)
+	if err != nil {
+		return fmt.Errorf("Unmarshal Secret: %w", err)
+	}
+
+	err = schema.Validate(parsedSecretData)
 	if err != nil {
 		return fmt.Errorf("Validating Secret Data with Schema: %w", err)
 	}
