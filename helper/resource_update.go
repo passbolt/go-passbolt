@@ -113,7 +113,12 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			return fmt.Errorf("Validating metadata: %w", err)
 		}
 
-		metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, true)
+		personal := true
+		if resource.MetadataKeyType == api.MetadataKeyTypeSharedKey {
+			personal = false
+		}
+
+		metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, personal)
 		if err != nil {
 			return fmt.Errorf("Get Metadata Key: %w", err)
 		}
