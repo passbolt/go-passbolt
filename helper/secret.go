@@ -9,9 +9,9 @@ import (
 )
 
 func validateSecretData(rType *api.ResourceType, secretData string) error {
-	// TODO Remove when v4 Resources are unsupported
+	// TODO Remove password-string when v4 Resources are unsupported
 	// with the Resource Type password-string the Secret is not json and can't be properly validated, so skip the check here
-	if rType.Slug == "password-string" {
+	if rType.Slug == "password-string" || rType.Slug == "v5-password-string" {
 		if len(secretData) > 4096 {
 			return fmt.Errorf("password is longer than 4096")
 		}
