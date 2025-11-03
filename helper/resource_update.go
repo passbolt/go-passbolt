@@ -167,10 +167,6 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			}
 			secretData = string(res)
 		case "v5-password-string":
-			newResource.Description = resource.Description
-			if description != "" {
-				newResource.Description = description
-			}
 			if password != "" {
 				secretData = password
 			} else {
