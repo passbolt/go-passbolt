@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -382,9 +383,9 @@ func TestAddPendingSessionKeyNilHandling(t *testing.T) {
 	}
 }
 
-// TestConcurrentKeyCopy tests that Key.Copy() is properly protected by the mutex
-// This test verifies that multiple goroutines can safely call DecryptMetadataWithKeyID
-// with the same metadata key without causing a race condition.
+// TestConcurrentKeyCopy tests that GetDecryptedMetadataKeyCached properly protects
+// concurrent access to the metadata key cache by returning copies.
+// Each goroutine gets its own key copy, enabling true parallel decryption.
 func TestConcurrentKeyCopy(t *testing.T) {
 	// Create a client with the crypto mutex initialized
 	pgp := crypto.PGP()
@@ -401,6 +402,9 @@ func TestConcurrentKeyCopy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
+
+	// Store the key in the cache (simulating what happens after login)
+	client.decryptedMetadataKeysCache["test-key-id"] = testKey
 
 	// Encrypt a test message with the key
 	encHandle, err := pgp.Encryption().Recipient(testKey).New()
@@ -424,12 +428,19 @@ func TestConcurrentKeyCopy(t *testing.T) {
 	results := make(chan error, numGoroutines*numDecrypts)
 	done := make(chan struct{})
 
-	// Start concurrent decryption goroutines all sharing the same metadata key
+	// Start concurrent decryption goroutines
+	// Each goroutine gets its own key copy from GetDecryptedMetadataKeyCached
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			for j := 0; j < numDecrypts; j++ {
-				// This should be safe because DecryptMetadataWithKeyID copies the key under mutex
-				_, err := client.DecryptMetadataWithKeyID("test-key-id", testKey, armoredCiphertext)
+				// Get a copy of the key (this is how the real code works)
+				keyCopy, err := client.GetDecryptedMetadataKeyCached(context.Background(), "test-key-id")
+				if err != nil {
+					results <- err
+					continue
+				}
+				// Decrypt using the copy - this can now run in parallel
+				_, err = client.DecryptMetadataWithKeyID("test-key-id", keyCopy, armoredCiphertext)
 				results <- err
 			}
 		}()

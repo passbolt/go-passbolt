@@ -450,17 +450,27 @@ func (c *Client) GetMetadataKeysCached(ctx context.Context) ([]MetadataKey, erro
 	return keys, nil
 }
 
-// GetDecryptedMetadataKeyCached returns a cached decrypted metadata key by ID
-// If not in cache, it will fetch and decrypt the key
+// GetDecryptedMetadataKeyCached returns a copy of a cached decrypted metadata key by ID.
+// If not in cache, it will fetch and decrypt the key.
 //
-// IMPORTANT: The returned key is managed by the client's cache. Do not store
-// long-term references. The key will be zeroed when ClearMetadataKeysCache()
-// or Logout() is called, invalidating any stored pointers.
+// The returned key is a copy that the caller owns and can use without synchronization.
+// This allows multiple goroutines to decrypt metadata concurrently without contention.
 func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (*crypto.Key, error) {
 	// Check decrypted key cache first
-	if key, ok := c.decryptedMetadataKeysCache[id]; ok {
-		return key, nil
+	// We need an exclusive lock because Key.Copy() is not thread-safe when called
+	// on the same key concurrently. This is a brief lock just for the copy operation.
+	c.cryptoMu.Lock()
+	key, ok := c.decryptedMetadataKeysCache[id]
+	if ok {
+		// Return a copy so the caller can use it without synchronization
+		keyCopy, err := key.Copy()
+		c.cryptoMu.Unlock()
+		if err != nil {
+			return nil, fmt.Errorf("Copy Cached Metadata Key: %w", err)
+		}
+		return keyCopy, nil
 	}
+	c.cryptoMu.Unlock()
 
 	// Get metadata keys (from cache or API)
 	keys, err := c.GetMetadataKeysCached(ctx)

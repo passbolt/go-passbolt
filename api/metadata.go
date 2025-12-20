@@ -75,16 +75,9 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 		}
 	}
 
-	// Copy the metadata key under the mutex to make this thread-safe.
-	// gopenpgp's Key.Copy() is not thread-safe when called concurrently on the same key.
-	c.cryptoMu.Lock()
-	metadataKeyCopy, err := metadataKey.Copy()
-	c.cryptoMu.Unlock()
-	if err != nil {
-		return "", fmt.Errorf("Copy Metadata Key: %w", err)
-	}
-
-	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKeyCopy, armoredCiphertext)
+	// The metadataKey is expected to be a copy provided by GetDecryptedMetadataKeyCached
+	// or GetUserPrivateKeyCopy, so we can use it directly without additional copying.
+	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKey, armoredCiphertext)
 	if err != nil {
 		return "", fmt.Errorf("Decrypting Metadata: %w", err)
 	}
@@ -136,16 +129,9 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 	}
 
 	// 3. Full asymmetric decryption
-	// Copy the metadata key under the mutex to make this thread-safe.
-	// gopenpgp's Key.Copy() is not thread-safe when called concurrently on the same key.
-	c.cryptoMu.Lock()
-	metadataKeyCopy, err := metadataKey.Copy()
-	c.cryptoMu.Unlock()
-	if err != nil {
-		return "", fmt.Errorf("Copy Metadata Key: %w", err)
-	}
-
-	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKeyCopy, armoredCiphertext)
+	// The metadataKey is expected to be a copy provided by GetDecryptedMetadataKeyCached,
+	// so we can use it directly without additional copying.
+	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKey, armoredCiphertext)
 	if err != nil {
 		return "", fmt.Errorf("Decrypting Metadata: %w", err)
 	}
