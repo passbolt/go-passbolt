@@ -8,6 +8,10 @@ import (
 
 // EncryptMessage encrypts a message using the users public key and then signes the message using the users private key
 func (c *Client) EncryptMessage(message string) (string, error) {
+	if c.userPrivateKey == nil {
+		return "", fmt.Errorf("Client has no user private key (logged out or not initialized)")
+	}
+
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
 		return "", fmt.Errorf("Get Private Key Copy: %w", err)
@@ -46,6 +50,10 @@ func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string,
 
 // EncryptMessageWithKey encrypts a message using the provided key and then signes the message using the users private key
 func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (string, error) {
+	if c.userPrivateKey == nil {
+		return "", fmt.Errorf("Client has no user private key (logged out or not initialized)")
+	}
+
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
 		return "", fmt.Errorf("Get Private Key Copy: %w", err)
@@ -72,6 +80,10 @@ func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (s
 
 // DecryptMessage decrypts a message using the users Private Key
 func (c *Client) DecryptMessage(armoredCiphertext string) (string, error) {
+	if c.userPrivateKey == nil {
+		return "", fmt.Errorf("Client has no user private key (logged out or not initialized)")
+	}
+
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
 		return "", fmt.Errorf("Get Private Key Copy: %w", err)
@@ -81,12 +93,27 @@ func (c *Client) DecryptMessage(armoredCiphertext string) (string, error) {
 	return message, err
 }
 
+// DecryptSecretWithResourceID decrypts a secret using the user's private key.
+// Secrets are always encrypted per-user, so no session key caching is needed.
+// Session key caching is only used for metadata decryption (shared metadata keys).
+func (c *Client) DecryptSecretWithResourceID(resourceID string, armoredCiphertext string) (string, error) {
+	// resourceID is kept for API compatibility but not used for caching
+	// Secrets don't benefit from session key caching as they're per-user encrypted
+	return c.DecryptMessage(armoredCiphertext)
+}
+
 // DecryptMessageWithPrivateKey Decrypts a Message using the Provided Private Key
 // Returns the Session key so that it can be saved in a cache
 func (c *Client) DecryptMessageWithPrivateKeyAndReturnSessionKey(privateKey *crypto.Key, armoredCiphertext string) (string, *crypto.SessionKey, error) {
 
+	// Copy the private key to avoid it being cleared by ClearPrivateParams
+	keyCopy, err := privateKey.Copy()
+	if err != nil {
+		return "", nil, fmt.Errorf("Copy Private Key: %w", err)
+	}
+
 	decHandle, err := c.pgp.Decryption().
-		DecryptionKey(privateKey).
+		DecryptionKey(keyCopy).
 		RetrieveSessionKey().
 		New()
 	if err != nil {
@@ -100,7 +127,13 @@ func (c *Client) DecryptMessageWithPrivateKeyAndReturnSessionKey(privateKey *cry
 		return "", nil, fmt.Errorf("Decrypt: %w", err)
 	}
 
-	return res.String(), res.SessionKey(), nil
+	// Clone the session key before returning it, as ClearPrivateParams() will zero it out
+	sessionKey := res.SessionKey()
+	if sessionKey != nil {
+		sessionKey = crypto.NewSessionKeyFromToken(sessionKey.Key, sessionKey.Algo)
+	}
+
+	return res.String(), sessionKey, nil
 }
 
 func GetPrivateKeyFromArmor(privateKey string, passphrase []byte) (*crypto.Key, error) {
@@ -142,6 +175,10 @@ func (c *Client) DecryptMessageWithSessionKey(sessionKey *crypto.SessionKey, cip
 }
 
 func (c *Client) GetUserPrivateKeyCopy() (*crypto.Key, error) {
+	if c.userPrivateKey == nil {
+		return nil, fmt.Errorf("Client has no user private key (logged out or not initialized)")
+	}
+
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
 		return nil, fmt.Errorf("Get Private Key Copy: %w", err)

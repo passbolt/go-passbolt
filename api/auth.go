@@ -28,6 +28,13 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 
 // Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar
 func (c *Client) Login(ctx context.Context) error {
+	// Validate client has private key (not logged out)
+	if c.userPrivateKey == nil {
+		return fmt.Errorf("Cannot login: client has no user private key (logged out or not initialized)")
+	}
+
+	// Clear any cached data from previous sessions
+	c.ClearCache()
 	c.csrfToken = http.Cookie{}
 
 	data := Login{&GPGAuth{KeyID: c.userPrivateKey.GetFingerprint()}}
@@ -118,16 +125,42 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("Setup Password Expiry Settings: %w", err)
 	}
 
+	// Pre-fetch caches if server supports v5 metadata encryption
+	if c.metadataTypeSettings.AllowCreationOfV5Resources {
+		sessionCount, metadataCount, err := c.PreFetchCaches(ctx)
+		if err != nil {
+			// Log but don't fail login - this is an optional optimization
+			c.log("Warning: Failed to pre-fetch caches: %v", err)
+		} else {
+			c.log("Pre-fetched %d session keys and %d metadata keys", sessionCount, metadataCount)
+		}
+	}
+
 	return nil
 }
 
 // Logout closes the current Session on the Passbolt server
+// IMPORTANT: After logout, the client's user private key is securely zeroed and cleared.
+// The client becomes permanently invalid and CANNOT be reused or re-logged in.
+// For a new session, create a new client instance with NewClient().
 func (c *Client) Logout(ctx context.Context) error {
 	_, err := c.DoCustomRequest(ctx, "GET", "/auth/logout.json", "v2", nil, nil)
 	if err != nil {
 		return fmt.Errorf("Doing Logout Request: %w", err)
 	}
+
+	// Clear session cookies
 	c.sessionToken = http.Cookie{}
 	c.csrfToken = http.Cookie{}
+
+	// Clear all caches with secure zeroing
+	c.ClearCache()
+
+	// Securely clear user private key
+	if c.userPrivateKey != nil {
+		c.userPrivateKey.ClearPrivateParams()
+		c.userPrivateKey = nil
+	}
+
 	return nil
 }
