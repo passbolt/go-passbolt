@@ -58,6 +58,7 @@ func (c *Client) DecryptMetadata(metadataKey *crypto.Key, armoredCiphertext stri
 // The metadataKeyID is used as the cache key for session key caching.
 // If metadataKeyID is empty, session key caching is disabled.
 // For resource-aware caching (using pre-fetched session keys), use DecryptMetadataWithResourceID instead.
+// This method is thread-safe: multiple goroutines can call this method concurrently with the same metadataKey.
 func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *crypto.Key, armoredCiphertext string) (string, error) {
 	// Try to get session key from cache
 	if metadataKeyID != "" {
@@ -74,7 +75,16 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 		}
 	}
 
-	metadata, newSessionKey, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(metadataKey, armoredCiphertext)
+	// Copy the metadata key under the mutex to make this thread-safe.
+	// gopenpgp's Key.Copy() is not thread-safe when called concurrently on the same key.
+	c.cryptoMu.Lock()
+	metadataKeyCopy, err := metadataKey.Copy()
+	c.cryptoMu.Unlock()
+	if err != nil {
+		return "", fmt.Errorf("Copy Metadata Key: %w", err)
+	}
+
+	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKeyCopy, armoredCiphertext)
 	if err != nil {
 		return "", fmt.Errorf("Decrypting Metadata: %w", err)
 	}
@@ -94,6 +104,7 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 // It first checks for a pre-fetched session key by resource ID (from metadata_session_keys table),
 // then falls back to metadata key ID cache, and finally to full asymmetric decryption.
 // This function provides the best performance when PreFetchCaches() has been called.
+// This method is thread-safe: multiple goroutines can call this method concurrently with the same metadataKey.
 func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string, metadataKey *crypto.Key, armoredCiphertext string) (string, error) {
 	// 1. First, check for pre-fetched session key by resource ID
 	if resourceID != "" {
@@ -125,7 +136,16 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 	}
 
 	// 3. Full asymmetric decryption
-	metadata, newSessionKey, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(metadataKey, armoredCiphertext)
+	// Copy the metadata key under the mutex to make this thread-safe.
+	// gopenpgp's Key.Copy() is not thread-safe when called concurrently on the same key.
+	c.cryptoMu.Lock()
+	metadataKeyCopy, err := metadataKey.Copy()
+	c.cryptoMu.Unlock()
+	if err != nil {
+		return "", fmt.Errorf("Copy Metadata Key: %w", err)
+	}
+
+	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKeyCopy, armoredCiphertext)
 	if err != nil {
 		return "", fmt.Errorf("Decrypting Metadata: %w", err)
 	}

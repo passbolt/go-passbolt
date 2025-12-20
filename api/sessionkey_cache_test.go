@@ -308,11 +308,8 @@ func TestSavePendingSessionKeys(t *testing.T) {
 	}
 }
 
-// TestConcurrentCacheAccessIntegration tests concurrent access with real server
-// NOTE: The Client is documented as NOT thread-safe for operations that use
-// crypto keys (encryption/decryption). This test validates that:
-// 1. Sequential operations work correctly
-// 2. Cache operations themselves are thread-safe
+// TestConcurrentCacheAccessIntegration tests concurrent access with real server.
+// The Client is now thread-safe, so we can run parallel decryption operations.
 func TestConcurrentCacheAccessIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -342,31 +339,43 @@ func TestConcurrentCacheAccessIntegration(t *testing.T) {
 	// Clear cache
 	client.ClearSessionKeyCache()
 
-	// First decrypt to populate cache (sequential, as Client is not thread-safe)
-	_, err = client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
-	if err != nil {
-		t.Fatalf("Initial decryption failed: %v", err)
+	const numGoroutines = 5
+	const numDecrypts = 10
+
+	// Use channels to collect results
+	results := make(chan error, numGoroutines*numDecrypts)
+	done := make(chan struct{})
+
+	// Start concurrent decryption goroutines
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			for j := 0; j < numDecrypts; j++ {
+				_, err := client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
+				results <- err
+			}
+		}(i)
 	}
 
-	// Verify cache is populated
-	if client.GetSessionKey(keyID) == nil {
-		t.Fatal("Session key should be cached after decrypt")
-	}
-
-	// Now test that cache-hit decryptions work quickly in sequence
-	const numDecrypts = 50
-	start := time.Now()
-	for i := 0; i < numDecrypts; i++ {
-		_, err := client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
-		if err != nil {
-			t.Errorf("Decryption %d failed: %v", i, err)
+	// Collect results
+	go func() {
+		for i := 0; i < numGoroutines*numDecrypts; i++ {
+			if err := <-results; err != nil {
+				t.Errorf("Decryption error in concurrent test: %v", err)
+			}
 		}
+		close(done)
+	}()
+
+	// Wait for completion with timeout
+	select {
+	case <-done:
+		t.Logf("Completed %d concurrent decryptions successfully", numGoroutines*numDecrypts)
+	case <-time.After(30 * time.Second):
+		t.Fatal("Concurrent test timed out")
 	}
-	elapsed := time.Since(start)
-	t.Logf("Completed %d sequential cache-hit decryptions in %v (avg %v each)", numDecrypts, elapsed, elapsed/numDecrypts)
 
 	// Verify cache is still functional
 	if client.GetSessionKey(keyID) == nil {
-		t.Error("Cache should have session key after operations")
+		t.Error("Cache should have session key after concurrent access")
 	}
 }

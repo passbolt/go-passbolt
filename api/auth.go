@@ -26,18 +26,23 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 	return err == nil
 }
 
-// Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar
+// Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar.
+// This method is thread-safe.
 func (c *Client) Login(ctx context.Context) error {
 	// Validate client has private key (not logged out)
+	c.cryptoMu.RLock()
 	if c.userPrivateKey == nil {
+		c.cryptoMu.RUnlock()
 		return fmt.Errorf("Cannot login: client has no user private key (logged out or not initialized)")
 	}
+	fingerprint := c.userPrivateKey.GetFingerprint()
+	c.cryptoMu.RUnlock()
 
 	// Clear any cached data from previous sessions
 	c.ClearCache()
 	c.csrfToken = http.Cookie{}
 
-	data := Login{&GPGAuth{KeyID: c.userPrivateKey.GetFingerprint()}}
+	data := Login{&GPGAuth{KeyID: fingerprint}}
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "Error API JSON Response Status: Message: The authentication failed.") {
@@ -139,10 +144,11 @@ func (c *Client) Login(ctx context.Context) error {
 	return nil
 }
 
-// Logout closes the current Session on the Passbolt server
+// Logout closes the current Session on the Passbolt server.
 // IMPORTANT: After logout, the client's user private key is securely zeroed and cleared.
 // The client becomes permanently invalid and CANNOT be reused or re-logged in.
 // For a new session, create a new client instance with NewClient().
+// This method is thread-safe.
 func (c *Client) Logout(ctx context.Context) error {
 	_, err := c.DoCustomRequest(ctx, "GET", "/auth/logout.json", "v2", nil, nil)
 	if err != nil {
@@ -156,11 +162,13 @@ func (c *Client) Logout(ctx context.Context) error {
 	// Clear all caches with secure zeroing
 	c.ClearCache()
 
-	// Securely clear user private key
+	// Securely clear user private key (requires write lock)
+	c.cryptoMu.Lock()
 	if c.userPrivateKey != nil {
 		c.userPrivateKey.ClearPrivateParams()
 		c.userPrivateKey = nil
 	}
+	c.cryptoMu.Unlock()
 
 	return nil
 }

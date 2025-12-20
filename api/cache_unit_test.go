@@ -382,6 +382,80 @@ func TestAddPendingSessionKeyNilHandling(t *testing.T) {
 	}
 }
 
+// TestConcurrentKeyCopy tests that Key.Copy() is properly protected by the mutex
+// This test verifies that multiple goroutines can safely call DecryptMetadataWithKeyID
+// with the same metadata key without causing a race condition.
+func TestConcurrentKeyCopy(t *testing.T) {
+	// Create a client with the crypto mutex initialized
+	pgp := crypto.PGP()
+	client := &Client{
+		sessionKeyCache:            make(map[string]*crypto.SessionKey),
+		pendingSessionKeys:         make(map[string]*PendingSessionKey),
+		decryptedMetadataKeysCache: make(map[string]*crypto.Key),
+		pgp:                        pgp,
+	}
+
+	// Generate a test key pair
+	keyGenHandle := pgp.KeyGeneration().AddUserId("Test User", "test@example.com").New()
+	testKey, err := keyGenHandle.GenerateKey()
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	// Encrypt a test message with the key
+	encHandle, err := pgp.Encryption().Recipient(testKey).New()
+	if err != nil {
+		t.Fatalf("Failed to create encryption handle: %v", err)
+	}
+	testMessage := "test metadata content"
+	encryptedMsg, err := encHandle.Encrypt([]byte(testMessage))
+	if err != nil {
+		t.Fatalf("Failed to encrypt test message: %v", err)
+	}
+	armoredCiphertext, err := encryptedMsg.Armor()
+	if err != nil {
+		t.Fatalf("Failed to armor ciphertext: %v", err)
+	}
+
+	const numGoroutines = 10
+	const numDecrypts = 20
+
+	// Use channels to collect results
+	results := make(chan error, numGoroutines*numDecrypts)
+	done := make(chan struct{})
+
+	// Start concurrent decryption goroutines all sharing the same metadata key
+	for i := 0; i < numGoroutines; i++ {
+		go func() {
+			for j := 0; j < numDecrypts; j++ {
+				// This should be safe because DecryptMetadataWithKeyID copies the key under mutex
+				_, err := client.DecryptMetadataWithKeyID("test-key-id", testKey, armoredCiphertext)
+				results <- err
+			}
+		}()
+	}
+
+	// Collect results
+	go func() {
+		for i := 0; i < numGoroutines*numDecrypts; i++ {
+			if err := <-results; err != nil {
+				t.Errorf("Decryption error in concurrent test: %v", err)
+			}
+		}
+		close(done)
+	}()
+
+	// Wait for completion
+	<-done
+
+	// Verify the cache has the session key
+	if client.GetSessionKey("test-key-id") == nil {
+		t.Error("Expected session key to be cached after concurrent decryptions")
+	}
+
+	t.Logf("Successfully completed %d concurrent decryptions without race conditions", numGoroutines*numDecrypts)
+}
+
 // TestFormatSessionKey tests the session key formatting function
 func TestFormatSessionKey(t *testing.T) {
 	tests := []struct {

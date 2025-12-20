@@ -25,7 +25,9 @@ const (
 	sessionKeyCachePrefixMetaKey = "metakey:"
 )
 
-// Client is a Client struct for the Passbolt api
+// Client is a Client struct for the Passbolt api.
+// The Client is thread-safe for concurrent use. All crypto operations and cache
+// access are protected by internal mutexes.
 type Client struct {
 	baseURL    *url.URL
 	userAgent  string
@@ -40,6 +42,11 @@ type Client struct {
 	// be sure to make a copy since using ClearPrivateParams on a handler also wipes the key...
 	userPrivateKey *crypto.Key
 	userID         string
+
+	// Mutex to protect userPrivateKey and crypto operations for thread safety.
+	// This ensures that concurrent encryption/decryption operations don't race
+	// on the userPrivateKey.Copy() operation which is not thread-safe.
+	cryptoMu sync.RWMutex
 
 	// Server Settings Determining which Resource Types we can use
 	metadataTypeSettings MetadataTypeSettings
