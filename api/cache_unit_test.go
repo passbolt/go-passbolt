@@ -136,8 +136,9 @@ func TestSessionKeyCacheOperations(t *testing.T) {
 		if retrieved == nil {
 			t.Error("GetSessionKeyByResourceID returned nil")
 		}
-		if retrieved != sessionKey {
-			t.Error("Retrieved session key doesn't match stored key")
+		// Compare contents, not pointers (getters return clones)
+		if retrieved.Algo != sessionKey.Algo || string(retrieved.Key) != string(sessionKey.Key) {
+			t.Error("Retrieved session key contents don't match stored key")
 		}
 
 		// Verify the internal cache key has the correct prefix
@@ -156,8 +157,9 @@ func TestSessionKeyCacheOperations(t *testing.T) {
 		if retrieved == nil {
 			t.Error("GetSessionKeyByMetadataKeyID returned nil")
 		}
-		if retrieved != sessionKey2 {
-			t.Error("Retrieved session key doesn't match stored key")
+		// Compare contents, not pointers (getters return clones)
+		if retrieved.Algo != sessionKey2.Algo || string(retrieved.Key) != string(sessionKey2.Key) {
+			t.Error("Retrieved session key contents don't match stored key")
 		}
 
 		// Verify the internal cache key has the correct prefix
@@ -176,12 +178,20 @@ func TestSessionKeyCacheOperations(t *testing.T) {
 		client.SetSessionKeyByResourceID(sameID, keyForResource)
 		client.SetSessionKeyByMetadataKeyID(sameID, keyForMetadata)
 
-		// Retrieve both and verify they're different
+		// Retrieve both and verify they have different contents
 		retrievedResource := client.GetSessionKeyByResourceID(sameID)
 		retrievedMetadata := client.GetSessionKeyByMetadataKeyID(sameID)
 
-		if retrievedResource == retrievedMetadata {
-			t.Error("Same ID with different prefixes returned same session key - collision!")
+		// Compare contents to verify no collision
+		if string(retrievedResource.Key) == string(retrievedMetadata.Key) {
+			t.Error("Same ID with different prefixes returned same session key contents - collision!")
+		}
+		// Verify each retrieved key matches its original
+		if string(retrievedResource.Key) != string(keyForResource.Key) {
+			t.Error("Resource session key contents don't match original")
+		}
+		if string(retrievedMetadata.Key) != string(keyForMetadata.Key) {
+			t.Error("Metadata session key contents don't match original")
 		}
 	})
 
@@ -295,33 +305,6 @@ func TestClearSessionKeyCacheZerosAllKeys(t *testing.T) {
 		if key.Key != nil {
 			t.Errorf("Key %d was not set to nil", i)
 		}
-	}
-}
-
-// TestLegacyGetSetSessionKey tests the legacy (non-prefixed) cache methods
-func TestLegacyGetSetSessionKey(t *testing.T) {
-	client := &Client{
-		sessionKeyCache:    make(map[string]*crypto.SessionKey),
-		pendingSessionKeys: make(map[string]*PendingSessionKey),
-	}
-
-	testKey := crypto.NewSessionKeyFromToken([]byte("legacy-session-key-data!"), "aes256")
-	keyID := "legacy-key-id"
-
-	// Test SetSessionKey and GetSessionKey (legacy methods)
-	client.SetSessionKey(keyID, testKey)
-
-	retrieved := client.GetSessionKey(keyID)
-	if retrieved == nil {
-		t.Error("GetSessionKey returned nil")
-	}
-	if retrieved != testKey {
-		t.Error("Retrieved session key doesn't match stored key")
-	}
-
-	// Verify the key is stored with the raw ID (no prefix)
-	if _, exists := client.sessionKeyCache[keyID]; !exists {
-		t.Errorf("Legacy cache key %q not found in cache", keyID)
 	}
 }
 
@@ -459,8 +442,8 @@ func TestConcurrentKeyCopy(t *testing.T) {
 	// Wait for completion
 	<-done
 
-	// Verify the cache has the session key
-	if client.GetSessionKey("test-key-id") == nil {
+	// Verify the cache has the session key (uses metadata key ID prefix)
+	if client.GetSessionKeyByMetadataKeyID("test-key-id") == nil {
 		t.Error("Expected session key to be cached after concurrent decryptions")
 	}
 

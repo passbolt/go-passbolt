@@ -46,13 +46,6 @@ func TestUserKeySessionCaching(t *testing.T) {
 
 	ctx := context.TODO()
 
-	// Get user key fingerprint to construct expected cache key
-	userKey, err := client.GetUserPrivateKeyCopy()
-	if err != nil {
-		t.Fatalf("Failed to get user key: %v", err)
-	}
-	expectedCacheKey := "user-key:" + userKey.GetFingerprint()
-
 	// Get resources
 	resources, err := client.GetResources(ctx, nil)
 	if err != nil {
@@ -80,8 +73,8 @@ func TestUserKeySessionCaching(t *testing.T) {
 	// Clear session key cache to start fresh
 	client.ClearSessionKeyCache()
 
-	// Verify session key cache is empty initially
-	sessionKey := client.GetSessionKey(expectedCacheKey)
+	// Verify session key cache is empty initially (session keys are cached by resource ID)
+	sessionKey := client.GetSessionKeyByResourceID(userOwnedV5Resource.ID)
 	if sessionKey != nil {
 		t.Error("Expected session key cache to be empty initially")
 	}
@@ -92,18 +85,18 @@ func TestUserKeySessionCaching(t *testing.T) {
 		t.Fatalf("Failed to get resource type: %v", err)
 	}
 
-	// First decryption - should cache session key with fingerprint-based key
+	// First decryption - should cache session key by resource ID
 	_, err = GetResourceMetadata(ctx, client, userOwnedV5Resource, rType)
 	if err != nil {
 		t.Fatalf("First decryption failed: %v", err)
 	}
 
-	// Verify session key was cached with the expected key (user-key:FINGERPRINT)
-	sessionKey = client.GetSessionKey(expectedCacheKey)
+	// Verify session key was cached by resource ID
+	sessionKey = client.GetSessionKeyByResourceID(userOwnedV5Resource.ID)
 	if sessionKey == nil {
-		t.Errorf("Expected session key to be cached with key %q", expectedCacheKey)
+		t.Errorf("Expected session key to be cached for resource %q", userOwnedV5Resource.ID)
 	} else {
-		t.Logf("SUCCESS: Session key cached with key %q", expectedCacheKey)
+		t.Logf("SUCCESS: Session key cached for resource %q", userOwnedV5Resource.ID)
 	}
 
 	// Second decryption - should use cached session key
@@ -113,7 +106,7 @@ func TestUserKeySessionCaching(t *testing.T) {
 	}
 
 	// Verify session key is still cached
-	sessionKey = client.GetSessionKey(expectedCacheKey)
+	sessionKey = client.GetSessionKeyByResourceID(userOwnedV5Resource.ID)
 	if sessionKey == nil {
 		t.Error("Expected session key to still be cached after second decryption")
 	}

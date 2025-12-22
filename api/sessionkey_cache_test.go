@@ -39,7 +39,7 @@ func TestSessionKeyCaching(t *testing.T) {
 	client.ClearSessionKeyCache()
 
 	// Verify cache is empty
-	if client.GetSessionKey(keyID) != nil {
+	if client.GetSessionKeyByMetadataKeyID(keyID) != nil {
 		t.Error("Expected empty cache initially")
 	}
 
@@ -52,7 +52,7 @@ func TestSessionKeyCaching(t *testing.T) {
 	}
 
 	// Verify cached
-	if client.GetSessionKey(keyID) == nil {
+	if client.GetSessionKeyByMetadataKeyID(keyID) == nil {
 		t.Error("Expected session key to be cached")
 	}
 
@@ -96,20 +96,20 @@ func TestSessionKeyCacheClear(t *testing.T) {
 	client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
 
 	// Verify cached
-	if client.GetSessionKey(keyID) == nil {
+	if client.GetSessionKeyByMetadataKeyID(keyID) == nil {
 		t.Error("Expected session key to be cached")
 	}
 
 	// Clear and verify
 	client.ClearSessionKeyCache()
-	if client.GetSessionKey(keyID) != nil {
+	if client.GetSessionKeyByMetadataKeyID(keyID) != nil {
 		t.Error("Expected cache to be cleared")
 	}
 
 	// Logout clears cache
 	client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
 	client.Logout(ctx)
-	if client.GetSessionKey(keyID) != nil {
+	if client.GetSessionKeyByMetadataKeyID(keyID) != nil {
 		t.Error("Expected cache cleared on logout")
 	}
 }
@@ -375,7 +375,7 @@ func TestConcurrentCacheAccessIntegration(t *testing.T) {
 	}
 
 	// Verify cache is still functional
-	if client.GetSessionKey(keyID) == nil {
+	if client.GetSessionKeyByMetadataKeyID(keyID) == nil {
 		t.Error("Cache should have session key after concurrent access")
 	}
 }

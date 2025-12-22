@@ -147,7 +147,7 @@ func TestClearSessionKeyCacheZerosKeys(t *testing.T) {
 	}
 
 	// Verify session key is cached
-	sessionKey := client.GetSessionKey(keyID)
+	sessionKey := client.GetSessionKeyByMetadataKeyID(keyID)
 	if sessionKey == nil {
 		t.Fatal("Expected session key to be cached")
 	}
@@ -159,7 +159,7 @@ func TestClearSessionKeyCacheZerosKeys(t *testing.T) {
 	client.ClearSessionKeyCache()
 
 	// Verify cache is empty
-	sessionKey = client.GetSessionKey(keyID)
+	sessionKey = client.GetSessionKeyByMetadataKeyID(keyID)
 	if sessionKey != nil {
 		t.Error("Expected session key cache to be empty after clear")
 	}

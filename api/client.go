@@ -376,6 +376,14 @@ func secureZeroSessionKey(sessionKey *crypto.SessionKey) {
 	}
 }
 
+// cloneSessionKey creates a copy of a session key to prevent modification of cached keys
+func cloneSessionKey(sk *crypto.SessionKey) *crypto.SessionKey {
+	if sk == nil {
+		return nil
+	}
+	return crypto.NewSessionKeyFromToken(sk.Key, sk.Algo)
+}
+
 // GetResourceTypesCached returns cached resource types, fetching from API if cache is empty
 func (c *Client) GetResourceTypesCached(ctx context.Context) ([]ResourceType, error) {
 	if c.resourceTypesCache != nil {
@@ -527,7 +535,12 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	// Cache the decrypted key
 	c.decryptedMetadataKeysCache[id] = metadataPrivateKeyObj
 
-	return metadataPrivateKeyObj, nil
+	// Return a copy so caller cannot affect cached key
+	keyCopy, err := metadataPrivateKeyObj.Copy()
+	if err != nil {
+		return nil, fmt.Errorf("Copy Metadata Key: %w", err)
+	}
+	return keyCopy, nil
 }
 
 // PreDecryptAllMetadataPrivateKeys pre-decrypts all metadata private keys and caches them.
@@ -578,28 +591,13 @@ func (c *Client) PreFetchCaches(ctx context.Context) (sessionCount, metadataKeyC
 	return sessionCount, metadataKeyCount, nil
 }
 
-// GetSessionKey retrieves a cached session key for a metadata key ID (legacy method)
-// For new code, prefer GetSessionKeyByResourceID or GetSessionKeyByMetadataKeyID
-func (c *Client) GetSessionKey(metadataKeyID string) *crypto.SessionKey {
-	c.sessionKeyCacheMu.RLock()
-	defer c.sessionKeyCacheMu.RUnlock()
-	return c.sessionKeyCache[metadataKeyID]
-}
-
-// SetSessionKey stores a session key in the cache for a metadata key ID (legacy method)
-// For new code, prefer SetSessionKeyByResourceID or SetSessionKeyByMetadataKeyID
-func (c *Client) SetSessionKey(metadataKeyID string, sessionKey *crypto.SessionKey) {
-	c.sessionKeyCacheMu.Lock()
-	defer c.sessionKeyCacheMu.Unlock()
-	c.sessionKeyCache[metadataKeyID] = sessionKey
-}
-
-// GetSessionKeyByResourceID retrieves a cached session key by resource ID
-// These session keys come from the metadata_session_keys table
+// GetSessionKeyByResourceID retrieves a cached session key by resource ID.
+// These session keys come from the metadata_session_keys table.
+// Returns a clone of the cached key to prevent callers from modifying the cache.
 func (c *Client) GetSessionKeyByResourceID(resourceID string) *crypto.SessionKey {
 	c.sessionKeyCacheMu.RLock()
 	defer c.sessionKeyCacheMu.RUnlock()
-	return c.sessionKeyCache[sessionKeyCachePrefixResource+resourceID]
+	return cloneSessionKey(c.sessionKeyCache[sessionKeyCachePrefixResource+resourceID])
 }
 
 // SetSessionKeyByResourceID stores a session key for a specific resource ID
@@ -609,12 +607,13 @@ func (c *Client) SetSessionKeyByResourceID(resourceID string, sessionKey *crypto
 	c.sessionKeyCache[sessionKeyCachePrefixResource+resourceID] = sessionKey
 }
 
-// GetSessionKeyByMetadataKeyID retrieves a cached session key by metadata key ID
-// These session keys are extracted during decrypt and cached as fallback
+// GetSessionKeyByMetadataKeyID retrieves a cached session key by metadata key ID.
+// These session keys are extracted during decrypt and cached as fallback.
+// Returns a clone of the cached key to prevent callers from modifying the cache.
 func (c *Client) GetSessionKeyByMetadataKeyID(metadataKeyID string) *crypto.SessionKey {
 	c.sessionKeyCacheMu.RLock()
 	defer c.sessionKeyCacheMu.RUnlock()
-	return c.sessionKeyCache[sessionKeyCachePrefixMetaKey+metadataKeyID]
+	return cloneSessionKey(c.sessionKeyCache[sessionKeyCachePrefixMetaKey+metadataKeyID])
 }
 
 // SetSessionKeyByMetadataKeyID stores a session key for a metadata key ID

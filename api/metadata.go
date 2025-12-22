@@ -60,11 +60,9 @@ func (c *Client) DecryptMetadata(metadataKey *crypto.Key, armoredCiphertext stri
 // For resource-aware caching (using pre-fetched session keys), use DecryptMetadataWithResourceID instead.
 // This method is thread-safe: multiple goroutines can call this method concurrently with the same metadataKey.
 func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *crypto.Key, armoredCiphertext string) (string, error) {
-	// Try to get session key from cache
+	// Try to get session key from cache (returns a clone)
 	if metadataKeyID != "" {
-		if cachedSessionKey := c.GetSessionKey(metadataKeyID); cachedSessionKey != nil {
-			// Clone the cached session key before using it to prevent ClearPrivateParams() from zeroing it
-			sessionKeyClone := crypto.NewSessionKeyFromToken(cachedSessionKey.Key, cachedSessionKey.Algo)
+		if sessionKeyClone := c.GetSessionKeyByMetadataKeyID(metadataKeyID); sessionKeyClone != nil {
 			message, err := c.DecryptMessageWithSessionKey(sessionKeyClone, armoredCiphertext)
 			// If decrypt was successful, return immediately
 			if err == nil {
@@ -87,7 +85,7 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 	// We clone the session key to create an independent copy that won't be affected.
 	if metadataKeyID != "" && newSessionKey != nil {
 		clonedSessionKey := crypto.NewSessionKeyFromToken(newSessionKey.Key, newSessionKey.Algo)
-		c.SetSessionKey(metadataKeyID, clonedSessionKey)
+		c.SetSessionKeyByMetadataKeyID(metadataKeyID, clonedSessionKey)
 	}
 
 	return metadata, nil
@@ -99,11 +97,9 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 // This function provides the best performance when PreFetchCaches() has been called.
 // This method is thread-safe: multiple goroutines can call this method concurrently with the same metadataKey.
 func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string, metadataKey *crypto.Key, armoredCiphertext string) (string, error) {
-	// 1. First, check for pre-fetched session key by resource ID
+	// 1. First, check for pre-fetched session key by resource ID (returns a clone)
 	if resourceID != "" {
-		if cachedSessionKey := c.GetSessionKeyByResourceID(resourceID); cachedSessionKey != nil {
-			// Clone the cached session key before using it
-			sessionKeyClone := crypto.NewSessionKeyFromToken(cachedSessionKey.Key, cachedSessionKey.Algo)
+		if sessionKeyClone := c.GetSessionKeyByResourceID(resourceID); sessionKeyClone != nil {
 			message, err := c.DecryptMessageWithSessionKey(sessionKeyClone, armoredCiphertext)
 			if err == nil {
 				c.log("Metadata session key cache HIT for resource %v", resourceID)
@@ -116,10 +112,9 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 		}
 	}
 
-	// 2. Check metadata key ID cache (fallback)
+	// 2. Check metadata key ID cache (fallback, returns a clone)
 	if metadataKeyID != "" {
-		if cachedSessionKey := c.GetSessionKeyByMetadataKeyID(metadataKeyID); cachedSessionKey != nil {
-			sessionKeyClone := crypto.NewSessionKeyFromToken(cachedSessionKey.Key, cachedSessionKey.Algo)
+		if sessionKeyClone := c.GetSessionKeyByMetadataKeyID(metadataKeyID); sessionKeyClone != nil {
 			message, err := c.DecryptMessageWithSessionKey(sessionKeyClone, armoredCiphertext)
 			if err == nil {
 				return message, nil
