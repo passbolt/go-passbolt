@@ -41,12 +41,17 @@ func (c *Client) SetupServerVerification(ctx context.Context) (string, string, e
 	return token, encToken, err
 }
 
-// VerifyServer verifys that the Server is still the same one as during the Setup, Only works before login
+// VerifyServer verifys that the Server is still the same one as during the Setup, Only works before login.
+// This method is thread-safe.
 func (c *Client) VerifyServer(ctx context.Context, token, encToken string) error {
+	c.cryptoMu.RLock()
+	fingerprint := c.userPrivateKey.GetFingerprint()
+	c.cryptoMu.RUnlock()
+
 	data := GPGVerifyContainer{
 		Req: GPGVerify{
 			Token: encToken,
-			KeyID: c.userPrivateKey.GetFingerprint(),
+			KeyID: fingerprint,
 		},
 	}
 	raw, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/verify.json", "v2", data, nil)

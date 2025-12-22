@@ -26,9 +26,17 @@ func GetResource(ctx context.Context, c *api.Client, resourceID string) (folderP
 	return GetResourceFromData(c, *resource, *secret, *rType)
 }
 
-// GetResourceFromData Decrypts Resources using only local data, the Resource object must inlude the secret
+// GetResourceFromData Decrypts Resources using only local data, the Resource object must include the secret
 // With v5 This needs network calls for Metadata of v5 Resources
 func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret, rType api.ResourceType) (string, string, string, string, string, string, error) {
+	return GetResourceFromDataWithOptions(c, resource, secret, rType, true)
+}
+
+// GetResourceFromDataWithOptions Decrypts Resources with option to skip secret decryption.
+// For v5 resources, metadata (name, username, uri) can be decrypted without the secret.
+// Set decryptSecret=false to skip secret decryption (password/description will be empty).
+// This provides significant performance improvement when only metadata is needed.
+func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret api.Secret, rType api.ResourceType, decryptSecret bool) (string, string, string, string, string, string, error) {
 	var name string
 	var username string
 	var uri string
@@ -37,14 +45,21 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 
 	ctx := context.TODO()
 
-	rawSecretData, err := c.DecryptMessage(secret.Data)
-	if err != nil {
-		return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
-	}
+	// For v5 resources, we can get metadata without decrypting the secret
+	// For v4 resources, metadata is in cleartext on the resource object
+	var rawSecretData string
+	var err error
 
-	err = validateSecretData(&rType, rawSecretData)
-	if err != nil {
-		return "", "", "", "", "", "", fmt.Errorf("Validate Secret Data: %w", err)
+	if decryptSecret && secret.Data != "" {
+		rawSecretData, err = c.DecryptSecretWithResourceID(resource.ID, secret.Data)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
+		}
+
+		err = validateSecretData(&rType, rawSecretData)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("Validate Secret Data: %w", err)
+		}
 	}
 
 	switch rType.Slug {
@@ -55,27 +70,33 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 		uri = resource.URI
 		desc = resource.Description
 	case "password-and-description":
-		var secretData api.SecretDataTypePasswordAndDescription
-		err = json.Unmarshal([]byte(rawSecretData), &secretData)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
-		}
 		name = resource.Name
 		username = resource.Username
 		uri = resource.URI
-		pw = secretData.Password
-		desc = secretData.Description
+		// Only parse secret data if it was decrypted
+		if rawSecretData != "" {
+			var secretData api.SecretDataTypePasswordAndDescription
+			err = json.Unmarshal([]byte(rawSecretData), &secretData)
+			if err != nil {
+				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			pw = secretData.Password
+			desc = secretData.Description
+		}
 	case "password-description-totp":
-		var secretData api.SecretDataTypePasswordDescriptionTOTP
-		err = json.Unmarshal([]byte(rawSecretData), &secretData)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
-		}
 		name = resource.Name
 		username = resource.Username
 		uri = resource.URI
-		pw = secretData.Password
-		desc = secretData.Description
+		// Only parse secret data if it was decrypted
+		if rawSecretData != "" {
+			var secretData api.SecretDataTypePasswordDescriptionTOTP
+			err = json.Unmarshal([]byte(rawSecretData), &secretData)
+			if err != nil {
+				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			pw = secretData.Password
+			desc = secretData.Description
+		}
 	case "totp":
 		name = resource.Name
 		username = resource.Username
@@ -99,13 +120,16 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 			uri = metadata.URIs[0]
 		}
 
-		var secretData api.SecretDataTypeV5Default
-		err = json.Unmarshal([]byte(rawSecretData), &secretData)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+		// Only parse secret data if it was decrypted
+		if rawSecretData != "" {
+			var secretData api.SecretDataTypeV5Default
+			err = json.Unmarshal([]byte(rawSecretData), &secretData)
+			if err != nil {
+				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			pw = secretData.Password
+			desc = secretData.Description
 		}
-		pw = secretData.Password
-		desc = secretData.Description
 	case "v5-default-with-totp":
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
@@ -124,13 +148,16 @@ func GetResourceFromData(c *api.Client, resource api.Resource, secret api.Secret
 			uri = metadata.URIs[0]
 		}
 
-		var secretData api.SecretDataTypeV5DefaultWithTOTP
-		err = json.Unmarshal([]byte(rawSecretData), &secretData)
-		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+		// Only parse secret data if it was decrypted
+		if rawSecretData != "" {
+			var secretData api.SecretDataTypeV5DefaultWithTOTP
+			err = json.Unmarshal([]byte(rawSecretData), &secretData)
+			if err != nil {
+				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+			pw = secretData.Password
+			desc = secretData.Description
 		}
-		pw = secretData.Password
-		desc = secretData.Description
 	case "v5-password-string":
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {

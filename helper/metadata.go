@@ -4,29 +4,58 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
+// schemaCache caches compiled JSON schemas by resource type ID
+var (
+	schemaCache   = make(map[string]*jsonschema.Schema)
+	schemaCacheMu sync.RWMutex
+)
+
 func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resource, rType *api.ResourceType) (string, error) {
+	// First, check if we have a pre-fetched session key for this resource
+	// This avoids unnecessary key copy operations when cache hits
+	if cachedSessionKey := c.GetSessionKeyByResourceID(resource.ID); cachedSessionKey != nil {
+		decMetadata, err := c.DecryptMetadataWithResourceID(resource.ID, "", nil, resource.Metadata)
+		if err == nil {
+			err = validateMetadata(rType, string(decMetadata))
+			if err != nil {
+				return "", fmt.Errorf("Validate Metadata: %w", err)
+			}
+			return decMetadata, nil
+		}
+		// If decrypt failed, fall through to full decryption path
+	}
+
 	var metadatakey *crypto.Key
+	var metadataKeyID string
+
 	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
 		tmp, err := c.GetUserPrivateKeyCopy()
 		if err != nil {
 			return "", fmt.Errorf("Get Private Key Copy: %w", err)
 		}
 		metadatakey = tmp
+		// Use user key fingerprint as cache key to enable session key caching
+		metadataKeyID = "user-key:" + tmp.GetFingerprint()
 	} else {
-		key, err := c.GetMetadataKeyById(ctx, resource.MetadataKeyID)
+		// Use cached decrypted metadata key
+		metadataKeyID = resource.MetadataKeyID
+		key, err := c.GetDecryptedMetadataKeyCached(ctx, metadataKeyID)
 		if err != nil {
 			return "", fmt.Errorf("Get Metadata Key by ID: %w", err)
 		}
 		metadatakey = key
 	}
 
-	decMetadata, err := c.DecryptMetadata(metadatakey, resource.Metadata)
+	// Use resource-aware decryption that checks pre-fetched session keys first
+	// This provides optimal performance when PreFetchCaches() has been called during login
+	decMetadata, err := c.DecryptMetadataWithResourceID(resource.ID, metadataKeyID, metadatakey, resource.Metadata)
 	if err != nil {
 		return "", fmt.Errorf("Decrypt Metadata: %w", err)
 	}
@@ -40,51 +69,63 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 }
 
 func validateMetadata(rType *api.ResourceType, metadata string) error {
-	var schemaDefinition api.ResourceTypeSchema
-	definition := rType.Definition
+	// Check schema cache first
+	schemaCacheMu.RLock()
+	schema, cached := schemaCache[rType.ID]
+	schemaCacheMu.RUnlock()
 
-	// Fallback schema
-	if string(definition) == "[]" || string(definition) == "\"[]\"" {
-		tmp, ok := api.ResourceSchemas[rType.Slug]
-		if !ok {
-			return fmt.Errorf("Server Does not have the Required json Schema and there is no fallback available for type: %v", rType.Slug)
-		}
-		definition = tmp
-	}
+	if !cached {
+		var schemaDefinition api.ResourceTypeSchema
+		definition := rType.Definition
 
-	err := json.Unmarshal([]byte(definition), &schemaDefinition)
-	if err != nil {
-		// Workaround for inconsistant API Responses where sometime the Schema is embedded directly and sometimes it's escaped as a string
-		if err.Error() == "json: cannot unmarshal string into Go value of type api.ResourceTypeSchema" {
-			var tmp string
-			err = json.Unmarshal([]byte(definition), &tmp)
-			if err != nil {
-				return fmt.Errorf("Workaround Unmarshal Json Schema String: %w", err)
+		// Fallback schema
+		if string(definition) == "[]" || string(definition) == "\"[]\"" {
+			tmp, ok := api.ResourceSchemas[rType.Slug]
+			if !ok {
+				return fmt.Errorf("Server Does not have the Required json Schema and there is no fallback available for type: %v", rType.Slug)
 			}
-
-			err = json.Unmarshal([]byte(tmp), &schemaDefinition)
-			if err != nil {
-				return fmt.Errorf("Workaround Unmarshal Json Schema: %w", err)
-			}
-		} else {
-			return fmt.Errorf("Unmarshal Json Schema: %w", err)
+			definition = tmp
 		}
-	}
 
-	comp := jsonschema.NewCompiler()
+		err := json.Unmarshal([]byte(definition), &schemaDefinition)
+		if err != nil {
+			// Workaround for inconsistant API Responses where sometime the Schema is embedded directly and sometimes it's escaped as a string
+			if err.Error() == "json: cannot unmarshal string into Go value of type api.ResourceTypeSchema" {
+				var tmp string
+				err = json.Unmarshal([]byte(definition), &tmp)
+				if err != nil {
+					return fmt.Errorf("Workaround Unmarshal Json Schema String: %w", err)
+				}
 
-	err = comp.AddResource("metadata.json", schemaDefinition.Resource)
-	if err != nil {
-		return fmt.Errorf("Adding Json Schema: %w", err)
-	}
+				err = json.Unmarshal([]byte(tmp), &schemaDefinition)
+				if err != nil {
+					return fmt.Errorf("Workaround Unmarshal Json Schema: %w", err)
+				}
+			} else {
+				return fmt.Errorf("Unmarshal Json Schema: %w", err)
+			}
+		}
 
-	schema, err := comp.Compile("metadata.json")
-	if err != nil {
-		return fmt.Errorf("Compiling Json Schema: %w", err)
+		comp := jsonschema.NewCompiler()
+
+		err = comp.AddResource("metadata.json", schemaDefinition.Resource)
+		if err != nil {
+			return fmt.Errorf("Adding Json Schema: %w", err)
+		}
+
+		schema, err = comp.Compile("metadata.json")
+		if err != nil {
+			return fmt.Errorf("Compiling Json Schema: %w", err)
+		}
+
+		// Cache the compiled schema
+		schemaCacheMu.Lock()
+		schemaCache[rType.ID] = schema
+		schemaCacheMu.Unlock()
 	}
 
 	var parsedMetadata map[string]any
-	err = json.Unmarshal([]byte(metadata), &parsedMetadata)
+	err := json.Unmarshal([]byte(metadata), &parsedMetadata)
 	if err != nil {
 		return fmt.Errorf("Unmarshal Secret: %w", err)
 	}
