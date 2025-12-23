@@ -134,32 +134,34 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		// Modify Secret
 		switch rType.Slug {
 		case "v5-default":
+			// Always fetch existing secret to preserve password/description for metadata-only updates
+			secret, err := c.GetSecret(ctx, resourceID)
+			if err != nil {
+				return fmt.Errorf("Getting Secret: %w", err)
+			}
+			oldSecretData, err := c.DecryptMessage(secret.Data)
+			if err != nil {
+				return fmt.Errorf("Decrypting Secret: %w", err)
+			}
+			var oldSecret api.SecretDataTypeV5Default
+			err = json.Unmarshal([]byte(oldSecretData), &oldSecret)
+			if err != nil {
+				return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+			}
+
 			tmp := api.SecretDataTypeV5Default{
-				Password:    password,
-				Description: description,
+				Password:    oldSecret.Password,
+				Description: oldSecret.Description,
 			}
 			tmp.ObjectType = api.PASSBOLT_OBJECT_TYPE_SECRET_DATA
 			tmp.ResourceTypeID = rType.ID
-			if password != "" || description != "" {
-				secret, err := c.GetSecret(ctx, resourceID)
-				if err != nil {
-					return fmt.Errorf("Getting Secret: %w", err)
-				}
-				oldSecretData, err := c.DecryptMessage(secret.Data)
-				if err != nil {
-					return fmt.Errorf("Decrypting Secret: %w", err)
-				}
-				var oldSecret api.SecretDataTypeV5Default
-				err = json.Unmarshal([]byte(oldSecretData), &oldSecret)
-				if err != nil {
-					return fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
-				}
-				if password == "" {
-					tmp.Password = oldSecret.Password
-				}
-				if description == "" {
-					tmp.Description = oldSecret.Description
-				}
+
+			// Override with new values if provided
+			if password != "" {
+				tmp.Password = password
+			}
+			if description != "" {
+				tmp.Description = description
 			}
 			res, err := json.Marshal(&tmp)
 			if err != nil {
