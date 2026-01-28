@@ -99,7 +99,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 				metadataMap["uris"] = []string{uri}
 			}
 		default:
-			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
+			return fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
 		}
 
 		newMetadata, err = json.Marshal(&metadataMap)
@@ -229,7 +229,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			}
 			secretData = string(res)
 		default:
-			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
+			return fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
 		}
 	} else {
 		// V4 Resource
@@ -345,7 +345,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			}
 			secretData = string(res)
 		default:
-			return fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
+			return fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
 		}
 	}
 
