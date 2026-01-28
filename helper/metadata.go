@@ -82,7 +82,7 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 		if string(definition) == "[]" || string(definition) == "\"[]\"" {
 			tmp, ok := api.ResourceSchemas[rType.Slug]
 			if !ok {
-				return fmt.Errorf("Server Does not have the Required json Schema and there is no fallback available for type: %v", rType.Slug)
+				return fmt.Errorf("%w: %v (no schema available)", ErrUnsupportedResourceType, rType.Slug)
 			}
 			definition = tmp
 		}
