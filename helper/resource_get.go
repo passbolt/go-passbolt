@@ -197,7 +197,7 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 			uri = metadata.URIs[0]
 		}
 	default:
-		return "", "", "", "", "", "", fmt.Errorf("Unknown ResourceType: %v", rType.Slug)
+		return "", "", "", "", "", "", fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
 	}
 	return resource.FolderParentID, name, username, uri, pw, desc, nil
 }
