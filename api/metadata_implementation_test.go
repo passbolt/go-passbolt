@@ -403,11 +403,11 @@ func TestGetResourceWithMetadata(t *testing.T) {
 	resourceID, err := helper.CreateResourceV5(
 		ctx,
 		client,
-		"",                                    // no folder
+		"",                                   // no folder
 		"Test Resource With Metadata",        // name
-		"testuser",                            // username
-		"https://test.example.com",            // uri
-		"TestPassword123!",                    // password
+		"testuser",                           // username
+		"https://test.example.com",           // uri
+		"TestPassword123!",                   // password
 		"Test description for metadata test", // description
 	)
 	if err != nil {
@@ -509,4 +509,3 @@ func TestCacheManagement(t *testing.T) {
 		t.Fatalf("Failed to get resource types after cache clear: %v", err)
 	}
 }
-
