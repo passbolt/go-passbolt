@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-//Group is a Group
+// Group is a Group
 type Group struct {
 	ID         string `json:"id,omitempty"`
 	Name       string `json:"name,omitempty"`
