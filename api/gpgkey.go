@@ -19,6 +19,8 @@ type GPGKey struct {
 	Fingerprint string `json:"fingerprint,omitempty"`
 	Type        string `json:"type,omitempty"`
 	Expires     *Time  `json:"expires,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
+	UID         string `json:"uid,omitempty"`
 }
 
 // GetGPGKeysOptions are all available query parameters

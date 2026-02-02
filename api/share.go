@@ -35,8 +35,33 @@ type ResourceShareSimulationUser struct {
 
 // ARO is a User or a Group
 type ARO struct {
-	User
-	Group
+	User  `json:"-"`
+	Group `json:"-"`
+}
+
+// UnmarshalJSON implements custom unmarshaling for ARO.
+// The API returns a flat array mixing User and Group objects,
+// so we detect the type by checking for distinguishing fields.
+func (a *ARO) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	// Users have "username", Groups have "name" and "user_count"
+	if _, hasUsername := raw["username"]; hasUsername {
+		return json.Unmarshal(data, &a.User)
+	}
+	return json.Unmarshal(data, &a.Group)
+}
+
+// MarshalJSON implements custom marshaling for ARO.
+// It marshals the User if Username is set, otherwise the Group.
+func (a ARO) MarshalJSON() ([]byte, error) {
+	if a.Username != "" {
+		return json.Marshal(a.User)
+	}
+	return json.Marshal(a.Group)
 }
 
 // SearchAROsOptions are all available query parameters

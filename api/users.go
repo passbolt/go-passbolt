@@ -14,6 +14,7 @@ type User struct {
 	Created      *Time     `json:"created,omitempty"`
 	Active       bool      `json:"active,omitempty"`
 	Deleted      bool      `json:"deleted,omitempty"`
+	Disabled     bool      `json:"disabled,omitempty"`
 	Description  string    `json:"description,omitempty"`
 	Favorite     *Favorite `json:"favorite,omitempty"`
 	Modified     *Time     `json:"modified,omitempty"`
@@ -21,12 +22,15 @@ type User struct {
 	RoleID       string    `json:"role_id,omitempty"`
 	Profile      *Profile  `json:"profile,omitempty"`
 	Role         *Role     `json:"role,omitempty"`
-	GPGKey       *GPGKey   `json:"gpgKey,omitempty"`
+	GPGKey       *GPGKey   `json:"gpgkey,omitempty"`
 	LastLoggedIn string    `json:"last_logged_in,omitempty"`
 	Locale       string    `json:"locale,omitempty"`
 
 	// Admin only, needs contains
 	MissingMetadataKeyIDs []string `json:"missing_metadata_key_ids,omitempty"`
+
+	// GroupsUsers contains group membership data (returned by SearchAROs endpoint)
+	GroupsUsers []GroupMembership `json:"groups_users,omitempty"`
 }
 
 // Profile is a Profile
@@ -35,8 +39,9 @@ type Profile struct {
 	UserID    string `json:"user_id,omitempty"`
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
-	Created   *Time  `json:"created,omitempty"`
-	Modified  *Time  `json:"modified,omitempty"`
+	Created   *Time   `json:"created,omitempty"`
+	Modified  *Time   `json:"modified,omitempty"`
+	Avatar    *Avatar `json:"avatar,omitempty"`
 }
 
 // GetUsersOptions are all available query parameters
