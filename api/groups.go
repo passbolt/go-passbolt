@@ -15,6 +15,7 @@ type Group struct {
 	Deleted    bool   `json:"deleted,omitempty"`
 	Modified   *Time  `json:"modified,omitempty"`
 	ModifiedBy string `json:"modified_by,omitempty"`
+	UserCount  int    `json:"user_count,omitempty"`
 	// This does not Contain Profile for Users Anymore...
 	GroupUsers []GroupMembership `json:"groups_users,omitempty"`
 	// This is new and undocumented but as all the data
