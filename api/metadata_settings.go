@@ -38,7 +38,7 @@ type MetadataTypeSettings struct {
 	AllowV4V5Downgrade         bool                   `json:"allow_v5_v4_downgrade"`
 }
 
-// MetadataTypeSettings Contains the Servers Settings about which Types to use
+// MetadataKeySettings contains the server settings about which metadata keys to use.
 type MetadataKeySettings struct {
 	AllowUsageOfPersonalKeys   bool `json:"allow_usage_of_personal_keys"`
 	AllowZeroKnowledgeKeyShare bool `json:"zero_knowledge_key_share"`

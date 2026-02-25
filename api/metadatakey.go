@@ -78,12 +78,12 @@ type GetMetadataKeysOptions struct {
 	ContainMetadataPrivateKeys bool `url:"contain[metadata_private_keys],omitempty"`
 }
 
-// SetTrustedMetadatakeyFingerprint
+// SetTrustedMetadatakeyFingerprint sets the trusted metadata key fingerprint.
 func (c *Client) SetTrustedMetadatakeyFingerprint(fingerprint string, signTime time.Time) {
 	c.trustedMetadataKeyFingerprint = &fingerprint
 }
 
-// GetTrustedMetadatakeyFingerprint
+// GetTrustedMetadatakeyFingerprint returns the trusted metadata key fingerprint.
 func (c *Client) GetTrustedMetadatakeyFingerprint() *string {
 	return c.trustedMetadataKeyFingerprint
 }
@@ -111,16 +111,16 @@ func (c *Client) GetMetadataKey(ctx context.Context, personal bool) (string, Met
 	if personal && c.MetadataKeySettings().AllowUsageOfPersonalKeys {
 		key, err := c.GetUserPrivateKeyCopy()
 		if err != nil {
-			return "", "", nil, fmt.Errorf("Get User Private Key: %w", err)
+			return "", "", nil, fmt.Errorf("get User Private Key: %w", err)
 		}
 
 		me, err := c.GetMe(ctx)
 		if err != nil {
-			return "", "", nil, fmt.Errorf("Get User Me: %w", err)
+			return "", "", nil, fmt.Errorf("get User Me: %w", err)
 		}
 
 		if me.GPGKey == nil {
-			return "", "", nil, fmt.Errorf("User Me GPG Key nil")
+			return "", "", nil, fmt.Errorf("user Me GPG Key nil")
 		}
 
 		return me.GPGKey.ID, MetadataKeyTypeUserKey, key, nil
@@ -130,7 +130,7 @@ func (c *Client) GetMetadataKey(ctx context.Context, personal bool) (string, Met
 		ContainMetadataPrivateKeys: true,
 	})
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Get Metadata Key: %w", err)
+		return "", "", nil, fmt.Errorf("get Metadata Key: %w", err)
 	}
 
 	// Get The Newest Metadata Key
@@ -145,41 +145,44 @@ func (c *Client) GetMetadataKey(ctx context.Context, personal bool) (string, Met
 	}
 
 	if privateMetadataKey == nil {
-		return "", "", nil, fmt.Errorf("No Metadata Private key for our user")
+		return "", "", nil, fmt.Errorf("no Metadata Private key for our user")
 	}
 
 	decPrivateMetadatakey, err := c.DecryptMessage(privateMetadataKey.Data)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Decrypt Metadata Private Key Data: %w", err)
+		return "", "", nil, fmt.Errorf("decrypt Metadata Private Key Data: %w", err)
 	}
 
 	var data MetadataPrivateKeyData
 	err = json.Unmarshal([]byte(decPrivateMetadatakey), &data)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Parse Metadata Private Key Data")
+		return "", "", nil, fmt.Errorf("parse Metadata Private Key Data")
 	}
 
 	metadataPrivateKeyObj, err := GetPrivateKeyFromArmor(data.ArmoredKey, []byte(data.Passphrase))
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Get Metadata Private Key: %w", err)
+		return "", "", nil, fmt.Errorf("get Metadata Private Key: %w", err)
 	}
 
 	// Verify the key
 	if c.GetTrustedMetadatakeyFingerprint() == nil || metadataPrivateKeyObj.GetFingerprint() != *c.GetTrustedMetadatakeyFingerprint() {
 
 		if c.trustedMetadataKeySigntime != nil && !data.Signed.Time.After(*c.trustedMetadataKeySigntime) {
-			return "", "", nil, fmt.Errorf("New Metadata Key is older than the currently trusted one: %w", err)
+			return "", "", nil, fmt.Errorf("new Metadata Key is older than the currently trusted one: %w", err)
 		}
 
 		userPrivateKey, err := c.GetUserPrivateKeyCopy()
 		if err != nil {
-			return "", "", nil, fmt.Errorf("Get User Private Key Copy: %w", err)
+			return "", "", nil, fmt.Errorf("get User Private Key Copy: %w", err)
 		}
 
 		verify, err := c.pgp.Verify().VerificationKey(userPrivateKey).New()
+		if err != nil {
+			return "", "", nil, fmt.Errorf("creating verifier: %w", err)
+		}
 		verifyRes, err := verify.VerifyInline([]byte(privateMetadataKey.Data), crypto.Armor)
 		if err != nil {
-			return "", "", nil, fmt.Errorf("Verify User Metadata Private Key Signature: %w", err)
+			return "", "", nil, fmt.Errorf("verify User Metadata Private Key Signature: %w", err)
 		}
 
 		signedByFingerprint := hex.EncodeToString(verifyRes.SignedByFingerprint())
@@ -199,14 +202,14 @@ func (c *Client) GetMetadataKey(ctx context.Context, personal bool) (string, Met
 		if c.MetadataKeyUpdatedCallback == nil {
 			// Fail if there is a key pinned but the signature check failed
 			if c.trustedMetadataKeyFingerprint != nil || !trusted {
-				return "", "", nil, fmt.Errorf("Metadata Key has changed, The Callback is nil, There is a Key Pinned but the new one is not trusted")
+				return "", "", nil, fmt.Errorf("metadata Key has changed, The Callback is nil, There is a Key Pinned but the new one is not trusted")
 			}
 			c.log("No Callback is defined, No Metadata key is pinned and the Signature is by our Private key, automatically trusting")
 
 		} else {
 			err = c.MetadataKeyUpdatedCallback(ctx, trusted, metadataPrivateKeyObj.GetFingerprint(), data.Signed.Time)
 			if err != nil {
-				return "", "", nil, fmt.Errorf("Metadata Key has changed, Callback: %w", err)
+				return "", "", nil, fmt.Errorf("metadata Key has changed, Callback: %w", err)
 			}
 		}
 
@@ -217,13 +220,13 @@ func (c *Client) GetMetadataKey(ctx context.Context, personal bool) (string, Met
 	return metadatakey.ID, MetadataKeyTypeSharedKey, metadataPrivateKeyObj, nil
 }
 
-// GetMetadataKeyById is for fetching a specific metadatakey if needed for Decryption, these are not verified
-func (c *Client) GetMetadataKeyById(ctx context.Context, id string) (*crypto.Key, error) {
+// GetMetadataKeyByID is for fetching a specific metadatakey if needed for decryption, these are not verified.
+func (c *Client) GetMetadataKeyByID(ctx context.Context, id string) (*crypto.Key, error) {
 	keys, err := c.GetMetadataKeys(ctx, &GetMetadataKeysOptions{
 		ContainMetadataPrivateKeys: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Get Metadata Key: %w", err)
+		return nil, fmt.Errorf("get Metadata Key: %w", err)
 	}
 	var key *MetadataKey
 	for _, k := range keys {
@@ -234,36 +237,36 @@ func (c *Client) GetMetadataKeyById(ctx context.Context, id string) (*crypto.Key
 	}
 
 	if key == nil {
-		return nil, fmt.Errorf("Metadata key not found: %v", id)
+		return nil, fmt.Errorf("metadata key not found: %v", id)
 	}
 
 	if len(key.MetadataPrivateKeys) == 0 {
-		return nil, fmt.Errorf("No Metadata Private key for our user")
+		return nil, fmt.Errorf("no Metadata Private key for our user")
 	}
 
 	if len(key.MetadataPrivateKeys) > 1 {
-		return nil, fmt.Errorf("More than 1 metadata Private key for our user")
+		return nil, fmt.Errorf("more than 1 metadata Private key for our user")
 	}
 
-	var privMetdata MetadataPrivateKey = key.MetadataPrivateKeys[0]
+	var privMetdata = key.MetadataPrivateKeys[0]
 	if *privMetdata.UserID != c.GetUserID() {
-		return nil, fmt.Errorf("MetadataPrivateKey is not for our user id: %v", privMetdata.UserID)
+		return nil, fmt.Errorf("metadataPrivateKey is not for our user id: %v", privMetdata.UserID)
 	}
 
 	decPrivMetadatakey, err := c.DecryptMessage(privMetdata.Data)
 	if err != nil {
-		return nil, fmt.Errorf("Decrypt Metadata Private Key Data: %w", err)
+		return nil, fmt.Errorf("decrypt Metadata Private Key Data: %w", err)
 	}
 
 	var data MetadataPrivateKeyData
 	err = json.Unmarshal([]byte(decPrivMetadatakey), &data)
 	if err != nil {
-		return nil, fmt.Errorf("Parse Metadata Private Key Data")
+		return nil, fmt.Errorf("parse Metadata Private Key Data")
 	}
 
 	metadataPrivateKeyObj, err := GetPrivateKeyFromArmor(data.ArmoredKey, []byte(data.Passphrase))
 	if err != nil {
-		return nil, fmt.Errorf("Get Metadata Private Key: %w", err)
+		return nil, fmt.Errorf("get Metadata Private Key: %w", err)
 	}
 
 	return metadataPrivateKeyObj, nil

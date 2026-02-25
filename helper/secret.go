@@ -37,16 +37,16 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 			var tmp string
 			err = json.Unmarshal([]byte(definition), &tmp)
 			if err != nil {
-				return fmt.Errorf("Workaround Unmarshal Json Schema String: %w", err)
+				return fmt.Errorf("workaround Unmarshal Json Schema String: %w", err)
 			}
 
 			err = json.Unmarshal([]byte(tmp), &schemaDefinition)
 			if err != nil {
-				return fmt.Errorf("Workaround Unmarshal Json Schema: %w", err)
+				return fmt.Errorf("workaround Unmarshal Json Schema: %w", err)
 			}
 
 		} else {
-			return fmt.Errorf("Unmarshal Json Schema: %w", err)
+			return fmt.Errorf("unmarshal Json Schema: %w", err)
 		}
 	}
 
@@ -54,23 +54,23 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 
 	err = comp.AddResource("secret.json", schemaDefinition.Secret)
 	if err != nil {
-		return fmt.Errorf("Adding Json Schema: %w", err)
+		return fmt.Errorf("adding Json Schema: %w", err)
 	}
 
 	schema, err := comp.Compile("secret.json")
 	if err != nil {
-		return fmt.Errorf("Compiling Json Schema: %w", err)
+		return fmt.Errorf("compiling Json Schema: %w", err)
 	}
 
 	var parsedSecretData map[string]any
 	err = json.Unmarshal([]byte(secretData), &parsedSecretData)
 	if err != nil {
-		return fmt.Errorf("Unmarshal Secret: %w", err)
+		return fmt.Errorf("unmarshal Secret: %w", err)
 	}
 
 	err = schema.Validate(parsedSecretData)
 	if err != nil {
-		return fmt.Errorf("Validating Secret Data with Schema: %w", err)
+		return fmt.Errorf("validating Secret Data with Schema: %w", err)
 	}
 	return nil
 }

@@ -52,18 +52,18 @@ func (c *Client) DoCustomRequestAndReturnRawResponseV5(ctx context.Context, meth
 start:
 	u, err := generateURL(*c.baseURL, path, opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Generating Path: %w", err)
+		return nil, nil, fmt.Errorf("generating Path: %w", err)
 	}
 
 	req, err := c.newRequest(method, u, body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Creating New Request: %w", err)
+		return nil, nil, fmt.Errorf("creating New Request: %w", err)
 	}
 
 	var res APIResponse
 	r, err := c.do(ctx, req, &res)
 	if err != nil {
-		return r, &res, fmt.Errorf("Doing Request: %w", err)
+		return r, &res, fmt.Errorf("doing Request: %w", err)
 	}
 
 	// Because of MFA i need to do the csrf token stuff here
@@ -81,18 +81,18 @@ start:
 		if res.Header.Code == 403 && strings.HasSuffix(res.Header.URL, "/mfa/verify/error.json") {
 			if !firstTime {
 				// if we are here this probably means that the MFA callback is broken, to prevent a infinite loop lets error here
-				return r, &res, fmt.Errorf("Got MFA challenge twice in a row, is your MFA Callback broken? Bailing to prevent loop...:")
+				return r, &res, fmt.Errorf("got MFA challenge twice in a row, is your MFA callback broken? bailing to prevent loop")
 			}
 			if c.MFACallback != nil {
 				c.mfaToken, err = c.MFACallback(ctx, c, &res)
 				if err != nil {
-					return r, &res, fmt.Errorf("MFA Callback: %w", err)
+					return r, &res, fmt.Errorf("handling MFA callback: %w", err)
 				}
 				// ok, we got the MFA challenge and the callback presumably handled it so we can retry the original request
 				firstTime = false
 				goto start
 			} else {
-				return r, &res, fmt.Errorf("Got MFA Challenge but the MFA callback is not defined")
+				return r, &res, fmt.Errorf("got MFA Challenge but the MFA callback is not defined")
 			}
 		}
 		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseErrorStatusCode, res.Header.Message, string(res.Body))

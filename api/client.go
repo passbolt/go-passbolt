@@ -117,7 +117,7 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 
 	u, err := url.Parse(BaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("Parsing Base URL: %w", err)
+		return nil, fmt.Errorf("parsing Base URL: %w", err)
 	}
 
 	pgp := crypto.PGP()
@@ -126,7 +126,7 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 	if UserPrivateKey != "" {
 		key, err := GetPrivateKeyFromArmor(UserPrivateKey, []byte(UserPassword))
 		if err != nil {
-			return nil, fmt.Errorf("Get Private Key: %w", err)
+			return nil, fmt.Errorf("get Private Key: %w", err)
 		}
 		unlockedKey = key
 	}
@@ -151,13 +151,13 @@ func (c *Client) newRequest(method, url string, body interface{}) (*http.Request
 		buf = new(bytes.Buffer)
 		err := json.NewEncoder(buf).Encode(body)
 		if err != nil {
-			return nil, fmt.Errorf("JSON Encoding Request: %w", err)
+			return nil, fmt.Errorf("jSON Encoding Request: %w", err)
 		}
 	}
 
 	req, err := http.NewRequest(method, url, buf)
 	if err != nil {
-		return nil, fmt.Errorf("Creating HTTP Request: %w", err)
+		return nil, fmt.Errorf("creating HTTP Request: %w", err)
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -189,9 +189,9 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 	if err != nil {
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("Request Context: %w", ctx.Err())
+			return nil, fmt.Errorf("request Context: %w", ctx.Err())
 		default:
-			return nil, fmt.Errorf("Request: %w", err)
+			return nil, fmt.Errorf("request: %w", err)
 		}
 	}
 	defer func() {
@@ -200,14 +200,14 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return resp, fmt.Errorf("Error Reading Resopnse Body: %w", err)
+		return resp, fmt.Errorf("error Reading Resopnse Body: %w", err)
 	}
 
 	c.log("Raw Response: %v", string(bodyBytes))
 
 	err = json.Unmarshal(bodyBytes, v)
 	if err != nil {
-		return resp, fmt.Errorf("Unable to Parse JSON API Response with HTTP Status Code %v: %w", resp.StatusCode, err)
+		return resp, fmt.Errorf("unable to Parse JSON API Response with HTTP Status Code %v: %w", resp.StatusCode, err)
 	}
 
 	return resp, nil
@@ -224,7 +224,7 @@ func generateURL(base url.URL, p string, opt interface{}) (string, error) {
 	base.Path = path.Join(base.Path, p)
 	vs, err := query.Values(opt)
 	if err != nil {
-		return "", fmt.Errorf("Getting URL Query Values: %w", err)
+		return "", fmt.Errorf("getting URL Query Values: %w", err)
 	}
 	base.RawQuery = vs.Encode()
 
@@ -240,19 +240,19 @@ func (c *Client) GetUserID() string {
 func (c *Client) GetPublicKey(ctx context.Context) (string, string, error) {
 	msg, err := c.DoCustomRequest(ctx, "GET", "/auth/verify.json", "v2", nil, nil)
 	if err != nil {
-		return "", "", fmt.Errorf("Doing Request: %w", err)
+		return "", "", fmt.Errorf("doing Request: %w", err)
 	}
 
 	var body PublicKeyReponse
 	err = json.Unmarshal(msg.Body, &body)
 	if err != nil {
-		return "", "", fmt.Errorf("Parsing JSON: %w", err)
+		return "", "", fmt.Errorf("parsing JSON: %w", err)
 	}
 
 	// Lets get the actual Fingerprint instead of trusting the Server
 	serverKey, err := crypto.NewKeyFromArmored(body.Keydata)
 	if err != nil {
-		return "", "", fmt.Errorf("Parsing Server Key: %w", err)
+		return "", "", fmt.Errorf("parsing Server Key: %w", err)
 	}
 	return body.Keydata, serverKey.GetFingerprint(), nil
 }
@@ -263,7 +263,7 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context, settings *ServerSe
 		c.log("Server has metadata plugin enabled, is v5 or Higher")
 		metadataTypeSettings, err := c.GetServerMetadataTypeSettings(ctx)
 		if err != nil {
-			return fmt.Errorf("Getting Metadata Type Settings: %w", err)
+			return fmt.Errorf("getting Metadata Type Settings: %w", err)
 		}
 
 		c.log("metadataTypeSettings: %+v", metadataTypeSettings)
@@ -271,7 +271,7 @@ func (c *Client) setMetadataTypeSettings(ctx context.Context, settings *ServerSe
 
 		metadataKeySettings, err := c.GetServerMetadataKeySettings(ctx)
 		if err != nil {
-			return fmt.Errorf("Getting Metadata Key Settings: %w", err)
+			return fmt.Errorf("getting Metadata Key Settings: %w", err)
 		}
 
 		c.log("metadataKeySettings: %+v", metadataKeySettings)
@@ -293,7 +293,7 @@ func (c *Client) setPasswordExpirySettings(ctx context.Context, settings *Server
 		c.log("Server has password expiry plugin enabled.")
 		passwordExpirySettings, err := c.getServerPasswordExpirySettings(ctx)
 		if err != nil {
-			return fmt.Errorf("Getting Password Expiry Settings: %w", err)
+			return fmt.Errorf("getting Password Expiry Settings: %w", err)
 		}
 
 		c.log("passwordExpirySettings: %+v", passwordExpirySettings)
@@ -474,7 +474,7 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 		keyCopy, err := key.Copy()
 		c.cryptoMu.Unlock()
 		if err != nil {
-			return nil, fmt.Errorf("Copy Cached Metadata Key: %w", err)
+			return nil, fmt.Errorf("copy Cached Metadata Key: %w", err)
 		}
 		return keyCopy, nil
 	}
@@ -483,7 +483,7 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	// Get metadata keys (from cache or API)
 	keys, err := c.GetMetadataKeysCached(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Get Metadata Keys: %w", err)
+		return nil, fmt.Errorf("get Metadata Keys: %w", err)
 	}
 
 	// Find the key with matching ID
@@ -496,11 +496,11 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	}
 
 	if metadataKey == nil {
-		return nil, fmt.Errorf("Metadata key not found: %v", id)
+		return nil, fmt.Errorf("metadata key not found: %v", id)
 	}
 
 	if len(metadataKey.MetadataPrivateKeys) == 0 {
-		return nil, fmt.Errorf("No Metadata Private key for our user")
+		return nil, fmt.Errorf("no Metadata Private key for our user")
 	}
 
 	// Find our user's private key
@@ -513,23 +513,23 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	}
 
 	if privMetadata == nil {
-		return nil, fmt.Errorf("No Metadata Private key for our user id: %v", c.userID)
+		return nil, fmt.Errorf("no Metadata Private key for our user id: %v", c.userID)
 	}
 
 	decPrivMetadatakey, err := c.DecryptMessage(privMetadata.Data)
 	if err != nil {
-		return nil, fmt.Errorf("Decrypt Metadata Private Key Data: %w", err)
+		return nil, fmt.Errorf("decrypt Metadata Private Key Data: %w", err)
 	}
 
 	var data MetadataPrivateKeyData
 	err = json.Unmarshal([]byte(decPrivMetadatakey), &data)
 	if err != nil {
-		return nil, fmt.Errorf("Parse Metadata Private Key Data: %w", err)
+		return nil, fmt.Errorf("parse Metadata Private Key Data: %w", err)
 	}
 
 	metadataPrivateKeyObj, err := GetPrivateKeyFromArmor(data.ArmoredKey, []byte(data.Passphrase))
 	if err != nil {
-		return nil, fmt.Errorf("Get Metadata Private Key: %w", err)
+		return nil, fmt.Errorf("get Metadata Private Key: %w", err)
 	}
 
 	// Cache the decrypted key
@@ -538,7 +538,7 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	// Return a copy so caller cannot affect cached key
 	keyCopy, err := metadataPrivateKeyObj.Copy()
 	if err != nil {
-		return nil, fmt.Errorf("Copy Metadata Key: %w", err)
+		return nil, fmt.Errorf("copy Metadata Key: %w", err)
 	}
 	return keyCopy, nil
 }
@@ -550,7 +550,7 @@ func (c *Client) PreDecryptAllMetadataPrivateKeys(ctx context.Context) (int, err
 	// Fetch all metadata keys (this will also fetch the private keys for our user)
 	keys, err := c.GetMetadataKeysCached(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("Get Metadata Keys: %w", err)
+		return 0, fmt.Errorf("get Metadata Keys: %w", err)
 	}
 
 	decrypted := 0

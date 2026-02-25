@@ -6,10 +6,10 @@ import (
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 )
 
-const PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA = "PASSBOLT_RESOURCE_METADATA"
-const PASSBOLT_OBJECT_TYPE_SECRET_DATA = "PASSBOLT_SECRET_DATA"
+const PassboltObjectTypeResourceMetadata = "PASSBOLT_RESOURCE_METADATA"
+const PassboltObjectTypeSecretData = "PASSBOLT_SECRET_DATA"
 
-// ResourceMetadataTypeV5Default
+// ResourceMetadataTypeV5Default represents the metadata for a V5 default resource.
 type ResourceMetadataTypeV5Default struct {
 	ObjectType     string   `json:"object_type"`
 	ResourceTypeID string   `json:"resource_type_id,omitempty"`
@@ -19,7 +19,7 @@ type ResourceMetadataTypeV5Default struct {
 	Description    string   `json:"description,omitempty"`
 }
 
-// ResourceMetadataTypeV5DefaultWithTOTP
+// ResourceMetadataTypeV5DefaultWithTOTP represents the metadata for a V5 default resource with TOTP.
 type ResourceMetadataTypeV5DefaultWithTOTP struct {
 	ObjectType     string   `json:"object_type"`
 	ResourceTypeID string   `json:"resource_type_id,omitempty"`
@@ -29,7 +29,7 @@ type ResourceMetadataTypeV5DefaultWithTOTP struct {
 	Description    string   `json:"description,omitempty"`
 }
 
-// ResourceMetadataTypeV5PasswordString
+// ResourceMetadataTypeV5PasswordString represents the metadata for a V5 password string resource.
 type ResourceMetadataTypeV5PasswordString struct {
 	ObjectType     string   `json:"object_type"`
 	ResourceTypeID string   `json:"resource_type_id,omitempty"`
@@ -39,7 +39,7 @@ type ResourceMetadataTypeV5PasswordString struct {
 	Description    string   `json:"description,omitempty"`
 }
 
-// ResourceMetadataTypeV5TOTPStandalone
+// ResourceMetadataTypeV5TOTPStandalone represents the metadata for a V5 standalone TOTP resource.
 type ResourceMetadataTypeV5TOTPStandalone struct {
 	ObjectType     string   `json:"object_type"`
 	ResourceTypeID string   `json:"resource_type_id,omitempty"`
@@ -77,7 +77,7 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 	// or GetUserPrivateKeyCopy, so we can use it directly without additional copying.
 	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKey, armoredCiphertext)
 	if err != nil {
-		return "", fmt.Errorf("Decrypting Metadata: %w", err)
+		return "", fmt.Errorf("decrypting Metadata: %w", err)
 	}
 
 	// Cache the session key for future use (clone it to avoid Clear() corruption)
@@ -128,7 +128,7 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 	// so we can use it directly without additional copying.
 	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKey, armoredCiphertext)
 	if err != nil {
-		return "", fmt.Errorf("Decrypting Metadata: %w", err)
+		return "", fmt.Errorf("decrypting Metadata: %w", err)
 	}
 
 	// Cache the session key by resource ID if available
@@ -149,7 +149,7 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 func (c *Client) EncryptMetadata(metadataKey *crypto.Key, data string) (string, error) {
 	armoredCiphertext, err := c.EncryptMessageWithKey(metadataKey, data)
 	if err != nil {
-		return "", fmt.Errorf("Encrypting Metadata: %w", err)
+		return "", fmt.Errorf("encrypting Metadata: %w", err)
 	}
 
 	return armoredCiphertext, nil

@@ -24,11 +24,11 @@ type SetupCompleteRequest struct {
 func (c *Client) SetupInstall(ctx context.Context, userID, token string) (*SetupInstallResponse, error) {
 	err := checkUUIDFormat(userID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	err = checkUUIDFormat(token)
 	if err != nil {
-		return nil, fmt.Errorf("Checking Token format: %w", err)
+		return nil, fmt.Errorf("checking Token format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/setup/install/"+userID+"/"+token+".json", "v2", nil, nil)
 	if err != nil {
@@ -47,7 +47,7 @@ func (c *Client) SetupInstall(ctx context.Context, userID, token string) (*Setup
 func (c *Client) SetupComplete(ctx context.Context, userID string, request SetupCompleteRequest) error {
 	err := checkUUIDFormat(userID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "POST", "/setup/complete/"+userID+".json", "v2", request, nil)
 	if err != nil {

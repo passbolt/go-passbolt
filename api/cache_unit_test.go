@@ -134,7 +134,7 @@ func TestSessionKeyCacheOperations(t *testing.T) {
 
 		retrieved := client.GetSessionKeyByResourceID(resourceID)
 		if retrieved == nil {
-			t.Error("GetSessionKeyByResourceID returned nil")
+			t.Fatal("GetSessionKeyByResourceID returned nil")
 		}
 		// Compare contents, not pointers (getters return clones)
 		if retrieved.Algo != sessionKey.Algo || string(retrieved.Key) != string(sessionKey.Key) {
@@ -155,7 +155,7 @@ func TestSessionKeyCacheOperations(t *testing.T) {
 
 		retrieved := client.GetSessionKeyByMetadataKeyID(metadataKeyID)
 		if retrieved == nil {
-			t.Error("GetSessionKeyByMetadataKeyID returned nil")
+			t.Fatal("GetSessionKeyByMetadataKeyID returned nil")
 		}
 		// Compare contents, not pointers (getters return clones)
 		if retrieved.Algo != sessionKey2.Algo || string(retrieved.Key) != string(sessionKey2.Key) {

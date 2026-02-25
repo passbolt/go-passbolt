@@ -4,6 +4,6 @@ import "errors"
 
 var (
 	// API Error Codes
-	ErrAPIResponseErrorStatusCode   = errors.New("Error API JSON Response Status")
-	ErrAPIResponseUnknownStatusCode = errors.New("Unknown API JSON Response Status")
+	ErrAPIResponseErrorStatusCode   = errors.New("error API JSON Response Status")
+	ErrAPIResponseUnknownStatusCode = errors.New("unknown API JSON Response Status")
 )

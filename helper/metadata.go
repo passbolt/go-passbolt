@@ -25,7 +25,7 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 		if err == nil {
 			err = validateMetadata(rType, string(decMetadata))
 			if err != nil {
-				return "", fmt.Errorf("Validate Metadata: %w", err)
+				return "", fmt.Errorf("validate Metadata: %w", err)
 			}
 			return decMetadata, nil
 		}
@@ -38,7 +38,7 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
 		tmp, err := c.GetUserPrivateKeyCopy()
 		if err != nil {
-			return "", fmt.Errorf("Get Private Key Copy: %w", err)
+			return "", fmt.Errorf("get Private Key Copy: %w", err)
 		}
 		metadatakey = tmp
 		// Use user key fingerprint as cache key to enable session key caching
@@ -48,7 +48,7 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 		metadataKeyID = resource.MetadataKeyID
 		key, err := c.GetDecryptedMetadataKeyCached(ctx, metadataKeyID)
 		if err != nil {
-			return "", fmt.Errorf("Get Metadata Key by ID: %w", err)
+			return "", fmt.Errorf("get Metadata Key by ID: %w", err)
 		}
 		metadatakey = key
 	}
@@ -57,12 +57,12 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 	// This provides optimal performance when PreFetchCaches() has been called during login
 	decMetadata, err := c.DecryptMetadataWithResourceID(resource.ID, metadataKeyID, metadatakey, resource.Metadata)
 	if err != nil {
-		return "", fmt.Errorf("Decrypt Metadata: %w", err)
+		return "", fmt.Errorf("decrypt Metadata: %w", err)
 	}
 
 	err = validateMetadata(rType, string(decMetadata))
 	if err != nil {
-		return "", fmt.Errorf("Validate Metadata: %w", err)
+		return "", fmt.Errorf("validate Metadata: %w", err)
 	}
 
 	return decMetadata, nil
@@ -94,15 +94,15 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 				var tmp string
 				err = json.Unmarshal([]byte(definition), &tmp)
 				if err != nil {
-					return fmt.Errorf("Workaround Unmarshal Json Schema String: %w", err)
+					return fmt.Errorf("workaround Unmarshal Json Schema String: %w", err)
 				}
 
 				err = json.Unmarshal([]byte(tmp), &schemaDefinition)
 				if err != nil {
-					return fmt.Errorf("Workaround Unmarshal Json Schema: %w", err)
+					return fmt.Errorf("workaround Unmarshal Json Schema: %w", err)
 				}
 			} else {
-				return fmt.Errorf("Unmarshal Json Schema: %w", err)
+				return fmt.Errorf("unmarshal Json Schema: %w", err)
 			}
 		}
 
@@ -110,12 +110,12 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 
 		err = comp.AddResource("metadata.json", schemaDefinition.Resource)
 		if err != nil {
-			return fmt.Errorf("Adding Json Schema: %w", err)
+			return fmt.Errorf("adding Json Schema: %w", err)
 		}
 
 		schema, err = comp.Compile("metadata.json")
 		if err != nil {
-			return fmt.Errorf("Compiling Json Schema: %w", err)
+			return fmt.Errorf("compiling Json Schema: %w", err)
 		}
 
 		// Cache the compiled schema
@@ -127,12 +127,12 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 	var parsedMetadata map[string]any
 	err := json.Unmarshal([]byte(metadata), &parsedMetadata)
 	if err != nil {
-		return fmt.Errorf("Unmarshal Secret: %w", err)
+		return fmt.Errorf("unmarshal Secret: %w", err)
 	}
 
 	err = schema.Validate(parsedMetadata)
 	if err != nil {
-		return fmt.Errorf("Validating Metadata with Schema: %w", err)
+		return fmt.Errorf("validating Metadata with Schema: %w", err)
 	}
 	return nil
 }

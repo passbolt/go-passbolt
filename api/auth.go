@@ -33,7 +33,7 @@ func (c *Client) Login(ctx context.Context) error {
 	c.cryptoMu.RLock()
 	if c.userPrivateKey == nil {
 		c.cryptoMu.RUnlock()
-		return fmt.Errorf("Cannot login: client has no user private key (logged out or not initialized)")
+		return fmt.Errorf("cannot login: client has no user private key (logged out or not initialized)")
 	}
 	fingerprint := c.userPrivateKey.GetFingerprint()
 	c.cryptoMu.RUnlock()
@@ -46,40 +46,40 @@ func (c *Client) Login(ctx context.Context) error {
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "Error API JSON Response Status: Message: The authentication failed.") {
-		return fmt.Errorf("Doing Stage 1 Request: %w", err)
+		return fmt.Errorf("doing Stage 1 Request: %w", err)
 	}
 
 	encAuthToken := res.Header.Get("X-GPGAuth-User-Auth-Token")
 
 	if encAuthToken == "" {
-		return fmt.Errorf("Got Empty X-GPGAuth-User-Auth-Token Header")
+		return fmt.Errorf("got Empty X-GPGAuth-User-Auth-Token Header")
 	}
 
 	c.log("Got Encrypted Auth Token: %v", encAuthToken)
 
 	encAuthToken, err = url.QueryUnescape(encAuthToken)
 	if err != nil {
-		return fmt.Errorf("Unescaping User Auth Token: %w", err)
+		return fmt.Errorf("unescaping User Auth Token: %w", err)
 	}
 	encAuthToken = strings.ReplaceAll(encAuthToken, "\\ ", " ")
 
 	authToken, err := c.DecryptMessage(encAuthToken)
 	if err != nil {
-		return fmt.Errorf("Decrypting User Auth Token: %w", err)
+		return fmt.Errorf("decrypting User Auth Token: %w", err)
 	}
 
 	c.log("Decrypted Auth Token: %v", authToken)
 
 	err = checkAuthTokenFormat(authToken)
 	if err != nil {
-		return fmt.Errorf("Checking Auth Token Format: %w", err)
+		return fmt.Errorf("checking Auth Token Format: %w", err)
 	}
 
 	data.Auth.Token = string(authToken)
 
 	res, _, err = c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil {
-		return fmt.Errorf("Doing Stage 2 Request: %w", err)
+		return fmt.Errorf("doing Stage 2 Request: %w", err)
 	}
 
 	c.log("Got Cookies: %+v", res.Cookies())
@@ -96,38 +96,38 @@ func (c *Client) Login(ctx context.Context) error {
 		}
 	}
 	if c.sessionToken.Name == "" {
-		return fmt.Errorf("Cannot Find Session Cookie!")
+		return fmt.Errorf("cannot find session cookie")
 	}
 
 	// Because of MFA, the custom Request Function now Fetches the CSRF token, we still need the user for his public key
 	apiMsg, err := c.DoCustomRequest(ctx, "GET", "/users/me.json", "v2", nil, nil)
 	if err != nil {
-		return fmt.Errorf("Getting CSRF Token: %w", err)
+		return fmt.Errorf("getting CSRF Token: %w", err)
 	}
 
 	// Get Users ID from Server
 	var user User
 	err = json.Unmarshal(apiMsg.Body, &user)
 	if err != nil {
-		return fmt.Errorf("Parsing User 'Me' JSON from API Request: %w", err)
+		return fmt.Errorf("parsing User 'Me' JSON from API Request: %w", err)
 	}
 
 	c.userID = user.ID
 
 	settings, err := c.GetServerSettings(ctx)
 	if err != nil {
-		return fmt.Errorf("Getting Server Settings: %w", err)
+		return fmt.Errorf("getting Server Settings: %w", err)
 	}
 
 	// after Login, fetch MetadataTypeSettings to finish the Client Setup
 	err = c.setMetadataTypeSettings(ctx, settings)
 	if err != nil {
-		return fmt.Errorf("Setup Metadata Type Settings: %w", err)
+		return fmt.Errorf("setup Metadata Type Settings: %w", err)
 	}
 
 	err = c.setPasswordExpirySettings(ctx, settings)
 	if err != nil {
-		return fmt.Errorf("Setup Password Expiry Settings: %w", err)
+		return fmt.Errorf("setup Password Expiry Settings: %w", err)
 	}
 
 	// Pre-fetch caches if server supports v5 metadata encryption
@@ -152,7 +152,7 @@ func (c *Client) Login(ctx context.Context) error {
 func (c *Client) Logout(ctx context.Context) error {
 	_, err := c.DoCustomRequest(ctx, "GET", "/auth/logout.json", "v2", nil, nil)
 	if err != nil {
-		return fmt.Errorf("Doing Logout Request: %w", err)
+		return fmt.Errorf("doing Logout Request: %w", err)
 	}
 
 	// Clear session cookies

@@ -14,7 +14,7 @@ func CreateFolder(ctx context.Context, c *api.Client, folderParentID, name strin
 		FolderParentID: folderParentID,
 	})
 	if err != nil {
-		return "", fmt.Errorf("Creating Folder: %w", err)
+		return "", fmt.Errorf("creating Folder: %w", err)
 	}
 	return f.ID, nil
 }
@@ -23,7 +23,7 @@ func CreateFolder(ctx context.Context, c *api.Client, folderParentID, name strin
 func GetFolder(ctx context.Context, c *api.Client, folderID string) (string, string, error) {
 	f, err := c.GetFolder(ctx, folderID, nil)
 	if err != nil {
-		return "", "", fmt.Errorf("Getting Folder: %w", err)
+		return "", "", fmt.Errorf("getting Folder: %w", err)
 	}
 	return f.FolderParentID, f.Name, nil
 }
@@ -32,7 +32,7 @@ func GetFolder(ctx context.Context, c *api.Client, folderID string) (string, str
 func UpdateFolder(ctx context.Context, c *api.Client, folderID, name string) error {
 	_, err := c.UpdateFolder(ctx, folderID, api.Folder{Name: name})
 	if err != nil {
-		return fmt.Errorf("Updating Folder: %w", err)
+		return fmt.Errorf("updating Folder: %w", err)
 	}
 	return err
 }
@@ -41,7 +41,7 @@ func UpdateFolder(ctx context.Context, c *api.Client, folderID, name string) err
 func DeleteFolder(ctx context.Context, c *api.Client, folderID string) error {
 	err := c.DeleteFolder(ctx, folderID)
 	if err != nil {
-		return fmt.Errorf("Deleting Folder: %w", err)
+		return fmt.Errorf("deleting Folder: %w", err)
 	}
 	return nil
 }
@@ -50,7 +50,7 @@ func DeleteFolder(ctx context.Context, c *api.Client, folderID string) error {
 func MoveFolder(ctx context.Context, c *api.Client, folderID, folderParentID string) error {
 	err := c.MoveFolder(ctx, folderID, folderParentID)
 	if err != nil {
-		return fmt.Errorf("Moving Folder: %w", err)
+		return fmt.Errorf("moving Folder: %w", err)
 	}
 	return nil
 }

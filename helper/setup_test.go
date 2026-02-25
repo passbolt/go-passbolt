@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 	}
 
 	fmt.Printf("Registering with url: %v\n", url)
-	userID, token, err := ParseInviteUrl(url)
+	userID, token, err := ParseInviteURL(url)
 	if err != nil {
 		panic(fmt.Errorf("Unable to Parse Invite URL: %w", err))
 	}
@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 	// Debug Output
 	c.Debug = true
 
-	c.Login(ctx)
+	err = c.Login(ctx)
 	if err != nil {
 		panic(fmt.Errorf("Login Client: %w", err))
 	}

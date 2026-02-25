@@ -86,7 +86,7 @@ func (c *Client) CreateFolder(ctx context.Context, folder Folder) (*Folder, erro
 func (c *Client) GetFolder(ctx context.Context, folderID string, opts *GetFolderOptions) (*Folder, error) {
 	err := checkUUIDFormat(folderID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/folders/"+folderID+".json", "v2", nil, opts)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *Client) GetFolder(ctx context.Context, folderID string, opts *GetFolder
 func (c *Client) UpdateFolder(ctx context.Context, folderID string, folder Folder) (*Folder, error) {
 	err := checkUUIDFormat(folderID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/folders/"+folderID+".json", "v2", folder, nil)
 	if err != nil {
@@ -123,7 +123,7 @@ func (c *Client) UpdateFolder(ctx context.Context, folderID string, folder Folde
 func (c *Client) DeleteFolder(ctx context.Context, folderID string) error {
 	err := checkUUIDFormat(folderID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "DELETE", "/folders/"+folderID+".json", "v2", nil, nil)
 	if err != nil {
@@ -136,7 +136,7 @@ func (c *Client) DeleteFolder(ctx context.Context, folderID string) error {
 func (c *Client) MoveFolder(ctx context.Context, folderID, folderParentID string) error {
 	err := checkUUIDFormat(folderID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "PUT", "/move/folder/"+folderID+".json", "v2", Folder{
 		FolderParentID: folderParentID,

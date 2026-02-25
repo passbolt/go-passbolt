@@ -32,7 +32,7 @@ type GetCommentsOptions struct {
 func (c *Client) GetComments(ctx context.Context, resourceID string, opts *GetCommentsOptions) ([]Comment, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/comments/resource/"+resourceID+".json", "v2", nil, opts)
 	if err != nil {
@@ -51,7 +51,7 @@ func (c *Client) GetComments(ctx context.Context, resourceID string, opts *GetCo
 func (c *Client) CreateComment(ctx context.Context, resourceID string, comment Comment) (*Comment, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/comments/resource/"+resourceID+".json", "v2", comment, nil)
 	if err != nil {
@@ -69,7 +69,7 @@ func (c *Client) CreateComment(ctx context.Context, resourceID string, comment C
 func (c *Client) UpdateComment(ctx context.Context, commentID string, comment Comment) (*Comment, error) {
 	err := checkUUIDFormat(commentID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/comments/"+commentID+".json", "v2", comment, nil)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c *Client) UpdateComment(ctx context.Context, commentID string, comment Co
 func (c *Client) DeleteComment(ctx context.Context, commentID string) error {
 	err := checkUUIDFormat(commentID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "DELETE", "/comments/"+commentID+".json", "v2", nil, nil)
 	if err != nil {

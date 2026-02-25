@@ -44,7 +44,7 @@ func (c *Client) GetResourceTypes(ctx context.Context, opts *GetResourceTypesOpt
 func (c *Client) GetResourceType(ctx context.Context, typeID string) (*ResourceType, error) {
 	err := checkUUIDFormat(typeID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/resource-types/"+typeID+".json", "v2", nil, nil)
 	if err != nil {

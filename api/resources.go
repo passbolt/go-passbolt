@@ -102,7 +102,7 @@ func (c *Client) CreateResource(ctx context.Context, resource Resource) (*Resour
 func (c *Client) GetResource(ctx context.Context, resourceID string) (*Resource, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/resources/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
@@ -121,7 +121,7 @@ func (c *Client) GetResource(ctx context.Context, resourceID string) (*Resource,
 func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource Resource) (*Resource, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/resources/"+resourceID+".json", "v2", resource, nil)
@@ -140,7 +140,7 @@ func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource
 func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "DELETE", "/resources/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
@@ -153,7 +153,7 @@ func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
 func (c *Client) MoveResource(ctx context.Context, resourceID, folderParentID string) error {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "PUT", "/move/resource/"+resourceID+".json", "v2", Resource{
 		FolderParentID: folderParentID,
