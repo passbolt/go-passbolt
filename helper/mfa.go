@@ -34,7 +34,8 @@ func AddMFACallbackTOTP(c *api.Client, retrys uint, retryDelay, offset time.Dura
 			var raw *http.Response
 			raw, _, err = c.DoCustomRequestAndReturnRawResponseV5(ctx, "POST", "mfa/verify/totp.json", req, nil)
 			if err != nil {
-				if errors.Unwrap(err) != api.ErrAPIResponseErrorStatusCode {
+				var apiErr *api.APIError
+				if !errors.As(err, &apiErr) {
 					return http.Cookie{}, fmt.Errorf("doing MFA Challenge Response: %w", err)
 				}
 				// MFA failed, so lets wait just let the loop try again

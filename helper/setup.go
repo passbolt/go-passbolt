@@ -17,7 +17,6 @@ func ParseInviteURL(url string) (string, string, error) {
 	return split[len(split)-2], strings.TrimSuffix(split[len(split)-1], ".json"), nil
 }
 
-
 // SetupAccount Setup a Account for a Invited User.
 // (Use ParseInviteURL to get the userid and token from a Invite URL)
 func SetupAccount(ctx context.Context, c *api.Client, userID, token, password string) (string, error) {

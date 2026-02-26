@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/passbolt/go-passbolt/api"
@@ -13,7 +14,7 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 	// with the Resource Type password-string the Secret is not json and can't be properly validated, so skip the check here
 	if rType.Slug == "password-string" || rType.Slug == "v5-password-string" {
 		if len(secretData) > 4096 {
-			return fmt.Errorf("password is longer than 4096")
+			return ErrPasswordTooLong
 		}
 		return nil
 	}
@@ -32,8 +33,9 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 
 	err := json.Unmarshal([]byte(definition), &schemaDefinition)
 	if err != nil {
-		// Workaround for inconsistant API Responses where sometime the Schema is embedded directly and sometimes it's escaped as a string
-		if err.Error() == "json: cannot unmarshal string into Go value of type api.ResourceTypeSchema" {
+		// Workaround for inconsistent API Responses where sometimes the Schema is embedded directly and sometimes it's escaped as a string
+		var unmarshalErr *json.UnmarshalTypeError
+		if errors.As(err, &unmarshalErr) {
 			var tmp string
 			err = json.Unmarshal([]byte(definition), &tmp)
 			if err != nil {
@@ -44,7 +46,6 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 			if err != nil {
 				return fmt.Errorf("workaround Unmarshal Json Schema: %w", err)
 			}
-
 		} else {
 			return fmt.Errorf("unmarshal Json Schema: %w", err)
 		}

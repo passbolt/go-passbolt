@@ -422,7 +422,7 @@ func (c *Client) GetResourceTypeCached(ctx context.Context, typeID string) (*Res
 		}
 	}
 
-	return nil, fmt.Errorf("resource type not found: %v", typeID)
+	return nil, fmt.Errorf("%w: %v", ErrResourceTypeNotFound, typeID)
 }
 
 // GetResourceTypeBySlugCached returns a cached resource type by slug
@@ -438,7 +438,7 @@ func (c *Client) GetResourceTypeBySlugCached(ctx context.Context, slug string) (
 		}
 	}
 
-	return nil, fmt.Errorf("resource type not found: %v", slug)
+	return nil, fmt.Errorf("%w: %v", ErrResourceTypeNotFound, slug)
 }
 
 // GetMetadataKeysCached returns cached metadata keys, fetching from API if cache is empty
@@ -496,11 +496,11 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	}
 
 	if metadataKey == nil {
-		return nil, fmt.Errorf("metadata key not found: %v", id)
+		return nil, fmt.Errorf("%w: %v", ErrMetadataKeyNotFound, id)
 	}
 
 	if len(metadataKey.MetadataPrivateKeys) == 0 {
-		return nil, fmt.Errorf("no Metadata Private key for our user")
+		return nil, ErrNoMetadataPrivateKey
 	}
 
 	// Find our user's private key
@@ -513,7 +513,7 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	}
 
 	if privMetadata == nil {
-		return nil, fmt.Errorf("no Metadata Private key for our user id: %v", c.userID)
+		return nil, fmt.Errorf("%w: user id %v", ErrNoMetadataPrivateKey, c.userID)
 	}
 
 	decPrivMetadatakey, err := c.DecryptMessage(privMetadata.Data)

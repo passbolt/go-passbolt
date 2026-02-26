@@ -3,6 +3,7 @@ package helper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -89,8 +90,9 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 
 		err := json.Unmarshal([]byte(definition), &schemaDefinition)
 		if err != nil {
-			// Workaround for inconsistant API Responses where sometime the Schema is embedded directly and sometimes it's escaped as a string
-			if err.Error() == "json: cannot unmarshal string into Go value of type api.ResourceTypeSchema" {
+			// Workaround for inconsistent API Responses where sometimes the Schema is embedded directly and sometimes it's escaped as a string
+			var unmarshalErr *json.UnmarshalTypeError
+			if errors.As(err, &unmarshalErr) {
 				var tmp string
 				err = json.Unmarshal([]byte(definition), &tmp)
 				if err != nil {

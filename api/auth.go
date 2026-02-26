@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -33,7 +34,7 @@ func (c *Client) Login(ctx context.Context) error {
 	c.cryptoMu.RLock()
 	if c.userPrivateKey == nil {
 		c.cryptoMu.RUnlock()
-		return fmt.Errorf("cannot login: client has no user private key (logged out or not initialized)")
+		return fmt.Errorf("cannot login: %w", ErrNoPrivateKey)
 	}
 	fingerprint := c.userPrivateKey.GetFingerprint()
 	c.cryptoMu.RUnlock()
@@ -45,14 +46,15 @@ func (c *Client) Login(ctx context.Context) error {
 	data := Login{&GPGAuth{KeyID: fingerprint}}
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
-	if err != nil && !strings.Contains(err.Error(), "Error API JSON Response Status: Message: The authentication failed.") {
+	var apiErr *APIError
+	if err != nil && !(errors.As(err, &apiErr) && apiErr.Message == "The authentication failed.") {
 		return fmt.Errorf("doing Stage 1 Request: %w", err)
 	}
 
 	encAuthToken := res.Header.Get("X-GPGAuth-User-Auth-Token")
 
 	if encAuthToken == "" {
-		return fmt.Errorf("got Empty X-GPGAuth-User-Auth-Token Header")
+		return ErrEmptyAuthToken
 	}
 
 	c.log("Got Encrypted Auth Token: %v", encAuthToken)
@@ -96,7 +98,7 @@ func (c *Client) Login(ctx context.Context) error {
 		}
 	}
 	if c.sessionToken.Name == "" {
-		return fmt.Errorf("cannot find session cookie")
+		return ErrSessionNotFound
 	}
 
 	// Because of MFA, the custom Request Function now Fetches the CSRF token, we still need the user for his public key

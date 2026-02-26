@@ -36,7 +36,7 @@ func checkAuthTokenFormat(authToken string) error {
 
 func checkUUIDFormat(data string) error {
 	if !isUUID.MatchString(data) {
-		return fmt.Errorf("uUID is not in the valid format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+		return ErrInvalidUUID
 	}
 	return nil
 }

@@ -13,7 +13,7 @@ func (c *Client) EncryptMessage(message string) (string, error) {
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return "", fmt.Errorf("client has no user private key (logged out or not initialized)")
+		return "", ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
@@ -59,7 +59,7 @@ func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (s
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return "", fmt.Errorf("client has no user private key (logged out or not initialized)")
+		return "", ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
@@ -93,7 +93,7 @@ func (c *Client) DecryptMessage(armoredCiphertext string) (string, error) {
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return "", fmt.Errorf("client has no user private key (logged out or not initialized)")
+		return "", ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
@@ -212,7 +212,7 @@ func (c *Client) GetUserPrivateKeyCopy() (*crypto.Key, error) {
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return nil, fmt.Errorf("client has no user private key (logged out or not initialized)")
+		return nil, ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()

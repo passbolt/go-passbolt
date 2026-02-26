@@ -81,7 +81,7 @@ start:
 		if res.Header.Code == 403 && strings.HasSuffix(res.Header.URL, "/mfa/verify/error.json") {
 			if !firstTime {
 				// if we are here this probably means that the MFA callback is broken, to prevent a infinite loop lets error here
-				return r, &res, fmt.Errorf("got MFA challenge twice in a row, is your MFA callback broken? bailing to prevent loop")
+				return r, &res, fmt.Errorf("%w: got MFA challenge twice in a row, is your MFA callback broken? bailing to prevent loop", ErrMFAFailed)
 			}
 			if c.MFACallback != nil {
 				c.mfaToken, err = c.MFACallback(ctx, c, &res)
@@ -92,11 +92,11 @@ start:
 				firstTime = false
 				goto start
 			} else {
-				return r, &res, fmt.Errorf("got MFA Challenge but the MFA callback is not defined")
+				return r, &res, ErrMFACallbackMissing
 			}
 		}
-		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseErrorStatusCode, res.Header.Message, string(res.Body))
+		return r, &res, &APIError{StatusCode: res.Header.Code, Message: res.Header.Message, Body: string(res.Body)}
 	} else {
-		return r, &res, fmt.Errorf("%w: Message: %v, Body: %v", ErrAPIResponseUnknownStatusCode, res.Header.Message, string(res.Body))
+		return r, &res, &APIError{StatusCode: res.Header.Code, Message: res.Header.Message, Body: string(res.Body)}
 	}
 }

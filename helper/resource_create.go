@@ -21,7 +21,7 @@ func CreateResource(ctx context.Context, c *api.Client, folderParentID, name, us
 
 func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	if !c.MetadataTypeSettings().AllowCreationOfV5Resources {
-		return "", fmt.Errorf("creation of V5 Passwords is disabled on this Server")
+		return "", ErrV5CreationDisabled
 	}
 
 	types, err := c.GetResourceTypes(ctx, nil)
@@ -36,7 +36,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 		}
 	}
 	if rType == nil {
-		return "", fmt.Errorf("cannot find Resource type password-and-description")
+		return "", fmt.Errorf("%w: v5-default", ErrResourceTypeSlugNotFound)
 	}
 
 	// Base Resource
@@ -115,7 +115,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	if !c.MetadataTypeSettings().AllowCreationOfV4Resources {
-		return "", fmt.Errorf("creation of V4 Passwords is disabled on this Server")
+		return "", ErrV4CreationDisabled
 	}
 
 	types, err := c.GetResourceTypes(ctx, nil)
@@ -130,7 +130,7 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 		}
 	}
 	if rType == nil {
-		return "", fmt.Errorf("cannot find Resource type password-and-description")
+		return "", fmt.Errorf("%w: password-and-description", ErrResourceTypeSlugNotFound)
 	}
 
 	resource := api.Resource{
@@ -177,7 +177,7 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 // CreateResourceSimple Creates a Legacy Resource where only the Password is Encrypted and Returns the Resources ID
 func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	if !c.MetadataTypeSettings().AllowCreationOfV4Resources {
-		return "", fmt.Errorf("creation of V4 Passwords is disabled on this Server")
+		return "", ErrV4CreationDisabled
 	}
 
 	// TODO Create a v5-password-string if v5 is enabled
