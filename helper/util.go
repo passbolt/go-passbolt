@@ -12,7 +12,7 @@ func getPublicKeyByUserID(userID string, Users []api.User) (string, error) {
 			return user.GPGKey.ArmoredKey, nil
 		}
 	}
-	return "", fmt.Errorf("Cannot Find Key for user id %v", userID)
+	return "", fmt.Errorf("%w: %v", ErrKeyNotFound, userID)
 }
 
 func getMembershipByUserID(memberships []api.GroupMembership, userID string) (*api.GroupMembership, error) {
@@ -21,7 +21,7 @@ func getMembershipByUserID(memberships []api.GroupMembership, userID string) (*a
 			return &membership, nil
 		}
 	}
-	return nil, fmt.Errorf("Cannot Find Membership for user id %v", userID)
+	return nil, fmt.Errorf("%w: %v", ErrMembershipNotFound, userID)
 }
 
 func getSecretByResourceID(secrets []api.Secret, resourceID string) (*api.Secret, error) {
@@ -30,5 +30,5 @@ func getSecretByResourceID(secrets []api.Secret, resourceID string) (*api.Secret
 			return &secret, nil
 		}
 	}
-	return nil, fmt.Errorf("Cannot Find Secret for id %v", resourceID)
+	return nil, fmt.Errorf("%w: %v", ErrSecretNotFound, resourceID)
 }

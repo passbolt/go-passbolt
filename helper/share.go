@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -43,40 +44,40 @@ func ShareResourceWithUsersAndGroups(ctx context.Context, c *api.Client, resourc
 func ShareResource(ctx context.Context, c *api.Client, resourceID string, changes []ShareOperation) error {
 	oldPermissions, err := c.GetResourcePermissions(ctx, resourceID)
 	if err != nil {
-		return fmt.Errorf("Getting Resource Permissions: %w", err)
+		return fmt.Errorf("getting Resource Permissions: %w", err)
 	}
 
 	permissionChanges, err := GeneratePermissionChanges(oldPermissions, changes)
 	if err != nil {
-		return fmt.Errorf("Generating Resource Permission Changes: %w", err)
+		return fmt.Errorf("generating Resource Permission Changes: %w", err)
 	}
 
 	shareRequest := api.ResourceShareRequest{Permissions: permissionChanges}
 
 	secret, err := c.GetSecret(ctx, resourceID)
 	if err != nil {
-		return fmt.Errorf("Get Resource: %w", err)
+		return fmt.Errorf("get Resource: %w", err)
 	}
 
 	secretData, err := c.DecryptMessage(secret.Data)
 	if err != nil {
-		return fmt.Errorf("Decrypting Resource Secret: %w", err)
+		return fmt.Errorf("decrypting Resource Secret: %w", err)
 	}
 
 	// Secret Validation
 	resource, err := c.GetResource(ctx, resourceID)
 	if err != nil {
-		return fmt.Errorf("Getting Resource: %w", err)
+		return fmt.Errorf("getting Resource: %w", err)
 	}
 
 	rType, err := c.GetResourceType(ctx, resource.ResourceTypeID)
 	if err != nil {
-		return fmt.Errorf("Getting ResourceType: %w", err)
+		return fmt.Errorf("getting ResourceType: %w", err)
 	}
 
 	err = validateSecretData(rType, secretData)
 	if err != nil {
-		return fmt.Errorf("Validating Secret Data: %w", err)
+		return fmt.Errorf("validating Secret Data: %w", err)
 	}
 
 	// if Metadata has not been shared yet then we need to do that
@@ -85,31 +86,31 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
 		metadata, err := GetResourceMetadata(ctx, c, resource, rType)
 		if err != nil {
-			return fmt.Errorf("Get Metadata: %w", err)
+			return fmt.Errorf("get Metadata: %w", err)
 		}
 
 		metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, false)
 		if err != nil {
-			return fmt.Errorf("Get Metadata Key: %w", err)
+			return fmt.Errorf("get Metadata Key: %w", err)
 		}
 		resource.MetadataKeyID = metadataKeyID
 		resource.MetadataKeyType = metadataKeyType
 
 		encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metadata))
 		if err != nil {
-			return fmt.Errorf("Encrypt Metadata: %w", err)
+			return fmt.Errorf("encrypt Metadata: %w", err)
 		}
 		resource.Metadata = encMetadata
 
-		resource, err = c.UpdateResource(ctx, resource.ID, *resource)
+		_, err = c.UpdateResource(ctx, resource.ID, *resource)
 		if err != nil {
-			return fmt.Errorf("Update Resource Metadata to Shared key: %w", err)
+			return fmt.Errorf("update Resource Metadata to Shared key: %w", err)
 		}
 	}
 
 	simulationResult, err := c.SimulateShareResource(ctx, resourceID, shareRequest)
 	if err != nil {
-		return fmt.Errorf("Simulate Share Resource: %w", err)
+		return fmt.Errorf("simulate Share Resource: %w", err)
 	}
 
 	// if no users where added then we can skip this
@@ -117,7 +118,7 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 	if len(simulationResult.Changes.Added) != 0 {
 		users, err = c.GetUsers(ctx, nil)
 		if err != nil {
-			return fmt.Errorf("Get Users: %w", err)
+			return fmt.Errorf("get Users: %w", err)
 		}
 	}
 
@@ -125,12 +126,17 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 	for _, user := range simulationResult.Changes.Added {
 		pubkey, err := getPublicKeyByUserID(user.User.ID, users)
 		if err != nil {
-			return fmt.Errorf("Getting Public Key for User %v: %w", user.User.ID, err)
+			return fmt.Errorf("getting Public Key for User %v: %w", user.User.ID, err)
 		}
 
-		encSecretData, err := c.EncryptMessageWithPublicKey(pubkey, secretData)
+		publicKey, err := crypto.NewKeyFromArmored(pubkey)
 		if err != nil {
-			return fmt.Errorf("Encrypting Secret for User %v: %w", user.User.ID, err)
+			return fmt.Errorf("parsing public key for user %v: %w", user.User.ID, err)
+		}
+
+		encSecretData, err := c.EncryptMessageWithKey(publicKey, secretData)
+		if err != nil {
+			return fmt.Errorf("encrypting Secret for User %v: %w", user.User.ID, err)
 		}
 		shareRequest.Secrets = append(shareRequest.Secrets, api.Secret{
 			UserID: user.User.ID,
@@ -140,7 +146,7 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 
 	err = c.ShareResource(ctx, resourceID, shareRequest)
 	if err != nil {
-		return fmt.Errorf("Sharing Resource: %w", err)
+		return fmt.Errorf("sharing Resource: %w", err)
 	}
 	return nil
 }
@@ -174,17 +180,17 @@ func ShareFolder(ctx context.Context, c *api.Client, folderID string, changes []
 		ContainPermissions: true,
 	})
 	if err != nil {
-		return fmt.Errorf("Getting Folder Permissions: %w", err)
+		return fmt.Errorf("getting Folder Permissions: %w", err)
 	}
 
 	permissionChanges, err := GeneratePermissionChanges(oldFolder.Permissions, changes)
 	if err != nil {
-		return fmt.Errorf("Generating Folder Permission Changes: %w", err)
+		return fmt.Errorf("generating Folder Permission Changes: %w", err)
 	}
 
 	err = c.ShareFolder(ctx, folderID, permissionChanges)
 	if err != nil {
-		return fmt.Errorf("Sharing Folder: %w", err)
+		return fmt.Errorf("sharing Folder: %w", err)
 	}
 	return nil
 }
@@ -195,14 +201,14 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 	for i, changeA := range changes {
 		for j, changeB := range changes {
 			if i != j && changeA.AROID == changeB.AROID && changeA.ARO == changeB.ARO {
-				return nil, fmt.Errorf("Change %v and %v are Both About the same ARO %v ID: %v, there can only be once change per ARO", i, j, changeA.ARO, changeA.AROID)
+				return nil, fmt.Errorf("change %v and %v are Both About the same ARO %v ID: %v, there can only be once change per ARO", i, j, changeA.ARO, changeA.AROID)
 			}
 		}
 	}
 
 	// Get ACO and ACO ID from Existing Permissions
 	if len(oldPermissions) == 0 {
-		return nil, fmt.Errorf("There has to be atleast one Permission on a ACO")
+		return nil, fmt.Errorf("there has to be atleast one Permission on a ACO")
 	}
 	ACO := oldPermissions[0].ACO
 	ACOID := oldPermissions[0].ACOForeignKey
@@ -229,9 +235,9 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 					ACOForeignKey: ACOID,
 				})
 			} else if change.Type == -1 {
-				return nil, fmt.Errorf("Permission for %v %v Cannot be Deleted as No Matching Permission Exists", change.ARO, change.AROID)
+				return nil, fmt.Errorf("permission for %v %v Cannot be Deleted as No Matching Permission Exists", change.ARO, change.AROID)
 			} else {
-				return nil, fmt.Errorf("Unknown Permission Type: %v", change.Type)
+				return nil, fmt.Errorf("unknown Permission Type: %v", change.Type)
 			}
 		} else {
 			tmp := api.Permission{
@@ -244,14 +250,14 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 
 			if change.Type == 15 || change.Type == 7 || change.Type == 1 {
 				if oldPermission.Type == change.Type {
-					return nil, fmt.Errorf("Permission for %v %v is already Type %v", change.ARO, change.AROID, change.Type)
+					return nil, fmt.Errorf("permission for %v %v is already Type %v", change.ARO, change.AROID, change.Type)
 				}
 				tmp.Type = change.Type
 			} else if change.Type == -1 {
 				tmp.Delete = true
 				tmp.Type = oldPermission.Type
 			} else {
-				return nil, fmt.Errorf("Unknown Permission Type: %v", change.Type)
+				return nil, fmt.Errorf("unknown Permission Type: %v", change.Type)
 			}
 			permissionChanges = append(permissionChanges, tmp)
 		}

@@ -48,7 +48,7 @@ func (c *Client) GetGPGKeys(ctx context.Context, opts *GetGPGKeysOptions) ([]GPG
 func (c *Client) GetGPGKey(ctx context.Context, gpgkeyID string) (*GPGKey, error) {
 	err := checkUUIDFormat(gpgkeyID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/gpgkeys/"+gpgkeyID+".json", "v2", nil, nil)
 	if err != nil {

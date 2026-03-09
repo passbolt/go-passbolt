@@ -20,13 +20,13 @@ func CreateResource(ctx context.Context, c *api.Client, folderParentID, name, us
 }
 
 func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
-	if c.MetadataTypeSettings().AllowCreationOfV5Resources == false {
-		return "", fmt.Errorf("Creation of V5 Passwords is disabled on this Server")
+	if !c.MetadataTypeSettings().AllowCreationOfV5Resources {
+		return "", ErrV5CreationDisabled
 	}
 
 	types, err := c.GetResourceTypes(ctx, nil)
 	if err != nil {
-		return "", fmt.Errorf("Getting ResourceTypes: %w", err)
+		return "", fmt.Errorf("getting ResourceTypes: %w", err)
 	}
 	var rType *api.ResourceType
 	for _, tmp := range types {
@@ -36,7 +36,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 		}
 	}
 	if rType == nil {
-		return "", fmt.Errorf("Cannot find Resource type password-and-description")
+		return "", fmt.Errorf("%w: v5-default", ErrResourceTypeSlugNotFound)
 	}
 
 	// Base Resource
@@ -47,7 +47,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	// Resource Metadata
 	meta := api.ResourceMetadataTypeV5Default{
-		ObjectType:     api.PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA,
+		ObjectType:     api.PassboltObjectTypeResourceMetadata,
 		ResourceTypeID: rType.ID,
 		Name:           name,
 		Username:       username,
@@ -56,47 +56,47 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	metaData, err := json.Marshal(&meta)
 	if err != nil {
-		return "", fmt.Errorf("Marshalling metadata: %w", err)
+		return "", fmt.Errorf("marshalling metadata: %w", err)
 	}
 
 	err = validateMetadata(rType, string(metaData))
 	if err != nil {
-		return "", fmt.Errorf("Validating metadata: %w", err)
+		return "", fmt.Errorf("validating metadata: %w", err)
 	}
 
 	metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, true)
 	if err != nil {
-		return "", fmt.Errorf("Get Metadata Key: %w", err)
+		return "", fmt.Errorf("get Metadata Key: %w", err)
 	}
 	resource.MetadataKeyID = metadataKeyID
 	resource.MetadataKeyType = metadataKeyType
 
 	encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metaData))
 	if err != nil {
-		return "", fmt.Errorf("Encrypt Metadata: %w", err)
+		return "", fmt.Errorf("encrypt Metadata: %w", err)
 	}
 	resource.Metadata = encMetadata
 
 	// Resource Secret
 	secret := api.SecretDataTypeV5Default{
-		ObjectType:  api.PASSBOLT_OBJECT_TYPE_SECRET_DATA,
+		ObjectType:  api.PassboltObjectTypeSecretData,
 		Password:    password,
 		Description: description,
 	}
 
 	secretData, err := json.Marshal(&secret)
 	if err != nil {
-		return "", fmt.Errorf("Marshalling Secret Data: %w", err)
+		return "", fmt.Errorf("marshalling Secret Data: %w", err)
 	}
 
 	err = validateSecretData(rType, string(secretData))
 	if err != nil {
-		return "", fmt.Errorf("Validating Secret Data: %w", err)
+		return "", fmt.Errorf("validating Secret Data: %w", err)
 	}
 
 	encSecretData, err := c.EncryptMessage(string(secretData))
 	if err != nil {
-		return "", fmt.Errorf("Encrypting Secret Data for User me: %w", err)
+		return "", fmt.Errorf("encrypting Secret Data for User me: %w", err)
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
@@ -108,19 +108,19 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	newresource, err := c.CreateResource(ctx, resource)
 	if err != nil {
-		return "", fmt.Errorf("Creating Resource: %w", err)
+		return "", fmt.Errorf("creating Resource: %w", err)
 	}
 	return newresource.ID, nil
 }
 
 func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
-	if c.MetadataTypeSettings().AllowCreationOfV4Resources == false {
-		return "", fmt.Errorf("Creation of V4 Passwords is disabled on this Server")
+	if !c.MetadataTypeSettings().AllowCreationOfV4Resources {
+		return "", ErrV4CreationDisabled
 	}
 
 	types, err := c.GetResourceTypes(ctx, nil)
 	if err != nil {
-		return "", fmt.Errorf("Getting ResourceTypes: %w", err)
+		return "", fmt.Errorf("getting ResourceTypes: %w", err)
 	}
 	var rType *api.ResourceType
 	for _, tmp := range types {
@@ -130,7 +130,7 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 		}
 	}
 	if rType == nil {
-		return "", fmt.Errorf("Cannot find Resource type password-and-description")
+		return "", fmt.Errorf("%w: password-and-description", ErrResourceTypeSlugNotFound)
 	}
 
 	resource := api.Resource{
@@ -147,17 +147,17 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 	}
 	secretData, err := json.Marshal(&tmp)
 	if err != nil {
-		return "", fmt.Errorf("Marshalling Secret Data: %w", err)
+		return "", fmt.Errorf("marshalling Secret Data: %w", err)
 	}
 
 	err = validateSecretData(rType, string(secretData))
 	if err != nil {
-		return "", fmt.Errorf("Validating Secret Data: %w", err)
+		return "", fmt.Errorf("validating Secret Data: %w", err)
 	}
 
 	encSecretData, err := c.EncryptMessage(string(secretData))
 	if err != nil {
-		return "", fmt.Errorf("Encrypting Secret Data for User me: %w", err)
+		return "", fmt.Errorf("encrypting Secret Data for User me: %w", err)
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
@@ -169,22 +169,22 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	newresource, err := c.CreateResource(ctx, resource)
 	if err != nil {
-		return "", fmt.Errorf("Creating Resource: %w", err)
+		return "", fmt.Errorf("creating Resource: %w", err)
 	}
 	return newresource.ID, nil
 }
 
 // CreateResourceSimple Creates a Legacy Resource where only the Password is Encrypted and Returns the Resources ID
 func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
-	if c.MetadataTypeSettings().AllowCreationOfV4Resources == false {
-		return "", fmt.Errorf("Creation of V4 Passwords is disabled on this Server")
+	if !c.MetadataTypeSettings().AllowCreationOfV4Resources {
+		return "", ErrV4CreationDisabled
 	}
 
 	// TODO Create a v5-password-string if v5 is enabled
 
 	enc, err := c.EncryptMessage(password)
 	if err != nil {
-		return "", fmt.Errorf("Encrypting Password: %w", err)
+		return "", fmt.Errorf("encrypting Password: %w", err)
 	}
 
 	res := api.Resource{
@@ -200,7 +200,7 @@ func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, na
 
 	resource, err := c.CreateResource(ctx, res)
 	if err != nil {
-		return "", fmt.Errorf("Creating Resource: %w", err)
+		return "", fmt.Errorf("creating Resource: %w", err)
 	}
 	return resource.ID, nil
 }

@@ -128,7 +128,7 @@ func (c *Client) CreateGroup(ctx context.Context, group Group) (*Group, error) {
 func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
 	err := checkUUIDFormat(groupID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/groups/"+groupID+".json", "v2", nil, nil)
 	if err != nil {
@@ -147,7 +147,7 @@ func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
 func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUpdate) (*Group, error) {
 	err := checkUUIDFormat(groupID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+".json", "v2", update, nil)
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUp
 func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update GroupUpdate) (*UpdateGroupDryRunResult, error) {
 	err := checkUUIDFormat(groupID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+"/dry-run.json", "v2", update, nil)
 	if err != nil {
@@ -183,7 +183,7 @@ func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update G
 func (c *Client) DeleteGroup(ctx context.Context, groupID string) error {
 	err := checkUUIDFormat(groupID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "DELETE", "/groups/"+groupID+".json", "v2", nil, nil)
 	if err != nil {

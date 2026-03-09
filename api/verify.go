@@ -23,20 +23,20 @@ type GPGVerify struct {
 func (c *Client) SetupServerVerification(ctx context.Context) (string, string, error) {
 	serverKey, _, err := c.GetPublicKey(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("Getting Server Key: %w", err)
+		return "", "", fmt.Errorf("getting Server Key: %w", err)
 	}
 	uuid, err := uuid.NewRandom()
 	if err != nil {
-		return "", "", fmt.Errorf("Generating UUID: %w", err)
+		return "", "", fmt.Errorf("generating UUID: %w", err)
 	}
 	token := "gpgauthv1.3.0|36|" + uuid.String() + "|gpgauthv1.3.0"
 	encToken, err := c.EncryptMessageWithPublicKey(serverKey, token)
 	if err != nil {
-		return "", "", fmt.Errorf("Encrypting Challenge: %w", err)
+		return "", "", fmt.Errorf("encrypting Challenge: %w", err)
 	}
 	err = c.VerifyServer(ctx, token, encToken)
 	if err != nil {
-		return "", "", fmt.Errorf("Initial Verification: %w", err)
+		return "", "", fmt.Errorf("initial Verification: %w", err)
 	}
 	return token, encToken, err
 }
@@ -56,11 +56,11 @@ func (c *Client) VerifyServer(ctx context.Context, token, encToken string) error
 	}
 	raw, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/verify.json", "v2", data, nil)
 	if err != nil && !strings.Contains(err.Error(), "The authentication failed.") {
-		return fmt.Errorf("Sending Verification Challenge: %w", err)
+		return fmt.Errorf("sending Verification Challenge: %w", err)
 	}
 
 	if raw.Header.Get("X-GPGAuth-Verify-Response") != token {
-		return fmt.Errorf("Server Response did not Match Saved Token")
+		return fmt.Errorf("server Response did not Match Saved Token")
 	}
 	return nil
 }

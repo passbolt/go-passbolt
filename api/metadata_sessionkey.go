@@ -70,7 +70,7 @@ func (c *Client) FetchAndCacheSessionKeys(ctx context.Context) (int, error) {
 	// Fetch the user's session keys row(s) from the server
 	sessionKeys, err := c.GetMetadataSessionKeys(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("Get Metadata Session Keys: %w", err)
+		return 0, fmt.Errorf("get Metadata Session Keys: %w", err)
 	}
 
 	if len(sessionKeys) == 0 {
@@ -165,7 +165,7 @@ func (c *Client) FetchAndCacheSessionKeys(ctx context.Context) (int, error) {
 func (c *Client) DeleteSessionKey(ctx context.Context, sessionKeyID string) error {
 	err := checkUUIDFormat(sessionKeyID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequestV5(ctx, "DELETE", "/metadata/session-keys/"+sessionKeyID+".json", nil, nil)
 	if err != nil {

@@ -12,16 +12,16 @@ import (
 func GetResource(ctx context.Context, c *api.Client, resourceID string) (folderParentID, name, username, uri, password, description string, err error) {
 	resource, err := c.GetResource(ctx, resourceID)
 	if err != nil {
-		return "", "", "", "", "", "", fmt.Errorf("Getting Resource: %w", err)
+		return "", "", "", "", "", "", fmt.Errorf("getting Resource: %w", err)
 	}
 
 	rType, err := c.GetResourceType(ctx, resource.ResourceTypeID)
 	if err != nil {
-		return "", "", "", "", "", "", fmt.Errorf("Getting ResourceType: %w", err)
+		return "", "", "", "", "", "", fmt.Errorf("getting ResourceType: %w", err)
 	}
 	secret, err := c.GetSecret(ctx, resource.ID)
 	if err != nil {
-		return "", "", "", "", "", "", fmt.Errorf("Getting Resource Secret: %w", err)
+		return "", "", "", "", "", "", fmt.Errorf("getting Resource Secret: %w", err)
 	}
 	return GetResourceFromData(c, *resource, *secret, *rType)
 }
@@ -53,12 +53,12 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 	if decryptSecret && secret.Data != "" {
 		rawSecretData, err = c.DecryptSecretWithResourceID(resource.ID, secret.Data)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Decrypting Secret Data: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("decrypting Secret Data: %w", err)
 		}
 
 		err = validateSecretData(&rType, rawSecretData)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Validate Secret Data: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("validate Secret Data: %w", err)
 		}
 	}
 
@@ -78,7 +78,7 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 			var secretData api.SecretDataTypePasswordAndDescription
 			err = json.Unmarshal([]byte(rawSecretData), &secretData)
 			if err != nil {
-				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+				return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Secret Data: %w", err)
 			}
 			pw = secretData.Password
 			desc = secretData.Description
@@ -92,7 +92,7 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 			var secretData api.SecretDataTypePasswordDescriptionTOTP
 			err = json.Unmarshal([]byte(rawSecretData), &secretData)
 			if err != nil {
-				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+				return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Secret Data: %w", err)
 			}
 			pw = secretData.Password
 			desc = secretData.Description
@@ -105,13 +105,13 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 	case "v5-default":
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("getting Metadata: %w", err)
 		}
 
 		var metadata api.ResourceMetadataTypeV5Default
 		err = json.Unmarshal([]byte(rawMetadata), &metadata)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Metadata: %w", err)
 		}
 
 		name = metadata.Name
@@ -125,7 +125,7 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 			var secretData api.SecretDataTypeV5Default
 			err = json.Unmarshal([]byte(rawSecretData), &secretData)
 			if err != nil {
-				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+				return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Secret Data: %w", err)
 			}
 			pw = secretData.Password
 			desc = secretData.Description
@@ -133,13 +133,13 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 	case "v5-default-with-totp":
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("getting Metadata: %w", err)
 		}
 
 		var metadata api.ResourceMetadataTypeV5DefaultWithTOTP
 		err = json.Unmarshal([]byte(rawMetadata), &metadata)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Metadata: %w", err)
 		}
 
 		name = metadata.Name
@@ -153,7 +153,7 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 			var secretData api.SecretDataTypeV5DefaultWithTOTP
 			err = json.Unmarshal([]byte(rawSecretData), &secretData)
 			if err != nil {
-				return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Secret Data: %w", err)
+				return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Secret Data: %w", err)
 			}
 			pw = secretData.Password
 			desc = secretData.Description
@@ -161,13 +161,13 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 	case "v5-password-string":
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("getting Metadata: %w", err)
 		}
 
 		var metadata api.ResourceMetadataTypeV5PasswordString
 		err = json.Unmarshal([]byte(rawMetadata), &metadata)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Metadata: %w", err)
 		}
 
 		name = metadata.Name
@@ -183,13 +183,13 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 	case "v5-totp-standalone":
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Getting Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("getting Metadata: %w", err)
 		}
 
 		var metadata api.ResourceMetadataTypeV5TOTPStandalone
 		err = json.Unmarshal([]byte(rawMetadata), &metadata)
 		if err != nil {
-			return "", "", "", "", "", "", fmt.Errorf("Parsing Decrypted Metadata: %w", err)
+			return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Metadata: %w", err)
 		}
 
 		name = metadata.Name

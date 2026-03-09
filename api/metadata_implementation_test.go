@@ -457,8 +457,8 @@ func TestGetResourceWithMetadata(t *testing.T) {
 		t.Error("Metadata missing object_type field")
 	}
 
-	if objectType != api.PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA {
-		t.Errorf("Expected object_type %s, got %v", api.PASSBOLT_OBJECT_TYPE_RESOURCE_METADATA, objectType)
+	if objectType != api.PassboltObjectTypeResourceMetadata {
+		t.Errorf("Expected object_type %s, got %v", api.PassboltObjectTypeResourceMetadata, objectType)
 	}
 
 	// Verify the metadata contains the values we set

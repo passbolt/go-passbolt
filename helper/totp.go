@@ -38,7 +38,7 @@ func GenerateOTPCode(token string, when time.Time) (string, error) {
 
 	secretBytes, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(token)
 	if err != nil {
-		return "", fmt.Errorf("Decoding token string: %w", err)
+		return "", fmt.Errorf("decoding token string: %w", err)
 	}
 
 	buf := make([]byte, 8)

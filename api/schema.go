@@ -2,7 +2,7 @@ package api
 
 import "encoding/json"
 
-// Fallback Schema, Only to be used if we encounter a Broken Server (v5.0), Not API Stable!
+// ResourceSchemas is a fallback schema, only to be used if we encounter a broken server (v5.0). Not API stable!
 var ResourceSchemas = map[string]json.RawMessage{
 	"v5-default": json.RawMessage(`
 {

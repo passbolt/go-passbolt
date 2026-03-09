@@ -89,7 +89,7 @@ func (c *Client) SearchAROs(ctx context.Context, opts SearchAROsOptions) ([]ARO,
 func (c *Client) ShareResource(ctx context.Context, resourceID string, shareRequest ResourceShareRequest) error {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "PUT", "/share/resource/"+resourceID+".json", "v2", shareRequest, nil)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *Client) ShareResource(ctx context.Context, resourceID string, shareRequ
 func (c *Client) ShareFolder(ctx context.Context, folderID string, permissions []Permission) error {
 	err := checkUUIDFormat(folderID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	f := Folder{Permissions: permissions}
 	_, err = c.DoCustomRequest(ctx, "PUT", "/share/folder/"+folderID+".json", "v2", f, nil)
@@ -118,7 +118,7 @@ func (c *Client) ShareFolder(ctx context.Context, folderID string, permissions [
 func (c *Client) SimulateShareResource(ctx context.Context, resourceID string, shareRequest ResourceShareRequest) (*ResourceShareSimulationResult, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/share/simulate/resource/"+resourceID+".json", "v2", shareRequest, nil)
 	if err != nil {

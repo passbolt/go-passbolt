@@ -41,7 +41,7 @@ type SecretDataTypePasswordDescriptionTOTP struct {
 	TOTP        SecretDataTOTP `json:"totp"`
 }
 
-// SecretDataTypeV5Default
+// SecretDataTypeV5Default represents the secret data for a V5 default resource.
 type SecretDataTypeV5Default struct {
 	ObjectType     string `json:"object_type"`
 	ResourceTypeID string `json:"resource_type_id,omitempty"`
@@ -49,7 +49,7 @@ type SecretDataTypeV5Default struct {
 	Description    string `json:"description,omitempty"`
 }
 
-// SecretDataTypeV5DefaultWithTOTP
+// SecretDataTypeV5DefaultWithTOTP represents the secret data for a V5 default resource with TOTP.
 type SecretDataTypeV5DefaultWithTOTP struct {
 	ObjectType     string         `json:"object_type"`
 	ResourceTypeID string         `json:"resource_type_id,omitempty"`
@@ -58,10 +58,10 @@ type SecretDataTypeV5DefaultWithTOTP struct {
 	TOTP           SecretDataTOTP `json:"totp"`
 }
 
-// SecretDataTypeV5PasswordString, is just the Password directly
+// SecretDataTypeV5PasswordString is just the password directly.
 type SecretDataTypeV5PasswordString string
 
-// SecretDataTypeV5TOTPStandalone
+// SecretDataTypeV5TOTPStandalone represents the secret data for a V5 standalone TOTP resource.
 type SecretDataTypeV5TOTPStandalone struct {
 	ObjectType     string         `json:"object_type"`
 	ResourceTypeID string         `json:"resource_type_id,omitempty"`
@@ -72,7 +72,7 @@ type SecretDataTypeV5TOTPStandalone struct {
 func (c *Client) GetSecret(ctx context.Context, resourceID string) (*Secret, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/secrets/resource/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {

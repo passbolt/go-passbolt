@@ -13,29 +13,29 @@ func (c *Client) EncryptMessage(message string) (string, error) {
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return "", fmt.Errorf("Client has no user private key (logged out or not initialized)")
+		return "", ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
-		return "", fmt.Errorf("Get Private Key Copy: %w", err)
+		return "", fmt.Errorf("get Private Key Copy: %w", err)
 	}
 
 	encHandle, err := c.pgp.Encryption().SigningKey(key).Recipient(c.userPrivateKey).New()
 	if err != nil {
-		return "", fmt.Errorf("New Encryptor: %w", err)
+		return "", fmt.Errorf("new Encryptor: %w", err)
 	}
 
 	defer encHandle.ClearPrivateParams()
 
 	encMessage, err := encHandle.Encrypt([]byte(message))
 	if err != nil {
-		return "", fmt.Errorf("Encrypt Message: %w", err)
+		return "", fmt.Errorf("encrypt Message: %w", err)
 	}
 
 	encArmor, err := encMessage.Armor()
 	if err != nil {
-		return "", fmt.Errorf("Armor Message: %w", err)
+		return "", fmt.Errorf("armor Message: %w", err)
 	}
 	return encArmor, nil
 }
@@ -46,7 +46,7 @@ func (c *Client) EncryptMessage(message string) (string, error) {
 func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string, error) {
 	publicKey, err := crypto.NewKeyFromArmored(publickey)
 	if err != nil {
-		return "", fmt.Errorf("Get Public Key: %w", err)
+		return "", fmt.Errorf("get Public Key: %w", err)
 	}
 
 	return c.EncryptMessageWithKey(publicKey, message)
@@ -59,29 +59,29 @@ func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (s
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return "", fmt.Errorf("Client has no user private key (logged out or not initialized)")
+		return "", ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
-		return "", fmt.Errorf("Get Private Key Copy: %w", err)
+		return "", fmt.Errorf("get Private Key Copy: %w", err)
 	}
 
 	encHandle, err := c.pgp.Encryption().SigningKey(key).Recipient(publicKey).New()
 	if err != nil {
-		return "", fmt.Errorf("New Encryptor: %w", err)
+		return "", fmt.Errorf("new Encryptor: %w", err)
 	}
 
 	defer encHandle.ClearPrivateParams()
 
 	encMessage, err := encHandle.Encrypt([]byte(message))
 	if err != nil {
-		return "", fmt.Errorf("Encrypt Message: %w", err)
+		return "", fmt.Errorf("encrypt Message: %w", err)
 	}
 
 	encArmor, err := encMessage.Armor()
 	if err != nil {
-		return "", fmt.Errorf("Armor Message: %w", err)
+		return "", fmt.Errorf("armor Message: %w", err)
 	}
 	return encArmor, nil
 }
@@ -93,12 +93,12 @@ func (c *Client) DecryptMessage(armoredCiphertext string) (string, error) {
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return "", fmt.Errorf("Client has no user private key (logged out or not initialized)")
+		return "", ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
-		return "", fmt.Errorf("Get Private Key Copy: %w", err)
+		return "", fmt.Errorf("get Private Key Copy: %w", err)
 	}
 
 	message, _, err := c.decryptMessageWithPrivateKeyAndReturnSessionKeyLocked(key, armoredCiphertext)
@@ -132,7 +132,7 @@ func (c *Client) decryptMessageWithPrivateKeyAndReturnSessionKeyLocked(privateKe
 	// (either by passing a copy or by external synchronization).
 	keyCopy, err := privateKey.Copy()
 	if err != nil {
-		return "", nil, fmt.Errorf("Copy Private Key: %w", err)
+		return "", nil, fmt.Errorf("copy Private Key: %w", err)
 	}
 
 	return c.decryptMessageWithPrivateKeyDirect(keyCopy, armoredCiphertext)
@@ -148,14 +148,14 @@ func (c *Client) decryptMessageWithPrivateKeyDirect(privateKey *crypto.Key, armo
 		RetrieveSessionKey().
 		New()
 	if err != nil {
-		return "", nil, fmt.Errorf("New Decryptor: %w", err)
+		return "", nil, fmt.Errorf("new Decryptor: %w", err)
 	}
 
 	defer decHandle.ClearPrivateParams()
 
 	res, err := decHandle.Decrypt([]byte(armoredCiphertext), crypto.Armor)
 	if err != nil {
-		return "", nil, fmt.Errorf("Decrypt: %w", err)
+		return "", nil, fmt.Errorf("decrypt: %w", err)
 	}
 
 	// Clone the session key before returning it, as ClearPrivateParams() will zero it out
@@ -170,18 +170,18 @@ func (c *Client) decryptMessageWithPrivateKeyDirect(privateKey *crypto.Key, armo
 func GetPrivateKeyFromArmor(privateKey string, passphrase []byte) (*crypto.Key, error) {
 	key, err := crypto.NewKeyFromArmored(privateKey)
 	if err != nil {
-		return nil, fmt.Errorf("Key From Armored: %w", err)
+		return nil, fmt.Errorf("key From Armored: %w", err)
 	}
 
 	locked, err := key.IsLocked()
 	if err != nil {
-		return nil, fmt.Errorf("Is Key Locked: %w", err)
+		return nil, fmt.Errorf("is Key Locked: %w", err)
 	}
 
 	if locked {
 		unlocked, err := key.Unlock(passphrase)
 		if err != nil {
-			return nil, fmt.Errorf("Unlock Key: %w", err)
+			return nil, fmt.Errorf("unlock Key: %w", err)
 		}
 		return unlocked, nil
 	}
@@ -192,14 +192,14 @@ func GetPrivateKeyFromArmor(privateKey string, passphrase []byte) (*crypto.Key, 
 func (c *Client) DecryptMessageWithSessionKey(sessionKey *crypto.SessionKey, ciphertextArmored string) (string, error) {
 	decHandle, err := c.pgp.Decryption().SessionKey(sessionKey).New()
 	if err != nil {
-		return "", fmt.Errorf("New Decryptor: %w", err)
+		return "", fmt.Errorf("new Decryptor: %w", err)
 	}
 
 	defer decHandle.ClearPrivateParams()
 
 	res, err := decHandle.Decrypt([]byte(ciphertextArmored), crypto.Armor)
 	if err != nil {
-		return "", fmt.Errorf("Decrypt: %w", err)
+		return "", fmt.Errorf("decrypt: %w", err)
 	}
 
 	return res.String(), nil
@@ -212,12 +212,12 @@ func (c *Client) GetUserPrivateKeyCopy() (*crypto.Key, error) {
 	defer c.cryptoMu.RUnlock()
 
 	if c.userPrivateKey == nil {
-		return nil, fmt.Errorf("Client has no user private key (logged out or not initialized)")
+		return nil, ErrNoPrivateKey
 	}
 
 	key, err := c.userPrivateKey.Copy()
 	if err != nil {
-		return nil, fmt.Errorf("Get Private Key Copy: %w", err)
+		return nil, fmt.Errorf("get Private Key Copy: %w", err)
 	}
 	return key, nil
 }
