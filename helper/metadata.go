@@ -24,7 +24,7 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 	if cachedSessionKey := c.GetSessionKeyByResourceID(resource.ID); cachedSessionKey != nil {
 		decMetadata, err := c.DecryptMetadataWithResourceID(resource.ID, "", nil, resource.Metadata)
 		if err == nil {
-			err = validateMetadata(rType, string(decMetadata))
+			err = validateMetadata(rType, decMetadata)
 			if err != nil {
 				return "", fmt.Errorf("validate Metadata: %w", err)
 			}
@@ -61,7 +61,7 @@ func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resou
 		return "", fmt.Errorf("decrypt Metadata: %w", err)
 	}
 
-	err = validateMetadata(rType, string(decMetadata))
+	err = validateMetadata(rType, decMetadata)
 	if err != nil {
 		return "", fmt.Errorf("validate Metadata: %w", err)
 	}

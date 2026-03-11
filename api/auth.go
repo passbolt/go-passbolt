@@ -47,7 +47,7 @@ func (c *Client) Login(ctx context.Context) error {
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	var apiErr *APIError
-	if err != nil && !(errors.As(err, &apiErr) && apiErr.Message == "The authentication failed.") {
+	if err != nil && (!errors.As(err, &apiErr) || apiErr.Message != "The authentication failed.") {
 		return fmt.Errorf("doing Stage 1 Request: %w", err)
 	}
 
@@ -77,7 +77,7 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("checking Auth Token Format: %w", err)
 	}
 
-	data.Auth.Token = string(authToken)
+	data.Auth.Token = authToken
 
 	res, _, err = c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil {
@@ -87,13 +87,14 @@ func (c *Client) Login(ctx context.Context) error {
 	c.log("Got Cookies: %+v", res.Cookies())
 
 	for _, cookie := range res.Cookies() {
-		if cookie.Name == "passbolt_session" {
+		switch cookie.Name {
+		case "passbolt_session":
 			c.sessionToken = *cookie
+		case "CAKEPHP":
 			// Session Cookie in older Passbolt Versions
-		} else if cookie.Name == "CAKEPHP" {
 			c.sessionToken = *cookie
+		case "PHPSESSID":
 			// Session Cookie in Cloud version?
-		} else if cookie.Name == "PHPSESSID" {
 			c.sessionToken = *cookie
 		}
 	}

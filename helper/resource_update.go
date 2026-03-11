@@ -49,7 +49,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		var metadataMap map[string]any
 		err = json.Unmarshal([]byte(orgMetadata), &metadataMap)
 		if err != nil {
-			return fmt.Errorf("marshalling metadata: %w", err)
+			return fmt.Errorf("marshaling metadata: %w", err)
 		}
 
 		var newMetadata []byte
@@ -104,7 +104,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 
 		newMetadata, err = json.Marshal(&metadataMap)
 		if err != nil {
-			return fmt.Errorf("marshalling metadata: %w", err)
+			return fmt.Errorf("marshaling metadata: %w", err)
 		}
 
 		// Validate Metadata
@@ -165,7 +165,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			}
 			res, err := json.Marshal(&tmp)
 			if err != nil {
-				return fmt.Errorf("marshalling Secret Data: %w", err)
+				return fmt.Errorf("marshaling Secret Data: %w", err)
 			}
 			secretData = string(res)
 		case "v5-password-string":
@@ -204,7 +204,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 
 			res, err := json.Marshal(&oldSecret)
 			if err != nil {
-				return fmt.Errorf("marshalling Secret Data: %w", err)
+				return fmt.Errorf("marshaling Secret Data: %w", err)
 			}
 			secretData = string(res)
 		case "v5-totp-standalone":
@@ -225,7 +225,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 
 			res, err := json.Marshal(&oldSecret)
 			if err != nil {
-				return fmt.Errorf("marshalling Secret Data: %w", err)
+				return fmt.Errorf("marshaling Secret Data: %w", err)
 			}
 			secretData = string(res)
 		default:
@@ -294,7 +294,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 			}
 			res, err := json.Marshal(&tmp)
 			if err != nil {
-				return fmt.Errorf("marshalling Secret Data: %w", err)
+				return fmt.Errorf("marshaling Secret Data: %w", err)
 			}
 			secretData = string(res)
 		case "password-description-totp":
@@ -320,7 +320,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 
 			res, err := json.Marshal(&oldSecret)
 			if err != nil {
-				return fmt.Errorf("marshalling Secret Data: %w", err)
+				return fmt.Errorf("marshaling Secret Data: %w", err)
 			}
 			secretData = string(res)
 		case "totp":
@@ -341,7 +341,7 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 
 			res, err := json.Marshal(&oldSecret)
 			if err != nil {
-				return fmt.Errorf("marshalling Secret Data: %w", err)
+				return fmt.Errorf("marshaling Secret Data: %w", err)
 			}
 			secretData = string(res)
 		default:

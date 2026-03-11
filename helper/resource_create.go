@@ -56,7 +56,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	metaData, err := json.Marshal(&meta)
 	if err != nil {
-		return "", fmt.Errorf("marshalling metadata: %w", err)
+		return "", fmt.Errorf("marshaling metadata: %w", err)
 	}
 
 	err = validateMetadata(rType, string(metaData))
@@ -86,7 +86,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	secretData, err := json.Marshal(&secret)
 	if err != nil {
-		return "", fmt.Errorf("marshalling Secret Data: %w", err)
+		return "", fmt.Errorf("marshaling Secret Data: %w", err)
 	}
 
 	err = validateSecretData(rType, string(secretData))
@@ -147,7 +147,7 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 	}
 	secretData, err := json.Marshal(&tmp)
 	if err != nil {
-		return "", fmt.Errorf("marshalling Secret Data: %w", err)
+		return "", fmt.Errorf("marshaling Secret Data: %w", err)
 	}
 
 	err = validateSecretData(rType, string(secretData))

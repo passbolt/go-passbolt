@@ -63,7 +63,7 @@ type Client struct {
 	// MetadataKeyUpdatedCallback is Called by the Client when the Metadatakey has changed
 	// trusted shows if this key has been signed and thus been trusted by another client of this user
 	// the consumer should prompt the user about the keychange and save the new fingerprint (may be skipped if it is trusted).
-	// If no error is returned then the new key will be accepted and its fingerpint set in the client
+	// If no error is returned then the new key will be accepted and its fingerprint set in the client
 	MetadataKeyUpdatedCallback func(ctx context.Context, trusted bool, fingerprint string, signTime time.Time) error
 
 	// used for solving MFA challenges. You can block this to for example wait for user input.
@@ -78,7 +78,8 @@ type Client struct {
 	Debug bool
 
 	// Cache for resource types (rarely change)
-	resourceTypesCache []ResourceType
+	resourceTypesCache   []ResourceType
+	resourceTypesCacheMu sync.RWMutex
 
 	// Cache for metadata keys (includes decrypted private keys)
 	metadataKeysCache []MetadataKey
@@ -151,7 +152,7 @@ func (c *Client) newRequest(method, url string, body interface{}) (*http.Request
 		buf = new(bytes.Buffer)
 		err := json.NewEncoder(buf).Encode(body)
 		if err != nil {
-			return nil, fmt.Errorf("jSON Encoding Request: %w", err)
+			return nil, fmt.Errorf("JSON encoding Request: %w", err)
 		}
 	}
 
@@ -194,13 +195,11 @@ func (c *Client) do(ctx context.Context, req *http.Request, v *APIResponse) (*ht
 			return nil, fmt.Errorf("request: %w", err)
 		}
 	}
-	defer func() {
-		resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return resp, fmt.Errorf("error Reading Resopnse Body: %w", err)
+		return resp, fmt.Errorf("error reading Response Body: %w", err)
 	}
 
 	c.log("Raw Response: %v", string(bodyBytes))
@@ -325,11 +324,16 @@ func (c *Client) ClearCache() {
 
 // ClearResourceTypesCache clears the resource types cache
 func (c *Client) ClearResourceTypesCache() {
+	c.resourceTypesCacheMu.Lock()
 	c.resourceTypesCache = nil
+	c.resourceTypesCacheMu.Unlock()
 }
 
 // ClearMetadataKeysCache clears the metadata keys cache with secure memory zeroing
 func (c *Client) ClearMetadataKeysCache() {
+	c.cryptoMu.Lock()
+	defer c.cryptoMu.Unlock()
+
 	c.metadataKeysCache = nil
 
 	// Securely zero all cached decrypted keys before clearing
@@ -386,28 +390,40 @@ func cloneSessionKey(sk *crypto.SessionKey) *crypto.SessionKey {
 
 // GetResourceTypesCached returns cached resource types, fetching from API if cache is empty
 func (c *Client) GetResourceTypesCached(ctx context.Context) ([]ResourceType, error) {
+	c.resourceTypesCacheMu.RLock()
 	if c.resourceTypesCache != nil {
-		return c.resourceTypesCache, nil
+		result := c.resourceTypesCache
+		c.resourceTypesCacheMu.RUnlock()
+		return result, nil
 	}
+	c.resourceTypesCacheMu.RUnlock()
 
 	types, err := c.GetResourceTypes(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	c.resourceTypesCacheMu.Lock()
 	c.resourceTypesCache = types
+	c.resourceTypesCacheMu.Unlock()
 	return types, nil
 }
 
 // GetResourceTypeCached returns a cached resource type by ID, fetching from API if not in cache
 func (c *Client) GetResourceTypeCached(ctx context.Context, typeID string) (*ResourceType, error) {
 	// First check the cache
+	c.resourceTypesCacheMu.RLock()
 	if c.resourceTypesCache != nil {
 		for i := range c.resourceTypesCache {
 			if c.resourceTypesCache[i].ID == typeID {
-				return &c.resourceTypesCache[i], nil
+				result := &c.resourceTypesCache[i]
+				c.resourceTypesCacheMu.RUnlock()
+				return result, nil
 			}
 		}
+		c.resourceTypesCacheMu.RUnlock()
+	} else {
+		c.resourceTypesCacheMu.RUnlock()
 	}
 
 	// Populate cache and search again
@@ -443,9 +459,13 @@ func (c *Client) GetResourceTypeBySlugCached(ctx context.Context, slug string) (
 
 // GetMetadataKeysCached returns cached metadata keys, fetching from API if cache is empty
 func (c *Client) GetMetadataKeysCached(ctx context.Context) ([]MetadataKey, error) {
+	c.cryptoMu.RLock()
 	if c.metadataKeysCache != nil {
-		return c.metadataKeysCache, nil
+		result := c.metadataKeysCache
+		c.cryptoMu.RUnlock()
+		return result, nil
 	}
+	c.cryptoMu.RUnlock()
 
 	keys, err := c.GetMetadataKeys(ctx, &GetMetadataKeysOptions{
 		ContainMetadataPrivateKeys: true,
@@ -454,7 +474,9 @@ func (c *Client) GetMetadataKeysCached(ctx context.Context) ([]MetadataKey, erro
 		return nil, err
 	}
 
+	c.cryptoMu.Lock()
 	c.metadataKeysCache = keys
+	c.cryptoMu.Unlock()
 	return keys, nil
 }
 
@@ -533,7 +555,9 @@ func (c *Client) GetDecryptedMetadataKeyCached(ctx context.Context, id string) (
 	}
 
 	// Cache the decrypted key
+	c.cryptoMu.Lock()
 	c.decryptedMetadataKeysCache[id] = metadataPrivateKeyObj
+	c.cryptoMu.Unlock()
 
 	// Return a copy so caller cannot affect cached key
 	keyCopy, err := metadataPrivateKeyObj.Copy()
@@ -577,7 +601,7 @@ func (c *Client) PreFetchCaches(ctx context.Context) (sessionCount, metadataKeyC
 	if err != nil {
 		// Log but don't fail - session key caching is optional optimization
 		c.log("Warning: Failed to fetch session keys: %v", err)
-		err = nil // Clear error to continue
+		err = nil //nolint:ineffassign // intentional: clear error to continue
 	}
 
 	// Then, pre-decrypt all metadata private keys
@@ -585,7 +609,7 @@ func (c *Client) PreFetchCaches(ctx context.Context) (sessionCount, metadataKeyC
 	if err != nil {
 		// Log but don't fail - this is also optional optimization
 		c.log("Warning: Failed to pre-decrypt metadata keys: %v", err)
-		err = nil
+		err = nil //nolint:ineffassign // intentional: clear error to continue
 	}
 
 	return sessionCount, metadataKeyCount, nil
