@@ -75,9 +75,10 @@ start:
 		}
 	}
 
-	if res.Header.Status == "success" {
+	switch res.Header.Status {
+	case "success":
 		return r, &res, nil
-	} else if res.Header.Status == "error" {
+	case "error":
 		if res.Header.Code == 403 && strings.HasSuffix(res.Header.URL, "/mfa/verify/error.json") {
 			if !firstTime {
 				// if we are here this probably means that the MFA callback is broken, to prevent a infinite loop lets error here
@@ -96,7 +97,7 @@ start:
 			}
 		}
 		return r, &res, &APIError{StatusCode: res.Header.Code, Message: res.Header.Message, Body: string(res.Body)}
-	} else {
+	default:
 		return r, &res, &APIError{StatusCode: res.Header.Code, Message: res.Header.Message, Body: string(res.Body)}
 	}
 }

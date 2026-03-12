@@ -167,7 +167,7 @@ func (c *Client) GetMetadataKey(ctx context.Context, personal bool) (string, Met
 	// Verify the key
 	if c.GetTrustedMetadatakeyFingerprint() == nil || metadataPrivateKeyObj.GetFingerprint() != *c.GetTrustedMetadatakeyFingerprint() {
 
-		if c.trustedMetadataKeySigntime != nil && !data.Signed.Time.After(*c.trustedMetadataKeySigntime) {
+		if c.trustedMetadataKeySigntime != nil && !data.Signed.After(*c.trustedMetadataKeySigntime) {
 			return "", "", nil, fmt.Errorf("new Metadata Key is older than the currently trusted one: %w", err)
 		}
 

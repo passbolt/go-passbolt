@@ -96,7 +96,7 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 		resource.MetadataKeyID = metadataKeyID
 		resource.MetadataKeyType = metadataKeyType
 
-		encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metadata))
+		encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, metadata)
 		if err != nil {
 			return fmt.Errorf("encrypt Metadata: %w", err)
 		}
@@ -225,7 +225,8 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 		}
 		// Check Whether Matching Permission Already Exists and needs to be adjusted or is a new one can be created
 		if oldPermission == nil {
-			if change.Type == 15 || change.Type == 7 || change.Type == 1 {
+			switch change.Type {
+			case 15, 7, 1:
 				permissionChanges = append(permissionChanges, api.Permission{
 					IsNew:         true,
 					Type:          change.Type,
@@ -234,9 +235,9 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 					ACO:           ACO,
 					ACOForeignKey: ACOID,
 				})
-			} else if change.Type == -1 {
+			case -1:
 				return nil, fmt.Errorf("permission for %v %v Cannot be Deleted as No Matching Permission Exists", change.ARO, change.AROID)
-			} else {
+			default:
 				return nil, fmt.Errorf("unknown Permission Type: %v", change.Type)
 			}
 		} else {
@@ -248,15 +249,16 @@ func GeneratePermissionChanges(oldPermissions []api.Permission, changes []ShareO
 				ACOForeignKey: ACOID,
 			}
 
-			if change.Type == 15 || change.Type == 7 || change.Type == 1 {
+			switch change.Type {
+			case 15, 7, 1:
 				if oldPermission.Type == change.Type {
 					return nil, fmt.Errorf("permission for %v %v is already Type %v", change.ARO, change.AROID, change.Type)
 				}
 				tmp.Type = change.Type
-			} else if change.Type == -1 {
+			case -1:
 				tmp.Delete = true
 				tmp.Type = oldPermission.Type
-			} else {
+			default:
 				return nil, fmt.Errorf("unknown Permission Type: %v", change.Type)
 			}
 			permissionChanges = append(permissionChanges, tmp)
