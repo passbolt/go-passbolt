@@ -68,6 +68,22 @@ type SecretDataTypeV5TOTPStandalone struct {
 	TOTP           SecretDataTOTP `json:"totp"`
 }
 
+// CustomField represents a single custom field item in secret or metadata data
+type CustomField struct {
+	ID            string `json:"id"`
+	Type          string `json:"type"`
+	SecretKey     string `json:"secret_key,omitempty"`
+	SecretValue   any    `json:"secret_value,omitempty"`
+	MetadataKey   string `json:"metadata_key,omitempty"`
+	MetadataValue any    `json:"metadata_value,omitempty"`
+}
+
+// SecretDataTypeV5CustomFields is the format for "v5-custom-fields" resources
+type SecretDataTypeV5CustomFields struct {
+	ObjectType   string        `json:"object_type"`
+	CustomFields []CustomField `json:"custom_fields"`
+}
+
 // GetSecret gets a Passbolt Secret
 func (c *Client) GetSecret(ctx context.Context, resourceID string) (*Secret, error) {
 	err := checkUUIDFormat(resourceID)

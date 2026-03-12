@@ -196,6 +196,40 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 		if len(metadata.URIs) != 0 {
 			uri = metadata.URIs[0]
 		}
+	case "v5-custom-fields":
+		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("getting Metadata: %w", err)
+		}
+
+		var metadata api.ResourceMetadataTypeV5CustomFields
+		err = json.Unmarshal([]byte(rawMetadata), &metadata)
+		if err != nil {
+			return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Metadata: %w", err)
+		}
+
+		name = metadata.Name
+		if len(metadata.URIs) != 0 {
+			uri = metadata.URIs[0]
+		}
+		desc = metadata.Description
+
+		// Extract password from custom fields if a "password" type field exists
+		if rawSecretData != "" {
+			var secretData api.SecretDataTypeV5CustomFields
+			err = json.Unmarshal([]byte(rawSecretData), &secretData)
+			if err != nil {
+				return "", "", "", "", "", "", fmt.Errorf("parsing Decrypted Secret Data: %w", err)
+			}
+			for _, cf := range secretData.CustomFields {
+				if cf.Type == "password" {
+					if s, ok := cf.SecretValue.(string); ok {
+						pw = s
+					}
+					break
+				}
+			}
+		}
 	default:
 		return "", "", "", "", "", "", fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
 	}

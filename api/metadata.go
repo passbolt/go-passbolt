@@ -48,6 +48,16 @@ type ResourceMetadataTypeV5TOTPStandalone struct {
 	Description    string   `json:"description,omitempty"`
 }
 
+// ResourceMetadataTypeV5CustomFields represents the metadata for a V5 custom fields resource.
+type ResourceMetadataTypeV5CustomFields struct {
+	ObjectType     string        `json:"object_type"`
+	ResourceTypeID string        `json:"resource_type_id,omitempty"`
+	Name           string        `json:"name,omitempty"`
+	URIs           []string      `json:"uris,omitempty"`
+	Description    string        `json:"description,omitempty"`
+	CustomFields   []CustomField `json:"custom_fields"`
+}
+
 // DecryptMetadata decrypts metadata using the provided key.
 // For session key caching, use DecryptMetadataWithKeyID instead.
 func (c *Client) DecryptMetadata(metadataKey *crypto.Key, armoredCiphertext string) (string, error) {
