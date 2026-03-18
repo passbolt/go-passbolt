@@ -69,7 +69,10 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 			// If failed, fall through to other cache strategies
 			c.log("Resource session key cache decrypt FAILED for resource %v: %v", resourceID, err)
 		} else {
-			c.log("Resource session key cache MISS for resource %v (cache size: %d)", resourceID, len(c.sessionKeyCache))
+			c.sessionKeyCacheMu.RLock()
+			cacheSize := len(c.sessionKeyCache)
+			c.sessionKeyCacheMu.RUnlock()
+			c.log("Resource session key cache MISS for resource %v (cache size: %d)", resourceID, cacheSize)
 		}
 	}
 
