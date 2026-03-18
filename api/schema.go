@@ -208,4 +208,76 @@ var ResourceSchemas = map[string]json.RawMessage{
     }
   }
 }`),
+	"v5-custom-fields": json.RawMessage(`
+{
+  "resource": {
+    "type": "object",
+    "required": ["name", "custom_fields"],
+    "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": ["PASSBOLT_RESOURCE_METADATA"]
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 255
+      },
+      "uris": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      },
+      "description": {
+        "type": ["string", "null"],
+        "maxLength": 10000
+      },
+      "custom_fields": {
+        "type": "array",
+        "maxItems": 128,
+        "items": {
+          "type": "object",
+          "required": ["id", "type"],
+          "properties": {
+            "id": { "type": "string" },
+            "type": {
+              "type": "string",
+              "enum": ["text", "password", "boolean", "number", "uri"]
+            },
+            "metadata_key": { "type": ["string", "null"] },
+            "metadata_value": {}
+          }
+        }
+      }
+    }
+  },
+  "secret": {
+    "type": "object",
+    "required": ["custom_fields"],
+    "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": ["PASSBOLT_SECRET_DATA"]
+      },
+      "custom_fields": {
+        "type": "array",
+        "maxItems": 128,
+        "items": {
+          "type": "object",
+          "required": ["id", "type"],
+          "properties": {
+            "id": { "type": "string" },
+            "type": {
+              "type": "string",
+              "enum": ["text", "password", "boolean", "number", "uri"]
+            },
+            "secret_key": { "type": ["string", "null"] },
+            "secret_value": {}
+          }
+        }
+      }
+    }
+  }
+}`),
 }

@@ -9,45 +9,6 @@ import (
 const PassboltObjectTypeResourceMetadata = "PASSBOLT_RESOURCE_METADATA"
 const PassboltObjectTypeSecretData = "PASSBOLT_SECRET_DATA"
 
-// ResourceMetadataTypeV5Default represents the metadata for a V5 default resource.
-type ResourceMetadataTypeV5Default struct {
-	ObjectType     string   `json:"object_type"`
-	ResourceTypeID string   `json:"resource_type_id,omitempty"`
-	Name           string   `json:"name,omitempty"`
-	Username       string   `json:"username,omitempty"`
-	URIs           []string `json:"uris,omitempty"`
-	Description    string   `json:"description,omitempty"`
-}
-
-// ResourceMetadataTypeV5DefaultWithTOTP represents the metadata for a V5 default resource with TOTP.
-type ResourceMetadataTypeV5DefaultWithTOTP struct {
-	ObjectType     string   `json:"object_type"`
-	ResourceTypeID string   `json:"resource_type_id,omitempty"`
-	Name           string   `json:"name,omitempty"`
-	Username       string   `json:"username,omitempty"`
-	URIs           []string `json:"uris,omitempty"`
-	Description    string   `json:"description,omitempty"`
-}
-
-// ResourceMetadataTypeV5PasswordString represents the metadata for a V5 password string resource.
-type ResourceMetadataTypeV5PasswordString struct {
-	ObjectType     string   `json:"object_type"`
-	ResourceTypeID string   `json:"resource_type_id,omitempty"`
-	Name           string   `json:"name,omitempty"`
-	Username       string   `json:"username,omitempty"`
-	URIs           []string `json:"uris,omitempty"`
-	Description    string   `json:"description,omitempty"`
-}
-
-// ResourceMetadataTypeV5TOTPStandalone represents the metadata for a V5 standalone TOTP resource.
-type ResourceMetadataTypeV5TOTPStandalone struct {
-	ObjectType     string   `json:"object_type"`
-	ResourceTypeID string   `json:"resource_type_id,omitempty"`
-	Name           string   `json:"name,omitempty"`
-	URIs           []string `json:"uris,omitempty"`
-	Description    string   `json:"description,omitempty"`
-}
-
 // DecryptMetadata decrypts metadata using the provided key.
 // For session key caching, use DecryptMetadataWithKeyID instead.
 func (c *Client) DecryptMetadata(metadataKey *crypto.Key, armoredCiphertext string) (string, error) {

@@ -4,102 +4,134 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/passbolt/go-passbolt/api"
 )
 
-// CreateResource Creates a Resource, Creates a v4 or v5 Resources based on the server Preference
+// CreateResource creates a resource using the server's preferred format (v4 or v5).
+// For more control, use CreateResourceGeneric.
 func CreateResource(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
-	// Create a v5 Password if that is the Server Default
+	var slug string
 	if c.MetadataTypeSettings().DefaultResourceType == api.PassboltAPIVersionTypeV5 {
-		return CreateResourceV5(ctx, c, folderParentID, name, username, uri, password, description)
+		slug = "v5-default"
 	} else {
-		return CreateResourceV4(ctx, c, folderParentID, name, username, uri, password, description)
+		slug = "password-and-description"
 	}
+
+	metadataFields := map[string]any{
+		"name":     name,
+		"username": username,
+	}
+	if strings.HasPrefix(slug, "v5-") {
+		metadataFields["uris"] = []string{uri}
+	} else {
+		metadataFields["uri"] = uri
+	}
+
+	secretFields := map[string]any{
+		"password":    password,
+		"description": description,
+	}
+
+	return CreateResourceGeneric(ctx, c, slug, folderParentID, metadataFields, secretFields)
 }
 
-func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
-	if !c.MetadataTypeSettings().AllowCreationOfV5Resources {
+// CreateResourceGeneric creates a resource of any type using dynamic field maps.
+// The slug determines the resource type. Metadata and secret fields are validated
+// against the resource type's JSON schema before submission.
+func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, folderParentID string, metadataFields map[string]any, secretFields map[string]any) (string, error) {
+	// Find the resource type by slug
+	rType, err := findResourceTypeBySlug(ctx, c, slug)
+	if err != nil {
+		return "", err
+	}
+
+	isV5 := rType.IsV5()
+
+	// Check creation permissions
+	if isV5 && !c.MetadataTypeSettings().AllowCreationOfV5Resources {
 		return "", ErrV5CreationDisabled
 	}
-
-	types, err := c.GetResourceTypes(ctx, nil)
-	if err != nil {
-		return "", fmt.Errorf("getting ResourceTypes: %w", err)
-	}
-	var rType *api.ResourceType
-	for _, tmp := range types {
-		if tmp.Slug == "v5-default" {
-			rType = &tmp
-			break
-		}
-	}
-	if rType == nil {
-		return "", fmt.Errorf("%w: v5-default", ErrResourceTypeSlugNotFound)
+	if !isV5 && !c.MetadataTypeSettings().AllowCreationOfV4Resources {
+		return "", ErrV4CreationDisabled
 	}
 
-	// Base Resource
 	resource := api.Resource{
 		ResourceTypeID: rType.ID,
 		FolderParentID: folderParentID,
 	}
 
-	// Resource Metadata
-	meta := api.ResourceMetadataTypeV5Default{
-		ObjectType:     api.PassboltObjectTypeResourceMetadata,
-		ResourceTypeID: rType.ID,
-		Name:           name,
-		Username:       username,
-		URIs:           []string{uri},
+	// Auto-route description between metadata and secret based on schema.
+	// Callers may put description in either map; we move it to the right place.
+	routeFieldBySchema(rType, metadataFields, secretFields, "description")
+
+	// Build and set metadata
+	if isV5 {
+		// V5: encrypt metadata
+		metadataFields["object_type"] = api.PassboltObjectTypeResourceMetadata
+		metadataFields["resource_type_id"] = rType.ID
+
+		metaData, err := json.Marshal(metadataFields)
+		if err != nil {
+			return "", fmt.Errorf("marshaling metadata: %w", err)
+		}
+
+		err = validateMetadata(rType, string(metaData))
+		if err != nil {
+			return "", fmt.Errorf("validating metadata: %w", err)
+		}
+
+		metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, true)
+		if err != nil {
+			return "", fmt.Errorf("get metadata key: %w", err)
+		}
+		resource.MetadataKeyID = metadataKeyID
+		resource.MetadataKeyType = metadataKeyType
+
+		encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metaData))
+		if err != nil {
+			return "", fmt.Errorf("encrypt metadata: %w", err)
+		}
+		resource.Metadata = encMetadata
+	} else {
+		// V4: set cleartext fields
+		resource.Name = getStringFromMap(metadataFields, "name")
+		resource.Username = getStringFromMap(metadataFields, "username")
+		resource.URI = getStringFromMap(metadataFields, "uri")
+		resource.Description = getStringFromMap(metadataFields, "description")
 	}
 
-	metaData, err := json.Marshal(&meta)
+	// Build and set secret
+	var secretDataStr string
+	if rType.IsSecretString() {
+		// Secret is a plain string (password)
+		secretDataStr = getStringFromMap(secretFields, "password")
+	} else {
+		// Secret is JSON
+		if isV5 {
+			secretFields["object_type"] = api.PassboltObjectTypeSecretData
+		}
+		secretData, err := json.Marshal(secretFields)
+		if err != nil {
+			return "", fmt.Errorf("marshaling secret data: %w", err)
+		}
+		secretDataStr = string(secretData)
+	}
+
+	err = validateSecretData(rType, secretDataStr)
 	if err != nil {
-		return "", fmt.Errorf("marshaling metadata: %w", err)
+		return "", fmt.Errorf("validating secret data: %w", err)
 	}
 
-	err = validateMetadata(rType, string(metaData))
+	encSecretData, err := c.EncryptMessage(secretDataStr)
 	if err != nil {
-		return "", fmt.Errorf("validating metadata: %w", err)
-	}
-
-	metadataKeyID, metadataKeyType, publicMetadataKey, err := c.GetMetadataKey(ctx, true)
-	if err != nil {
-		return "", fmt.Errorf("get Metadata Key: %w", err)
-	}
-	resource.MetadataKeyID = metadataKeyID
-	resource.MetadataKeyType = metadataKeyType
-
-	encMetadata, err := c.EncryptMessageWithKey(publicMetadataKey, string(metaData))
-	if err != nil {
-		return "", fmt.Errorf("encrypt Metadata: %w", err)
-	}
-	resource.Metadata = encMetadata
-
-	// Resource Secret
-	secret := api.SecretDataTypeV5Default{
-		ObjectType:  api.PassboltObjectTypeSecretData,
-		Password:    password,
-		Description: description,
-	}
-
-	secretData, err := json.Marshal(&secret)
-	if err != nil {
-		return "", fmt.Errorf("marshaling Secret Data: %w", err)
-	}
-
-	err = validateSecretData(rType, string(secretData))
-	if err != nil {
-		return "", fmt.Errorf("validating Secret Data: %w", err)
-	}
-
-	encSecretData, err := c.EncryptMessage(string(secretData))
-	if err != nil {
-		return "", fmt.Errorf("encrypting Secret Data for User me: %w", err)
+		return "", fmt.Errorf("encrypting secret data for user me: %w", err)
 	}
 	resource.Secrets = []api.Secret{{Data: encSecretData}}
 
+	// Handle password expiry
 	passwordExpirySettings := c.GetPasswordExpirySettings()
 	if passwordExpirySettings.DefaultExpiryPeriod != 0 {
 		expiry := time.Now().Add(time.Hour * 24 * time.Duration(passwordExpirySettings.DefaultExpiryPeriod))
@@ -108,83 +140,64 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 
 	newresource, err := c.CreateResource(ctx, resource)
 	if err != nil {
-		return "", fmt.Errorf("creating Resource: %w", err)
+		return "", fmt.Errorf("creating resource: %w", err)
 	}
 	return newresource.ID, nil
 }
 
+// CreateResourceV5 creates a v5-default resource. Delegates to CreateResourceGeneric.
+func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
+	return CreateResourceGeneric(ctx, c, "v5-default", folderParentID,
+		map[string]any{
+			"name":     name,
+			"username": username,
+			"uris":     []string{uri},
+		},
+		map[string]any{
+			"password":    password,
+			"description": description,
+		},
+	)
+}
+
+// CreateResourceV4 creates a v4 password-and-description resource. Delegates to CreateResourceGeneric.
 func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
-	if !c.MetadataTypeSettings().AllowCreationOfV4Resources {
-		return "", ErrV4CreationDisabled
-	}
-
-	types, err := c.GetResourceTypes(ctx, nil)
-	if err != nil {
-		return "", fmt.Errorf("getting ResourceTypes: %w", err)
-	}
-	var rType *api.ResourceType
-	for _, tmp := range types {
-		if tmp.Slug == "password-and-description" {
-			rType = &tmp
-			break
-		}
-	}
-	if rType == nil {
-		return "", fmt.Errorf("%w: password-and-description", ErrResourceTypeSlugNotFound)
-	}
-
-	resource := api.Resource{
-		ResourceTypeID: rType.ID,
-		FolderParentID: folderParentID,
-		Name:           name,
-		Username:       username,
-		URI:            uri,
-	}
-
-	tmp := api.SecretDataTypePasswordAndDescription{
-		Password:    password,
-		Description: description,
-	}
-	secretData, err := json.Marshal(&tmp)
-	if err != nil {
-		return "", fmt.Errorf("marshaling Secret Data: %w", err)
-	}
-
-	err = validateSecretData(rType, string(secretData))
-	if err != nil {
-		return "", fmt.Errorf("validating Secret Data: %w", err)
-	}
-
-	encSecretData, err := c.EncryptMessage(string(secretData))
-	if err != nil {
-		return "", fmt.Errorf("encrypting Secret Data for User me: %w", err)
-	}
-	resource.Secrets = []api.Secret{{Data: encSecretData}}
-
-	passwordExpirySettings := c.GetPasswordExpirySettings()
-	if passwordExpirySettings.DefaultExpiryPeriod != 0 {
-		expiry := time.Now().Add(time.Hour * 24 * time.Duration(passwordExpirySettings.DefaultExpiryPeriod))
-		resource.Expired = &api.Time{Time: expiry}
-	}
-
-	newresource, err := c.CreateResource(ctx, resource)
-	if err != nil {
-		return "", fmt.Errorf("creating Resource: %w", err)
-	}
-	return newresource.ID, nil
+	return CreateResourceGeneric(ctx, c, "password-and-description", folderParentID,
+		map[string]any{
+			"name":     name,
+			"username": username,
+			"uri":      uri,
+		},
+		map[string]any{
+			"password":    password,
+			"description": description,
+		},
+	)
 }
 
-// CreateResourceSimple Creates a Legacy Resource where only the Password is Encrypted and Returns the Resources ID
+// CreateResourceSimple creates a legacy resource where only the password is encrypted.
 func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
+	if c.MetadataTypeSettings().DefaultResourceType == api.PassboltAPIVersionTypeV5 {
+		return CreateResourceGeneric(ctx, c, "v5-password-string", folderParentID,
+			map[string]any{
+				"name":        name,
+				"username":    username,
+				"uris":        []string{uri},
+				"description": description,
+			},
+			map[string]any{
+				"password": password,
+			},
+		)
+	}
+
 	if !c.MetadataTypeSettings().AllowCreationOfV4Resources {
 		return "", ErrV4CreationDisabled
 	}
-
-	// TODO Create a v5-password-string if v5 is enabled
 
 	enc, err := c.EncryptMessage(password)
 	if err != nil {
-		return "", fmt.Errorf("encrypting Password: %w", err)
+		return "", fmt.Errorf("encrypting password: %w", err)
 	}
 
 	res := api.Resource{
@@ -200,7 +213,52 @@ func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, na
 
 	resource, err := c.CreateResource(ctx, res)
 	if err != nil {
-		return "", fmt.Errorf("creating Resource: %w", err)
+		return "", fmt.Errorf("creating resource: %w", err)
 	}
 	return resource.ID, nil
+}
+
+// findResourceTypeBySlug finds a resource type by its slug from the server.
+func findResourceTypeBySlug(ctx context.Context, c *api.Client, slug string) (*api.ResourceType, error) {
+	types, err := c.GetResourceTypes(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("getting resource types: %w", err)
+	}
+	for _, t := range types {
+		if t.Slug == slug {
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %v", ErrResourceTypeSlugNotFound, slug)
+}
+
+// routeFieldBySchema moves a field from metadataFields to secretFields (or vice versa)
+// based on which schema section actually defines the field. This allows callers to put
+// fields like "description" in either map without knowing the resource type internals.
+func routeFieldBySchema(rType *api.ResourceType, metadataFields, secretFields map[string]any, field string) {
+	inMeta := rType.HasMetadataField(field)
+	inSecret := rType.HasSecretField(field)
+
+	if val, ok := metadataFields[field]; ok && !inMeta && inSecret {
+		// Caller put it in metadata but schema says it belongs in secret
+		secretFields[field] = val
+		delete(metadataFields, field)
+	} else if val, ok := secretFields[field]; ok && !inSecret && inMeta {
+		// Caller put it in secret but schema says it belongs in metadata
+		metadataFields[field] = val
+		delete(secretFields, field)
+	}
+}
+
+// getStringFromMap safely extracts a string from a map[string]any
+func getStringFromMap(m map[string]any, key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }
