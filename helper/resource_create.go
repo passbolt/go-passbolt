@@ -67,6 +67,9 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 	// Callers may put description in either map; we move it to the right place.
 	routeFieldBySchema(rType, metadataFields, secretFields, "description")
 
+	// Normalize uri/uris based on schema (V4 uses "uri", V5 uses "uris" array)
+	normalizeURIField(rType, metadataFields)
+
 	// Validate custom fields before encryption (server can't validate encrypted content)
 	if err := validateCustomFields(metadataFields, secretFields); err != nil {
 		return "", fmt.Errorf("validating custom fields: %w", err)
@@ -255,3 +258,29 @@ func routeFieldBySchema(rType *api.ResourceType, metadataFields, secretFields ma
 	}
 }
 
+// normalizeURIField converts between "uri" (string) and "uris" ([]string) in metadata
+// based on what the resource type schema expects. This allows callers to always pass "uri"
+// as a simple string without knowing whether the type uses V4's "uri" or V5's "uris".
+func normalizeURIField(rType *api.ResourceType, metadataFields map[string]any) {
+	wantsURIs := rType.HasMetadataField("uris")
+	wantsURI := rType.HasMetadataField("uri")
+
+	if val, ok := metadataFields["uri"]; ok && wantsURIs && !wantsURI {
+		// Caller passed "uri" but schema expects "uris" array
+		if s, ok := val.(string); ok {
+			metadataFields["uris"] = []string{s}
+			delete(metadataFields, "uri")
+		}
+	} else if val, ok := metadataFields["uris"]; ok && wantsURI && !wantsURIs {
+		// Caller passed "uris" but schema expects "uri" string
+		if arr, ok := val.([]string); ok && len(arr) > 0 {
+			metadataFields["uri"] = arr[0]
+			delete(metadataFields, "uris")
+		} else if arr, ok := val.([]any); ok && len(arr) > 0 {
+			if s, ok := arr[0].(string); ok {
+				metadataFields["uri"] = s
+				delete(metadataFields, "uris")
+			}
+		}
+	}
+}
