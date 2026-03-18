@@ -17,4 +17,11 @@ var (
 	ErrKeyNotFound        = errors.New("cannot find key for user")
 	ErrMembershipNotFound = errors.New("cannot find membership for user")
 	ErrSecretNotFound     = errors.New("cannot find secret for resource")
+
+	// Custom field validation errors
+	ErrCustomFieldInvalidID    = errors.New("custom field id must be a valid UUID")
+	ErrCustomFieldMissingKey   = errors.New("custom field in metadata must have metadata_key")
+	ErrCustomFieldMissingValue = errors.New("custom field in secret must have secret_value")
+	ErrCustomFieldCrossField   = errors.New("custom field key/value must be defined in only one of metadata or secret")
+	ErrCustomFieldIDMismatch   = errors.New("custom field ids must match in metadata and secret arrays")
 )

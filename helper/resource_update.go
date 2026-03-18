@@ -76,6 +76,11 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 	// Auto-route fields between metadata and secret based on schema
 	routeFieldBySchema(rType, metadataUpdates, secretUpdates, "description")
 
+	// Validate custom fields before encryption (server can't validate encrypted content)
+	if err := validateCustomFields(metadataUpdates, secretUpdates); err != nil {
+		return fmt.Errorf("validating custom fields: %w", err)
+	}
+
 	newResource := api.Resource{
 		ID:             resourceID,
 		ResourceTypeID: resource.ResourceTypeID,

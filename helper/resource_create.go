@@ -67,6 +67,11 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 	// Callers may put description in either map; we move it to the right place.
 	routeFieldBySchema(rType, metadataFields, secretFields, "description")
 
+	// Validate custom fields before encryption (server can't validate encrypted content)
+	if err := validateCustomFields(metadataFields, secretFields); err != nil {
+		return "", fmt.Errorf("validating custom fields: %w", err)
+	}
+
 	// Build and set metadata
 	if isV5 {
 		// V5: encrypt metadata
