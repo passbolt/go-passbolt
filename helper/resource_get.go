@@ -198,3 +198,16 @@ func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secre
 
 	return resource.FolderParentID, name, username, uri, password, description, metadataFields, secretFields, nil
 }
+
+// getStringField safely extracts a string from a map
+func getStringField(m map[string]any, key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
