@@ -9,7 +9,15 @@ var ResourceSchemas = map[string]json.RawMessage{
   "resource": {
     "type": "object",
     "required": ["name"],
+    "additionalProperties": false,
     "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": ["PASSBOLT_RESOURCE_METADATA"]
+      },
+      "resource_type_id": {
+        "type": "string"
+      },
       "name": {
         "type": "string",
         "maxLength": 255
@@ -34,6 +42,7 @@ var ResourceSchemas = map[string]json.RawMessage{
   "secret": {
     "type": "object",
     "required": ["password"],
+    "additionalProperties": false,
     "properties": {
       "object_type": {
         "type": "string",
@@ -55,7 +64,15 @@ var ResourceSchemas = map[string]json.RawMessage{
   "resource": {
     "type": "object",
     "required": ["name"],
+    "additionalProperties": false,
     "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": ["PASSBOLT_RESOURCE_METADATA"]
+      },
+      "resource_type_id": {
+        "type": "string"
+      },
       "name": {
         "type": "string",
         "maxLength": 255
@@ -87,7 +104,15 @@ var ResourceSchemas = map[string]json.RawMessage{
   "resource": {
     "type": "object",
     "required": ["name"],
+    "additionalProperties": false,
     "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": ["PASSBOLT_RESOURCE_METADATA"]
+      },
+      "resource_type_id": {
+        "type": "string"
+      },
       "name": {
         "type": "string",
         "maxLength": 255
@@ -112,6 +137,7 @@ var ResourceSchemas = map[string]json.RawMessage{
   "secret": {
     "type": "object",
     "required": ["totp"],
+    "additionalProperties": false,
     "properties": {
       "object_type": {
         "type": "string",
@@ -156,7 +182,15 @@ var ResourceSchemas = map[string]json.RawMessage{
   "resource": {
     "type": "object",
     "required": ["name"],
+    "additionalProperties": false,
     "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": ["PASSBOLT_RESOURCE_METADATA"]
+      },
+      "resource_type_id": {
+        "type": "string"
+      },
       "name": {
         "type": "string",
         "maxLength": 255
@@ -177,6 +211,7 @@ var ResourceSchemas = map[string]json.RawMessage{
   "secret": {
     "type": "object",
     "required": ["totp"],
+    "additionalProperties": false,
     "properties": {
       "object_type": {
         "type": "string",
@@ -213,10 +248,14 @@ var ResourceSchemas = map[string]json.RawMessage{
   "resource": {
     "type": "object",
     "required": ["name", "custom_fields"],
+    "additionalProperties": false,
     "properties": {
       "object_type": {
         "type": "string",
         "enum": ["PASSBOLT_RESOURCE_METADATA"]
+      },
+      "resource_type_id": {
+        "type": "string"
       },
       "name": {
         "type": "string",
@@ -255,6 +294,7 @@ var ResourceSchemas = map[string]json.RawMessage{
   "secret": {
     "type": "object",
     "required": ["custom_fields"],
+    "additionalProperties": false,
     "properties": {
       "object_type": {
         "type": "string",
