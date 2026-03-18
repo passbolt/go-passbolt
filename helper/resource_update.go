@@ -18,6 +18,8 @@ func UpdateResource(ctx context.Context, c *api.Client, resourceID, name, userna
 		return fmt.Errorf("getting resource: %w", err)
 	}
 
+	// V5 detection uses metadata presence (not rType.IsV5()) because we need to know
+	// how this specific resource was stored, not what the type slug suggests.
 	isV5 := resource.Metadata != ""
 
 	// Build metadata updates
@@ -71,6 +73,7 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		return fmt.Errorf("getting users: %w", err)
 	}
 
+	// V5 detection uses metadata presence — see comment in UpdateResource.
 	isV5 := resource.Metadata != ""
 
 	// Auto-route fields between metadata and secret based on schema
@@ -135,16 +138,16 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		newResource.URI = resource.URI
 		newResource.Description = resource.Description
 
-		if v := getStringFromMap(metadataUpdates, "name"); v != "" {
+		if v := getStringField(metadataUpdates, "name"); v != "" {
 			newResource.Name = v
 		}
-		if v := getStringFromMap(metadataUpdates, "username"); v != "" {
+		if v := getStringField(metadataUpdates, "username"); v != "" {
 			newResource.Username = v
 		}
-		if v := getStringFromMap(metadataUpdates, "uri"); v != "" {
+		if v := getStringField(metadataUpdates, "uri"); v != "" {
 			newResource.URI = v
 		}
-		if v := getStringFromMap(metadataUpdates, "description"); v != "" {
+		if v := getStringField(metadataUpdates, "description"); v != "" {
 			newResource.Description = v
 		}
 	}
@@ -154,7 +157,7 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 
 	if rType.IsSecretString() {
 		// Secret is a plain string (password)
-		if pw := getStringFromMap(secretUpdates, "password"); pw != "" {
+		if pw := getStringField(secretUpdates, "password"); pw != "" {
 			secretDataStr = pw
 		} else {
 			// Preserve existing secret

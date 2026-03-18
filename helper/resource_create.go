@@ -102,17 +102,17 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 		resource.Metadata = encMetadata
 	} else {
 		// V4: set cleartext fields
-		resource.Name = getStringFromMap(metadataFields, "name")
-		resource.Username = getStringFromMap(metadataFields, "username")
-		resource.URI = getStringFromMap(metadataFields, "uri")
-		resource.Description = getStringFromMap(metadataFields, "description")
+		resource.Name = getStringField(metadataFields, "name")
+		resource.Username = getStringField(metadataFields, "username")
+		resource.URI = getStringField(metadataFields, "uri")
+		resource.Description = getStringField(metadataFields, "description")
 	}
 
 	// Build and set secret
 	var secretDataStr string
 	if rType.IsSecretString() {
 		// Secret is a plain string (password)
-		secretDataStr = getStringFromMap(secretFields, "password")
+		secretDataStr = getStringField(secretFields, "password")
 	} else {
 		// Secret is JSON
 		if isV5 {
@@ -255,15 +255,3 @@ func routeFieldBySchema(rType *api.ResourceType, metadataFields, secretFields ma
 	}
 }
 
-// getStringFromMap safely extracts a string from a map[string]any
-func getStringFromMap(m map[string]any, key string) string {
-	v, ok := m[key]
-	if !ok {
-		return ""
-	}
-	s, ok := v.(string)
-	if !ok {
-		return ""
-	}
-	return s
-}

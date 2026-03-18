@@ -198,8 +198,10 @@ func (r *Resource) getResourceMetadataCached(ctx context.Context) (string, error
 	return r.client.DecryptMetadataWithKeyID(metadataKeyID, metadataKey, r.raw.Metadata)
 }
 
-// isV5Resource returns true if this is a v5 resource type.
-// Detection is based on the presence of encrypted metadata on the resource.
+// isV5Resource returns true if this is a v5 resource.
+// We check for the presence of encrypted metadata on the resource instance rather than
+// using rType.IsV5() (slug prefix), because an existing resource's actual format is
+// determined by whether it was stored with encrypted metadata, not by its type slug alone.
 func (r *Resource) isV5Resource() bool {
 	return r.raw.Metadata != ""
 }

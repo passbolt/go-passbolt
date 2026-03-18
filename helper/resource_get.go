@@ -53,7 +53,9 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 		}
 	}
 
-	// Parse metadata
+	// Parse metadata.
+	// V5 detection uses metadata presence (not rType.IsV5()) because we need to know
+	// how this specific resource was stored, not what the type slug suggests.
 	var metadataFields map[string]any
 	isV5 := resource.Metadata != ""
 
