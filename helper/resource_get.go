@@ -196,6 +196,16 @@ func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secre
 		description = getStringField(secretFields, "description")
 	}
 
+	// Normalize maps so CEL filters can use consistent keys regardless of v4/v5.
+	// Always add "uri" to metadata if missing (v5 schema uses "uris" array).
+	if _, ok := metadataFields["uri"]; !ok {
+		metadataFields["uri"] = uri
+	}
+	// Always add "description" to metadata if missing (v5 stores it in secret).
+	if _, ok := metadataFields["description"]; !ok {
+		metadataFields["description"] = description
+	}
+
 	return resource.FolderParentID, name, username, uri, password, description, metadataFields, secretFields, nil
 }
 
