@@ -80,7 +80,9 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 	routeFieldBySchema(rType, metadataUpdates, secretUpdates, "description")
 
 	// Normalize uri/uris based on schema (V4 uses "uri", V5 uses "uris" array)
-	normalizeURIField(rType, metadataUpdates)
+	if err := normalizeURIField(rType, metadataUpdates); err != nil {
+		return fmt.Errorf("normalizing URI field: %w", err)
+	}
 
 	// Validate custom fields before encryption (server can't validate encrypted content)
 	if err := validateCustomFields(metadataUpdates, secretUpdates); err != nil {

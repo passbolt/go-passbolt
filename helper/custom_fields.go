@@ -2,10 +2,9 @@ package helper
 
 import (
 	"fmt"
-	"regexp"
-)
 
-var uuidRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	"github.com/google/uuid"
+)
 
 // validateCustomFields validates custom_fields arrays in metadata and secret maps
 // before encryption. This enforces the same rules as the Passbolt web extension:
@@ -37,7 +36,7 @@ func validateCustomFields(metadataFields, secretFields map[string]any) error {
 		if !ok || id == "" {
 			return fmt.Errorf("%w: metadata custom_fields[%d] has no id", ErrCustomFieldInvalidID, i)
 		}
-		if !uuidRegex.MatchString(id) {
+		if _, err := uuid.Parse(id); err != nil {
 			return fmt.Errorf("%w: %q (metadata custom_fields[%d])", ErrCustomFieldInvalidID, id, i)
 		}
 		if _, exists := metaByID[id]; exists {
@@ -52,7 +51,7 @@ func validateCustomFields(metadataFields, secretFields map[string]any) error {
 		if !ok || id == "" {
 			return fmt.Errorf("%w: secret custom_fields[%d] has no id", ErrCustomFieldInvalidID, i)
 		}
-		if !uuidRegex.MatchString(id) {
+		if _, err := uuid.Parse(id); err != nil {
 			return fmt.Errorf("%w: %q (secret custom_fields[%d])", ErrCustomFieldInvalidID, id, i)
 		}
 		if _, exists := secretByID[id]; exists {

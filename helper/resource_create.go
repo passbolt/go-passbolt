@@ -68,7 +68,9 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 	routeFieldBySchema(rType, metadataFields, secretFields, "description")
 
 	// Normalize uri/uris based on schema (V4 uses "uri", V5 uses "uris" array)
-	normalizeURIField(rType, metadataFields)
+	if err := normalizeURIField(rType, metadataFields); err != nil {
+		return "", fmt.Errorf("normalizing URI field: %w", err)
+	}
 
 	// Validate custom fields before encryption (server can't validate encrypted content)
 	if err := validateCustomFields(metadataFields, secretFields); err != nil {
@@ -153,6 +155,7 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 	return newresource.ID, nil
 }
 
+// Deprecated: Use CreateResourceGeneric instead.
 // CreateResourceV5 creates a v5-default resource. Delegates to CreateResourceGeneric.
 func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	return CreateResourceGeneric(ctx, c, "v5-default", folderParentID,
@@ -168,6 +171,7 @@ func CreateResourceV5(ctx context.Context, c *api.Client, folderParentID, name, 
 	)
 }
 
+// Deprecated: Use CreateResourceGeneric instead.
 // CreateResourceV4 creates a v4 password-and-description resource. Delegates to CreateResourceGeneric.
 func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	return CreateResourceGeneric(ctx, c, "password-and-description", folderParentID,
@@ -183,6 +187,7 @@ func CreateResourceV4(ctx context.Context, c *api.Client, folderParentID, name, 
 	)
 }
 
+// Deprecated: Use CreateResourceGeneric instead.
 // CreateResourceSimple creates a legacy resource where only the password is encrypted.
 func CreateResourceSimple(ctx context.Context, c *api.Client, folderParentID, name, username, uri, password, description string) (string, error) {
 	if c.MetadataTypeSettings().DefaultResourceType == api.PassboltAPIVersionTypeV5 {
@@ -261,7 +266,8 @@ func routeFieldBySchema(rType *api.ResourceType, metadataFields, secretFields ma
 // normalizeURIField converts between "uri" (string) and "uris" ([]string) in metadata
 // based on what the resource type schema expects. This allows callers to always pass "uri"
 // as a simple string without knowing whether the type uses V4's "uri" or V5's "uris".
-func normalizeURIField(rType *api.ResourceType, metadataFields map[string]any) {
+// Returns an error if multiple URIs are provided but the schema only supports a single URI.
+func normalizeURIField(rType *api.ResourceType, metadataFields map[string]any) error {
 	wantsURIs := rType.HasMetadataField("uris")
 	wantsURI := rType.HasMetadataField("uri")
 
@@ -274,13 +280,20 @@ func normalizeURIField(rType *api.ResourceType, metadataFields map[string]any) {
 	} else if val, ok := metadataFields["uris"]; ok && wantsURI && !wantsURIs {
 		// Caller passed "uris" but schema expects "uri" string
 		if arr, ok := val.([]string); ok && len(arr) > 0 {
+			if len(arr) > 1 {
+				return fmt.Errorf("resource type %q only supports a single URI, but %d were provided", rType.Slug, len(arr))
+			}
 			metadataFields["uri"] = arr[0]
 			delete(metadataFields, "uris")
 		} else if arr, ok := val.([]any); ok && len(arr) > 0 {
+			if len(arr) > 1 {
+				return fmt.Errorf("resource type %q only supports a single URI, but %d were provided", rType.Slug, len(arr))
+			}
 			if s, ok := arr[0].(string); ok {
 				metadataFields["uri"] = s
 				delete(metadataFields, "uris")
 			}
 		}
 	}
+	return nil
 }
