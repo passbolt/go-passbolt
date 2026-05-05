@@ -248,6 +248,11 @@ func findResourceTypeBySlug(ctx context.Context, c *api.Client, slug string) (*a
 // routeFieldBySchema moves a field from metadataFields to secretFields (or vice versa)
 // based on which schema section actually defines the field. This allows callers to put
 // fields like "description" in either map without knowing the resource type internals.
+//
+// Note: what the API/JSON schema calls "description" is surfaced as "note" in the
+// Passbolt UI and web extension. Depending on the resource type, "description" is
+// stored in metadata (e.g. v5-password-string) or in the encrypted secret JSON
+// (e.g. v5-default, v4 password-and-description); this function routes it accordingly.
 func routeFieldBySchema(rType *api.ResourceType, metadataFields, secretFields map[string]any, field string) {
 	inMeta := rType.HasMetadataField(field)
 	inSecret := rType.HasSecretField(field)
