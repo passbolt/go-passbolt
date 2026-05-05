@@ -96,11 +96,11 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 	}
 
 	// Extract standard fields from maps
-	name := getStringField(metadataFields, "name")
-	username := getStringField(metadataFields, "username")
+	name := GetStringField(metadataFields, "name")
+	username := GetStringField(metadataFields, "username")
 
 	// URI: v4 uses "uri", v5 uses "uris" array
-	uri := getStringField(metadataFields, "uri")
+	uri := GetStringField(metadataFields, "uri")
 	if uri == "" {
 		if uris, ok := metadataFields["uris"].([]any); ok && len(uris) > 0 {
 			if s, ok := uris[0].(string); ok {
@@ -109,21 +109,22 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 		}
 	}
 
-	password := getStringField(secretFields, "password")
+	password := GetStringField(secretFields, "password")
 
 	// Description: check metadata first, then secret
-	description := getStringField(metadataFields, "description")
+	description := GetStringField(metadataFields, "description")
 	if description == "" {
-		description = getStringField(secretFields, "description")
+		description = GetStringField(secretFields, "description")
 	}
 
 	return resource.FolderParentID, name, username, uri, password, description, nil
 }
 
-// GetResourceFieldMaps decrypts a resource and returns both the standard fields and
-// the full metadata/secret field maps. This is useful for callers that need access to
-// custom fields beyond the standard name/username/uri/password/description.
-func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secret, rType api.ResourceType, decryptSecret bool) (folderParentID, name, username, uri, password, description string, metadataFields, secretFields map[string]any, err error) {
+// GetResourceFieldMaps decrypts a resource and returns the metadata and secret field maps.
+// This is useful for callers that need access to custom fields beyond the standard
+// name/username/uri/password/description; those standard fields can be read from the
+// returned maps with GetStringField.
+func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secret, rType api.ResourceType, decryptSecret bool) (folderParentID string, metadataFields, secretFields map[string]any, err error) {
 	ctx := context.TODO()
 
 	// Decrypt secret data if requested
@@ -131,12 +132,12 @@ func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secre
 	if decryptSecret && secret.Data != "" {
 		rawSecretData, err = c.DecryptSecretWithResourceID(resource.ID, secret.Data)
 		if err != nil {
-			return "", "", "", "", "", "", nil, nil, fmt.Errorf("decrypting secret data: %w", err)
+			return "", nil, nil, fmt.Errorf("decrypting secret data: %w", err)
 		}
 
 		err = validateSecretData(&rType, rawSecretData)
 		if err != nil {
-			return "", "", "", "", "", "", nil, nil, fmt.Errorf("validate secret data: %w", err)
+			return "", nil, nil, fmt.Errorf("validate secret data: %w", err)
 		}
 	}
 
@@ -146,12 +147,12 @@ func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secre
 	if isV5 {
 		rawMetadata, err := GetResourceMetadata(ctx, c, &resource, &rType)
 		if err != nil {
-			return "", "", "", "", "", "", nil, nil, fmt.Errorf("getting metadata: %w", err)
+			return "", nil, nil, fmt.Errorf("getting metadata: %w", err)
 		}
 
 		metadataFields = make(map[string]any)
 		if err := json.Unmarshal([]byte(rawMetadata), &metadataFields); err != nil {
-			return "", "", "", "", "", "", nil, nil, fmt.Errorf("parsing decrypted metadata: %w", err)
+			return "", nil, nil, fmt.Errorf("parsing decrypted metadata: %w", err)
 		}
 	} else {
 		metadataFields = map[string]any{
@@ -171,46 +172,33 @@ func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secre
 		} else {
 			secretFields = make(map[string]any)
 			if err := json.Unmarshal([]byte(rawSecretData), &secretFields); err != nil {
-				return "", "", "", "", "", "", nil, nil, fmt.Errorf("parsing decrypted secret data: %w", err)
+				return "", nil, nil, fmt.Errorf("parsing decrypted secret data: %w", err)
 			}
 		}
-	}
-
-	// Extract standard fields from maps
-	name = getStringField(metadataFields, "name")
-	username = getStringField(metadataFields, "username")
-
-	uri = getStringField(metadataFields, "uri")
-	if uri == "" {
-		if uris, ok := metadataFields["uris"].([]any); ok && len(uris) > 0 {
-			if s, ok := uris[0].(string); ok {
-				uri = s
-			}
-		}
-	}
-
-	password = getStringField(secretFields, "password")
-
-	description = getStringField(metadataFields, "description")
-	if description == "" {
-		description = getStringField(secretFields, "description")
 	}
 
 	// Normalize maps so CEL filters can use consistent keys regardless of v4/v5.
 	// Always add "uri" to metadata if missing (v5 schema uses "uris" array).
 	if _, ok := metadataFields["uri"]; !ok {
+		uri := ""
+		if uris, ok := metadataFields["uris"].([]any); ok && len(uris) > 0 {
+			if s, ok := uris[0].(string); ok {
+				uri = s
+			}
+		}
 		metadataFields["uri"] = uri
 	}
 	// Always add "description" to metadata if missing (v5 stores it in secret).
 	if _, ok := metadataFields["description"]; !ok {
-		metadataFields["description"] = description
+		metadataFields["description"] = GetStringField(secretFields, "description")
 	}
 
-	return resource.FolderParentID, name, username, uri, password, description, metadataFields, secretFields, nil
+	return resource.FolderParentID, metadataFields, secretFields, nil
 }
 
-// getStringField safely extracts a string from a map
-func getStringField(m map[string]any, key string) string {
+// GetStringField safely extracts a string from a map. Returns "" if the key is
+// missing or the value isn't a string.
+func GetStringField(m map[string]any, key string) string {
 	v, ok := m[key]
 	if !ok {
 		return ""

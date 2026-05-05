@@ -107,17 +107,17 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 		resource.Metadata = encMetadata
 	} else {
 		// V4: set cleartext fields
-		resource.Name = getStringField(metadataFields, "name")
-		resource.Username = getStringField(metadataFields, "username")
-		resource.URI = getStringField(metadataFields, "uri")
-		resource.Description = getStringField(metadataFields, "description")
+		resource.Name = GetStringField(metadataFields, "name")
+		resource.Username = GetStringField(metadataFields, "username")
+		resource.URI = GetStringField(metadataFields, "uri")
+		resource.Description = GetStringField(metadataFields, "description")
 	}
 
 	// Build and set secret
 	var secretDataStr string
 	if rType.IsSecretString() {
 		// Secret is a plain string (password)
-		secretDataStr = getStringField(secretFields, "password")
+		secretDataStr = GetStringField(secretFields, "password")
 	} else {
 		// Secret is JSON
 		if isV5 {

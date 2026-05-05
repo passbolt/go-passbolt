@@ -143,16 +143,16 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		newResource.URI = resource.URI
 		newResource.Description = resource.Description
 
-		if v := getStringField(metadataUpdates, "name"); v != "" {
+		if v := GetStringField(metadataUpdates, "name"); v != "" {
 			newResource.Name = v
 		}
-		if v := getStringField(metadataUpdates, "username"); v != "" {
+		if v := GetStringField(metadataUpdates, "username"); v != "" {
 			newResource.Username = v
 		}
-		if v := getStringField(metadataUpdates, "uri"); v != "" {
+		if v := GetStringField(metadataUpdates, "uri"); v != "" {
 			newResource.URI = v
 		}
-		if v := getStringField(metadataUpdates, "description"); v != "" {
+		if v := GetStringField(metadataUpdates, "description"); v != "" {
 			newResource.Description = v
 		}
 	}
@@ -162,7 +162,7 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 
 	if rType.IsSecretString() {
 		// Secret is a plain string (password)
-		if pw := getStringField(secretUpdates, "password"); pw != "" {
+		if pw := GetStringField(secretUpdates, "password"); pw != "" {
 			secretDataStr = pw
 		} else {
 			// Preserve existing secret
