@@ -400,15 +400,20 @@ func TestGetResourceWithMetadata(t *testing.T) {
 	defer cleanup()
 
 	// Create a v5 test resource with metadata
-	resourceID, err := helper.CreateResourceV5(
+	resourceID, err := helper.CreateResourceGeneric(
 		ctx,
 		client,
-		"",                                   // no folder
-		"Test Resource With Metadata",        // name
-		"testuser",                           // username
-		"https://test.example.com",           // uri
-		"TestPassword123!",                   // password
-		"Test description for metadata test", // description
+		"v5-default",
+		"", // no folder
+		map[string]any{
+			"name":     "Test Resource With Metadata",
+			"username": "testuser",
+			"uris":     []string{"https://test.example.com"},
+		},
+		map[string]any{
+			"password":    "TestPassword123!",
+			"description": "Test description for metadata test",
+		},
 	)
 	if err != nil {
 		t.Skipf("Cannot create v5 resource (server may not support v5): %v", err)
