@@ -19,6 +19,8 @@ type GPGKey struct {
 	Fingerprint string `json:"fingerprint,omitempty"`
 	Type        string `json:"type,omitempty"`
 	Expires     *Time  `json:"expires,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
+	UID         string `json:"uid,omitempty"`
 }
 
 // GetGPGKeysOptions are all available query parameters
@@ -46,7 +48,7 @@ func (c *Client) GetGPGKeys(ctx context.Context, opts *GetGPGKeysOptions) ([]GPG
 func (c *Client) GetGPGKey(ctx context.Context, gpgkeyID string) (*GPGKey, error) {
 	err := checkUUIDFormat(gpgkeyID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/gpgkeys/"+gpgkeyID+".json", "v2", nil, nil)
 	if err != nil {

@@ -11,7 +11,7 @@ import (
 func CreateUser(ctx context.Context, c *api.Client, role, username, firstname, lastname string) (string, error) {
 	roles, err := c.GetRoles(ctx)
 	if err != nil {
-		return "", fmt.Errorf("Get Role: %w", err)
+		return "", fmt.Errorf("get Role: %w", err)
 	}
 
 	roleID := ""
@@ -24,7 +24,7 @@ func CreateUser(ctx context.Context, c *api.Client, role, username, firstname, l
 	}
 
 	if roleID == "" {
-		return "", fmt.Errorf("Cannot Find Role: %v", role)
+		return "", fmt.Errorf("cannot Find Role: %v", role)
 	}
 
 	u, err := c.CreateUser(ctx, api.User{
@@ -36,7 +36,7 @@ func CreateUser(ctx context.Context, c *api.Client, role, username, firstname, l
 		RoleID: roleID,
 	})
 	if err != nil {
-		return "", fmt.Errorf("Creating User: %w", err)
+		return "", fmt.Errorf("creating User: %w", err)
 	}
 	return u.ID, nil
 }
@@ -45,7 +45,7 @@ func CreateUser(ctx context.Context, c *api.Client, role, username, firstname, l
 func GetUser(ctx context.Context, c *api.Client, userID string) (string, string, string, string, error) {
 	u, err := c.GetUser(ctx, userID)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("Getting User: %w", err)
+		return "", "", "", "", fmt.Errorf("getting User: %w", err)
 	}
 	return u.Role.Name, u.Username, u.Profile.FirstName, u.Profile.LastName, nil
 }
@@ -54,7 +54,7 @@ func GetUser(ctx context.Context, c *api.Client, userID string) (string, string,
 func UpdateUser(ctx context.Context, c *api.Client, userID, role, firstname, lastname string) error {
 	user, err := c.GetUser(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("Getting User: %w", err)
+		return fmt.Errorf("getting User: %w", err)
 	}
 
 	new := api.User{
@@ -67,7 +67,7 @@ func UpdateUser(ctx context.Context, c *api.Client, userID, role, firstname, las
 	if role != "" {
 		roles, err := c.GetRoles(ctx)
 		if err != nil {
-			return fmt.Errorf("Get Role: %w", err)
+			return fmt.Errorf("get Role: %w", err)
 		}
 
 		roleID := ""
@@ -80,7 +80,7 @@ func UpdateUser(ctx context.Context, c *api.Client, userID, role, firstname, las
 		}
 
 		if roleID == "" {
-			return fmt.Errorf("Cannot Find Role %v", role)
+			return fmt.Errorf("cannot Find Role %v", role)
 		}
 		new.RoleID = roleID
 	}
@@ -94,7 +94,7 @@ func UpdateUser(ctx context.Context, c *api.Client, userID, role, firstname, las
 
 	_, err = c.UpdateUser(ctx, userID, new)
 	if err != nil {
-		return fmt.Errorf("Updating User: %w", err)
+		return fmt.Errorf("updating User: %w", err)
 	}
 	return nil
 }
@@ -103,7 +103,7 @@ func UpdateUser(ctx context.Context, c *api.Client, userID, role, firstname, las
 func DeleteUser(ctx context.Context, c *api.Client, userID string) error {
 	err := c.DeleteUser(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("Deleting User: %w", err)
+		return fmt.Errorf("deleting User: %w", err)
 	}
 	return nil
 }

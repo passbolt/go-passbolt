@@ -24,7 +24,7 @@ type Permission struct {
 func (c *Client) GetResourcePermissions(ctx context.Context, resourceID string) ([]Permission, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/permissions/resource/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
