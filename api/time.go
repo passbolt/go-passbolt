@@ -25,5 +25,5 @@ func (t *Time) UnmarshalJSON(buf []byte) error {
 
 // MarshalJSON Marshals Passbolt *Time
 func (t Time) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + t.Time.Format(time.RFC3339) + `"`), nil
+	return []byte(`"` + t.Format(time.RFC3339) + `"`), nil
 }

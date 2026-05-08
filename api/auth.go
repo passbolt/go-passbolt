@@ -3,13 +3,11 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
 // Login is used for login
@@ -29,116 +27,151 @@ func (c *Client) CheckSession(ctx context.Context) bool {
 	return err == nil
 }
 
-// Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar
+// Login gets a Session and CSRF Token from Passbolt and Stores them in the Clients Cookie Jar.
+// This method is thread-safe.
 func (c *Client) Login(ctx context.Context) error {
+	// Validate client has private key (not logged out)
+	c.cryptoMu.RLock()
+	if c.userPrivateKey == nil {
+		c.cryptoMu.RUnlock()
+		return fmt.Errorf("cannot login: %w", ErrNoPrivateKey)
+	}
+	fingerprint := c.userPrivateKey.GetFingerprint()
+	c.cryptoMu.RUnlock()
+
+	// Clear any cached data from previous sessions
+	c.ClearCache()
 	c.csrfToken = http.Cookie{}
 
-	if c.userPrivateKey == "" {
-		return fmt.Errorf("Client has no Private Key")
-	}
-
-	privateKeyObj, err := crypto.NewKeyFromArmored(c.userPrivateKey)
-	if err != nil {
-		return fmt.Errorf("Parsing User Private Key: %w", err)
-	}
-	data := Login{&GPGAuth{KeyID: privateKeyObj.GetFingerprint()}}
+	data := Login{&GPGAuth{KeyID: fingerprint}}
 
 	res, _, err := c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
-	if err != nil && !strings.Contains(err.Error(), "Error API JSON Response Status: Message: The authentication failed.") {
-		return fmt.Errorf("Doing Stage 1 Request: %w", err)
+	var apiErr *APIError
+	if err != nil && (!errors.As(err, &apiErr) || apiErr.Message != "The authentication failed.") {
+		return fmt.Errorf("doing Stage 1 Request: %w", err)
 	}
 
 	encAuthToken := res.Header.Get("X-GPGAuth-User-Auth-Token")
 
 	if encAuthToken == "" {
-		return fmt.Errorf("Got Empty X-GPGAuth-User-Auth-Token Header")
+		return ErrEmptyAuthToken
 	}
 
 	c.log("Got Encrypted Auth Token: %v", encAuthToken)
 
 	encAuthToken, err = url.QueryUnescape(encAuthToken)
 	if err != nil {
-		return fmt.Errorf("Unescaping User Auth Token: %w", err)
+		return fmt.Errorf("unescaping User Auth Token: %w", err)
 	}
 	encAuthToken = strings.ReplaceAll(encAuthToken, "\\ ", " ")
 
-	authToken, err := helper.DecryptMessageArmored(c.userPrivateKey, c.userPassword, encAuthToken)
+	authToken, err := c.DecryptMessage(encAuthToken)
 	if err != nil {
-		return fmt.Errorf("Decrypting User Auth Token: %w", err)
+		return fmt.Errorf("decrypting User Auth Token: %w", err)
 	}
 
 	c.log("Decrypted Auth Token: %v", authToken)
 
 	err = checkAuthTokenFormat(authToken)
 	if err != nil {
-		return fmt.Errorf("Checking Auth Token Format: %w", err)
+		return fmt.Errorf("checking Auth Token Format: %w", err)
 	}
 
-	data.Auth.Token = string(authToken)
+	data.Auth.Token = authToken
 
 	res, _, err = c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "/auth/login.json", "v2", data, nil)
 	if err != nil {
-		return fmt.Errorf("Doing Stage 2 Request: %w", err)
+		return fmt.Errorf("doing Stage 2 Request: %w", err)
 	}
 
 	c.log("Got Cookies: %+v", res.Cookies())
 
 	for _, cookie := range res.Cookies() {
-		if cookie.Name == "passbolt_session" {
+		switch cookie.Name {
+		case "passbolt_session":
 			c.sessionToken = *cookie
+		case "CAKEPHP":
 			// Session Cookie in older Passbolt Versions
-		} else if cookie.Name == "CAKEPHP" {
 			c.sessionToken = *cookie
+		case "PHPSESSID":
 			// Session Cookie in Cloud version?
-		} else if cookie.Name == "PHPSESSID" {
 			c.sessionToken = *cookie
 		}
 	}
 	if c.sessionToken.Name == "" {
-		return fmt.Errorf("Cannot Find Session Cookie!")
+		return ErrSessionNotFound
 	}
 
 	// Because of MFA, the custom Request Function now Fetches the CSRF token, we still need the user for his public key
 	apiMsg, err := c.DoCustomRequest(ctx, "GET", "/users/me.json", "v2", nil, nil)
 	if err != nil {
-		return fmt.Errorf("Getting CSRF Token: %w", err)
+		return fmt.Errorf("getting CSRF Token: %w", err)
 	}
 
-	// Get Users Own Public Key from Server
+	// Get Users ID from Server
 	var user User
 	err = json.Unmarshal(apiMsg.Body, &user)
 	if err != nil {
-		return fmt.Errorf("Parsing User 'Me' JSON from API Request: %w", err)
+		return fmt.Errorf("parsing User 'Me' JSON from API Request: %w", err)
 	}
 
-	// Validate that this Publickey that the Server gave us actually Matches our Privatekey
-	randomString := randStringBytesRmndr(50)
-	armor, err := helper.EncryptMessageArmored(user.GPGKey.ArmoredKey, randomString)
-	if err != nil {
-		return fmt.Errorf("Encryping PublicKey Validation Message: %w", err)
-	}
-	decrypted, err := helper.DecryptMessageArmored(c.userPrivateKey, c.userPassword, armor)
-	if err != nil {
-		return fmt.Errorf("Decrypting PublicKey Validation Message (you might be getting Hacked): %w", err)
-	}
-	if decrypted != randomString {
-		return fmt.Errorf("Decrypted PublicKey Validation Message does not Match Original (you might be getting Hacked): %w", err)
-	}
-
-	// Insert PublicKey into Client after checking it to Prevent ignored errors leading to proceeding with a potentially Malicious PublicKey
-	c.userPublicKey = user.GPGKey.ArmoredKey
 	c.userID = user.ID
+
+	settings, err := c.GetServerSettings(ctx)
+	if err != nil {
+		return fmt.Errorf("getting Server Settings: %w", err)
+	}
+
+	// after Login, fetch MetadataTypeSettings to finish the Client Setup
+	err = c.setMetadataTypeSettings(ctx, settings)
+	if err != nil {
+		return fmt.Errorf("setup Metadata Type Settings: %w", err)
+	}
+
+	err = c.setPasswordExpirySettings(ctx, settings)
+	if err != nil {
+		return fmt.Errorf("setup Password Expiry Settings: %w", err)
+	}
+
+	// Pre-fetch caches if server supports v5 metadata encryption
+	if c.metadataTypeSettings.AllowCreationOfV5Resources {
+		sessionCount, metadataCount, err := c.PreFetchCaches(ctx)
+		if err != nil {
+			// Log but don't fail login - this is an optional optimization
+			c.log("Warning: Failed to pre-fetch caches: %v", err)
+		} else {
+			c.log("Pre-fetched %d session keys and %d metadata keys", sessionCount, metadataCount)
+		}
+	}
 
 	return nil
 }
 
-// Logout closes the current Session on the Passbolt server
+// Logout closes the current Session on the Passbolt server.
+// IMPORTANT: After logout, the client's user private key is securely zeroed and cleared.
+// The client becomes permanently invalid and CANNOT be reused or re-logged in.
+// For a new session, create a new client instance with NewClient().
+// This method is thread-safe.
 func (c *Client) Logout(ctx context.Context) error {
 	_, err := c.DoCustomRequest(ctx, "GET", "/auth/logout.json", "v2", nil, nil)
 	if err != nil {
-		return fmt.Errorf("Doing Logout Request: %w", err)
+		return fmt.Errorf("doing Logout Request: %w", err)
 	}
+
+	// Clear session cookies
 	c.sessionToken = http.Cookie{}
 	c.csrfToken = http.Cookie{}
+
+	// Clear all caches with secure zeroing
+	c.ClearCache()
+
+	// Securely clear user private key (requires write lock)
+	c.cryptoMu.Lock()
+	if c.userPrivateKey != nil {
+		c.userPrivateKey.ClearPrivateParams()
+		c.userPrivateKey = nil
+	}
+	c.cryptoMu.Unlock()
+
 	return nil
 }

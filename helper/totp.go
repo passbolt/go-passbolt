@@ -28,7 +28,7 @@ func GenerateOTPCode(token string, when time.Time) (string, error) {
 	// Remove spaces, some providers are giving us in a readable format
 	// so they add spaces in there. If it's not removed while pasting in,
 	// remove it now.
-	token = strings.Replace(token, " ", "", -1)
+	token = strings.ReplaceAll(token, " ", "")
 
 	// It should be uppercase always
 	token = strings.ToUpper(token)
@@ -38,7 +38,7 @@ func GenerateOTPCode(token string, when time.Time) (string, error) {
 
 	secretBytes, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(token)
 	if err != nil {
-		return "", fmt.Errorf("Decoding token string: %w", err)
+		return "", fmt.Errorf("decoding token string: %w", err)
 	}
 
 	buf := make([]byte, 8)
@@ -55,7 +55,7 @@ func GenerateOTPCode(token string, when time.Time) (string, error) {
 		((int(sum[offset+2] & mask3)) << shift8) |
 		(int(sum[offset+3]) & mask3))
 
-	modulo := int32(value % int64(math.Pow10(codeLength)))
+	modulo := value % int64(math.Pow10(codeLength))
 
 	format := fmt.Sprintf("%%0%dd", codeLength)
 

@@ -17,25 +17,26 @@ func AddMFACallbackTOTP(c *api.Client, retrys uint, retryDelay, offset time.Dura
 		challenge := api.MFAChallenge{}
 		err := json.Unmarshal(res.Body, &challenge)
 		if err != nil {
-			return http.Cookie{}, fmt.Errorf("Parsing MFA Challenge")
+			return http.Cookie{}, fmt.Errorf("parsing MFA Challenge")
 		}
 		if challenge.Provider.TOTP == "" {
-			return http.Cookie{}, fmt.Errorf("Server Provided no TOTP Provider")
+			return http.Cookie{}, fmt.Errorf("server Provided no TOTP Provider")
 		}
 		for i := uint(0); i < retrys+1; i++ {
 			var code string
 			code, err = GenerateOTPCode(token, time.Now().Add(offset))
 			if err != nil {
-				return http.Cookie{}, fmt.Errorf("Error Generating MFA Code: %w", err)
+				return http.Cookie{}, fmt.Errorf("error Generating MFA Code: %w", err)
 			}
 			req := api.MFAChallengeResponse{
 				TOTP: code,
 			}
 			var raw *http.Response
-			raw, _, err = c.DoCustomRequestAndReturnRawResponse(ctx, "POST", "mfa/verify/totp.json", "v2", req, nil)
+			raw, _, err = c.DoCustomRequestAndReturnRawResponseV5(ctx, "POST", "mfa/verify/totp.json", req, nil)
 			if err != nil {
-				if errors.Unwrap(err) != api.ErrAPIResponseErrorStatusCode {
-					return http.Cookie{}, fmt.Errorf("Doing MFA Challenge Response: %w", err)
+				var apiErr *api.APIError
+				if !errors.As(err, &apiErr) {
+					return http.Cookie{}, fmt.Errorf("doing MFA Challenge Response: %w", err)
 				}
 				// MFA failed, so lets wait just let the loop try again
 				time.Sleep(retryDelay)
@@ -46,9 +47,9 @@ func AddMFACallbackTOTP(c *api.Client, retrys uint, retryDelay, offset time.Dura
 						return *cookie, nil
 					}
 				}
-				return http.Cookie{}, fmt.Errorf("Unable to find Passbolt MFA Cookie")
+				return http.Cookie{}, fmt.Errorf("unable to find Passbolt MFA Cookie")
 			}
 		}
-		return http.Cookie{}, fmt.Errorf("Failed MFA Challenge 3 times: %w", err)
+		return http.Cookie{}, fmt.Errorf("failed MFA Challenge 3 times: %w", err)
 	}
 }

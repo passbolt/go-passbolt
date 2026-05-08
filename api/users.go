@@ -14,6 +14,7 @@ type User struct {
 	Created      *Time     `json:"created,omitempty"`
 	Active       bool      `json:"active,omitempty"`
 	Deleted      bool      `json:"deleted,omitempty"`
+	Disabled     bool      `json:"disabled,omitempty"`
 	Description  string    `json:"description,omitempty"`
 	Favorite     *Favorite `json:"favorite,omitempty"`
 	Modified     *Time     `json:"modified,omitempty"`
@@ -21,19 +22,26 @@ type User struct {
 	RoleID       string    `json:"role_id,omitempty"`
 	Profile      *Profile  `json:"profile,omitempty"`
 	Role         *Role     `json:"role,omitempty"`
-	GPGKey       *GPGKey   `json:"gpgKey,omitempty"`
+	GPGKey       *GPGKey   `json:"gpgkey,omitempty"`
 	LastLoggedIn string    `json:"last_logged_in,omitempty"`
 	Locale       string    `json:"locale,omitempty"`
+
+	// Admin only, needs contains
+	MissingMetadataKeyIDs []string `json:"missing_metadata_key_ids,omitempty"`
+
+	// GroupsUsers contains group membership data (returned by SearchAROs endpoint)
+	GroupsUsers []GroupMembership `json:"groups_users,omitempty"`
 }
 
 // Profile is a Profile
 type Profile struct {
-	ID        string `json:"id,omitempty"`
-	UserID    string `json:"user_id,omitempty"`
-	FirstName string `json:"first_name,omitempty"`
-	LastName  string `json:"last_name,omitempty"`
-	Created   *Time  `json:"created,omitempty"`
-	Modified  *Time  `json:"modified,omitempty"`
+	ID        string  `json:"id,omitempty"`
+	UserID    string  `json:"user_id,omitempty"`
+	FirstName string  `json:"first_name,omitempty"`
+	LastName  string  `json:"last_name,omitempty"`
+	Created   *Time   `json:"created,omitempty"`
+	Modified  *Time   `json:"modified,omitempty"`
+	Avatar    *Avatar `json:"avatar,omitempty"`
 }
 
 // GetUsersOptions are all available query parameters
@@ -42,6 +50,8 @@ type GetUsersOptions struct {
 	FilterHasGroup  []string `url:"filter[has-group][],omitempty"`
 	FilterHasAccess []string `url:"filter[has-access][],omitempty"`
 	FilterIsAdmin   bool     `url:"filter[is-admin],omitempty"`
+	// Admin only, TODO are underscores correct?
+	MissingMetadataKeyIDs bool `url:"filter[missing_metadata_key_ids],omitempty"`
 
 	ContainLastLoggedIn bool `url:"contain[LastLoggedIn],omitempty"`
 }
@@ -82,9 +92,11 @@ func (c *Client) GetMe(ctx context.Context) (*User, error) {
 
 // GetUser gets a Passbolt User
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
-	err := checkUUIDFormat(userID)
-	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+	if userID != "me" {
+		err := checkUUIDFormat(userID)
+		if err != nil {
+			return nil, fmt.Errorf("checking ID format: %w", err)
+		}
 	}
 	msg, err := c.DoCustomRequest(ctx, "GET", "/users/"+userID+".json", "v2", nil, nil)
 	if err != nil {
@@ -101,9 +113,11 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
 
 // UpdateUser Updates a existing Passbolt User
 func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*User, error) {
-	err := checkUUIDFormat(userID)
-	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+	if userID != "me" {
+		err := checkUUIDFormat(userID)
+		if err != nil {
+			return nil, fmt.Errorf("checking ID format: %w", err)
+		}
 	}
 	msg, err := c.DoCustomRequest(ctx, "PUT", "/users/"+userID+".json", "v2", user, nil)
 	if err != nil {
@@ -119,11 +133,13 @@ func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*Use
 
 // DeleteUser Deletes a Passbolt User
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
-	err := checkUUIDFormat(userID)
-	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+	if userID != "me" {
+		err := checkUUIDFormat(userID)
+		if err != nil {
+			return fmt.Errorf("checking ID format: %w", err)
+		}
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
+	_, err := c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -134,7 +150,7 @@ func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 func (c *Client) DeleteUserDryrun(ctx context.Context, userID string) error {
 	err := checkUUIDFormat(userID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+"/dry-run.json", "v2", nil, nil)
 	if err != nil {

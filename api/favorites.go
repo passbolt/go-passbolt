@@ -19,7 +19,7 @@ type Favorite struct {
 func (c *Client) CreateFavorite(ctx context.Context, resourceID string) (*Favorite, error) {
 	err := checkUUIDFormat(resourceID)
 	if err != nil {
-		return nil, fmt.Errorf("Checking ID format: %w", err)
+		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
 	msg, err := c.DoCustomRequest(ctx, "POST", "/favorites/resource/"+resourceID+".json", "v2", nil, nil)
 	if err != nil {
@@ -38,7 +38,7 @@ func (c *Client) CreateFavorite(ctx context.Context, resourceID string) (*Favori
 func (c *Client) DeleteFavorite(ctx context.Context, favoriteID string) error {
 	err := checkUUIDFormat(favoriteID)
 	if err != nil {
-		return fmt.Errorf("Checking ID format: %w", err)
+		return fmt.Errorf("checking ID format: %w", err)
 	}
 	_, err = c.DoCustomRequest(ctx, "DELETE", "/favorites/"+favoriteID+".json", "v2", nil, nil)
 	if err != nil {

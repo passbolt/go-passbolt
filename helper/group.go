@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -28,7 +29,7 @@ func CreateGroup(ctx context.Context, c *api.Client, name string, operations []G
 	memberships := []api.GroupMembership{}
 	for _, o := range operations {
 		if o.Delete {
-			return "", fmt.Errorf("Cannot Delete Membership during Group Creation")
+			return "", fmt.Errorf("cannot Delete Membership during Group Creation")
 		}
 		memberships = append(memberships, api.GroupMembership{
 			UserID:  o.UserID,
@@ -40,7 +41,7 @@ func CreateGroup(ctx context.Context, c *api.Client, name string, operations []G
 		GroupUsers: memberships,
 	})
 	if err != nil {
-		return "", fmt.Errorf("Creating Group: %w", err)
+		return "", fmt.Errorf("creating Group: %w", err)
 	}
 	return group.ID, nil
 }
@@ -54,7 +55,7 @@ func GetGroup(ctx context.Context, c *api.Client, groupID string) (string, []Gro
 		ContainGroupsUsersUserProfile: true,
 	})
 	if err != nil {
-		return "", nil, fmt.Errorf("Getting Groups: %w", err)
+		return "", nil, fmt.Errorf("getting Groups: %w", err)
 	}
 
 	for _, g := range groups {
@@ -72,7 +73,7 @@ func GetGroup(ctx context.Context, c *api.Client, groupID string) (string, []Gro
 			return g.Name, memberships, nil
 		}
 	}
-	return "", nil, fmt.Errorf("Cannot Find Group in API Response")
+	return "", nil, fmt.Errorf("cannot Find Group in API Response")
 }
 
 // UpdateGroup Updates a Groups Name and Memberships
@@ -82,7 +83,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		ContainGroupsUsers: true,
 	})
 	if err != nil {
-		return fmt.Errorf("Getting Groups: %w", err)
+		return fmt.Errorf("getting Groups: %w", err)
 	}
 
 	var currentMemberships []api.GroupMembership
@@ -95,7 +96,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		}
 	}
 	if currentMemberships == nil {
-		return fmt.Errorf("Cannot Find Group with ID %v", groupID)
+		return fmt.Errorf("cannot Find Group with ID %v", groupID)
 	}
 
 	request := api.GroupUpdate{
@@ -114,7 +115,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		if err != nil {
 			// Membership does not Exist so we can only create a new one
 			if operation.Delete {
-				return fmt.Errorf("Cannot Delete User %v as it has no membership", operation.UserID)
+				return fmt.Errorf("cannot Delete User %v as it has no membership", operation.UserID)
 			}
 			request.GroupChanges = append(request.GroupChanges, api.GroupMembership{
 				UserID:  operation.UserID,
@@ -123,7 +124,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		} else {
 			// Membership Exists so we can modify or delete it
 			if !operation.Delete && membership.IsAdmin == operation.IsGroupManager {
-				return fmt.Errorf("Membership for User %v already Exists with Same Role", operation.UserID)
+				return fmt.Errorf("membership for User %v already Exists with Same Role", operation.UserID)
 			}
 			request.GroupChanges = append(request.GroupChanges, api.GroupMembership{
 				ID:      membership.ID,
@@ -135,7 +136,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 
 	dryrun, err := c.UpdateGroupDryRun(ctx, groupID, request)
 	if err != nil {
-		return fmt.Errorf("Update Group Dryrun: %w", err)
+		return fmt.Errorf("update Group Dryrun: %w", err)
 	}
 
 	var users []api.User
@@ -143,7 +144,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 	if len(dryrun.DryRun.SecretsNeeded) != 0 {
 		users, err = c.GetUsers(ctx, &api.GetUsersOptions{})
 		if err != nil {
-			return fmt.Errorf("Getting Users: %w", err)
+			return fmt.Errorf("getting Users: %w", err)
 		}
 	}
 
@@ -160,12 +161,12 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		if decryptedSecretCache[missingSecret.ResourceID] == "" {
 			secret, err := getSecretByResourceID(secrets, missingSecret.ResourceID)
 			if err != nil {
-				return fmt.Errorf("Get Secret from Dryrun Response: %w", err)
+				return fmt.Errorf("get Secret from Dryrun Response: %w", err)
 			}
 
 			msg, err := c.DecryptMessage(secret.Data)
 			if err != nil {
-				return fmt.Errorf("Decrypting Secret: %w", err)
+				return fmt.Errorf("decrypting Secret: %w", err)
 			}
 
 			decryptedSecretCache[missingSecret.ResourceID] = msg
@@ -173,12 +174,17 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 
 		pubkey, err := getPublicKeyByUserID(missingSecret.UserID, users)
 		if err != nil {
-			return fmt.Errorf("Get pubkey for User: %w", err)
+			return fmt.Errorf("get pubkey for User: %w", err)
 		}
 
-		newSecretData, err := c.EncryptMessageWithPublicKey(pubkey, decryptedSecretCache[missingSecret.ResourceID])
+		publicKey, err := crypto.NewKeyFromArmored(pubkey)
 		if err != nil {
-			return fmt.Errorf("Encrypting Secret: %w", err)
+			return fmt.Errorf("parsing public key for user %v: %w", missingSecret.UserID, err)
+		}
+
+		newSecretData, err := c.EncryptMessageWithKey(publicKey, decryptedSecretCache[missingSecret.ResourceID])
+		if err != nil {
+			return fmt.Errorf("encrypting Secret: %w", err)
 		}
 		request.Secrets = append(request.Secrets, api.Secret{
 			UserID:     missingSecret.UserID,
@@ -189,7 +195,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 
 	_, err = c.UpdateGroup(ctx, groupID, request)
 	if err != nil {
-		return fmt.Errorf("Updating Group: %w", err)
+		return fmt.Errorf("updating Group: %w", err)
 	}
 	return nil
 }
@@ -198,7 +204,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 func DeleteGroup(ctx context.Context, c *api.Client, groupID string) error {
 	err := c.DeleteGroup(ctx, groupID)
 	if err != nil {
-		return fmt.Errorf("Deleting Group: %w", err)
+		return fmt.Errorf("deleting Group: %w", err)
 	}
 	return nil
 }
