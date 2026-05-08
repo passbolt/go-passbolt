@@ -110,12 +110,12 @@ func validateMetadata(rType *api.ResourceType, metadata string) error {
 
 		comp := jsonschema.NewCompiler()
 
-		err = comp.AddResource("metadata.json", schemaDefinition.Resource)
+		err = comp.AddResource("urn:passbolt:schema:metadata", schemaDefinition.Resource)
 		if err != nil {
 			return fmt.Errorf("adding Json Schema: %w", err)
 		}
 
-		schema, err = comp.Compile("metadata.json")
+		schema, err = comp.Compile("urn:passbolt:schema:metadata")
 		if err != nil {
 			return fmt.Errorf("compiling Json Schema: %w", err)
 		}

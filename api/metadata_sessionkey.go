@@ -157,7 +157,10 @@ func (c *Client) FetchAndCacheSessionKeys(ctx context.Context) (int, error) {
 		}
 	}
 
-	c.log("Cached %d session keys from metadata_session_keys (map size: %d)", totalCached, len(c.sessionKeyCache))
+	c.sessionKeyCacheMu.RLock()
+	cacheSize := len(c.sessionKeyCache)
+	c.sessionKeyCacheMu.RUnlock()
+	c.log("Cached %d session keys from metadata_session_keys (map size: %d)", totalCached, cacheSize)
 	return totalCached, nil
 }
 

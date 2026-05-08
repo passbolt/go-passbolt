@@ -10,9 +10,8 @@ import (
 )
 
 func validateSecretData(rType *api.ResourceType, secretData string) error {
-	// TODO Remove password-string when v4 Resources are unsupported
-	// with the Resource Type password-string the Secret is not json and can't be properly validated, so skip the check here
-	if rType.Slug == "password-string" || rType.Slug == "v5-password-string" {
+	// When the secret is a plain string (not JSON), we can only validate length
+	if rType.IsSecretString() {
 		if len(secretData) > 4096 {
 			return ErrPasswordTooLong
 		}
@@ -53,12 +52,12 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 
 	comp := jsonschema.NewCompiler()
 
-	err = comp.AddResource("secret.json", schemaDefinition.Secret)
+	err = comp.AddResource("urn:passbolt:schema:secret", schemaDefinition.Secret)
 	if err != nil {
 		return fmt.Errorf("adding Json Schema: %w", err)
 	}
 
-	schema, err := comp.Compile("secret.json")
+	schema, err := comp.Compile("urn:passbolt:schema:secret")
 	if err != nil {
 		return fmt.Errorf("compiling Json Schema: %w", err)
 	}

@@ -9,8 +9,8 @@ import (
 // EncryptMessage encrypts a message using the users public key and then signes the message using the users private key.
 // This method is thread-safe.
 func (c *Client) EncryptMessage(message string) (string, error) {
-	c.cryptoMu.RLock()
-	defer c.cryptoMu.RUnlock()
+	c.cryptoMu.Lock()
+	defer c.cryptoMu.Unlock()
 
 	if c.userPrivateKey == nil {
 		return "", ErrNoPrivateKey
@@ -55,8 +55,8 @@ func (c *Client) EncryptMessageWithPublicKey(publickey, message string) (string,
 // EncryptMessageWithKey encrypts a message using the provided key and then signes the message using the users private key.
 // This method is thread-safe.
 func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (string, error) {
-	c.cryptoMu.RLock()
-	defer c.cryptoMu.RUnlock()
+	c.cryptoMu.Lock()
+	defer c.cryptoMu.Unlock()
 
 	if c.userPrivateKey == nil {
 		return "", ErrNoPrivateKey
@@ -89,8 +89,8 @@ func (c *Client) EncryptMessageWithKey(publicKey *crypto.Key, message string) (s
 // DecryptMessage decrypts a message using the users Private Key.
 // This method is thread-safe.
 func (c *Client) DecryptMessage(armoredCiphertext string) (string, error) {
-	c.cryptoMu.RLock()
-	defer c.cryptoMu.RUnlock()
+	c.cryptoMu.Lock()
+	defer c.cryptoMu.Unlock()
 
 	if c.userPrivateKey == nil {
 		return "", ErrNoPrivateKey
@@ -118,14 +118,14 @@ func (c *Client) DecryptSecretWithResourceID(resourceID string, armoredCiphertex
 // Returns the session key so that it can be saved in a cache.
 // This method is thread-safe.
 func (c *Client) DecryptMessageWithPrivateKeyAndReturnSessionKey(privateKey *crypto.Key, armoredCiphertext string) (string, *crypto.SessionKey, error) {
-	c.cryptoMu.RLock()
-	defer c.cryptoMu.RUnlock()
+	c.cryptoMu.Lock()
+	defer c.cryptoMu.Unlock()
 
 	return c.decryptMessageWithPrivateKeyAndReturnSessionKeyLocked(privateKey, armoredCiphertext)
 }
 
 // decryptMessageWithPrivateKeyAndReturnSessionKeyLocked is the internal implementation.
-// Caller must hold cryptoMu.RLock().
+// Caller must hold cryptoMu.Lock().
 func (c *Client) decryptMessageWithPrivateKeyAndReturnSessionKeyLocked(privateKey *crypto.Key, armoredCiphertext string) (string, *crypto.SessionKey, error) {
 	// Copy the private key to avoid it being cleared by ClearPrivateParams.
 	// Note: The caller must ensure privateKey is not accessed concurrently
@@ -208,8 +208,8 @@ func (c *Client) DecryptMessageWithSessionKey(sessionKey *crypto.SessionKey, cip
 // GetUserPrivateKeyCopy returns a copy of the user's private key.
 // This method is thread-safe.
 func (c *Client) GetUserPrivateKeyCopy() (*crypto.Key, error) {
-	c.cryptoMu.RLock()
-	defer c.cryptoMu.RUnlock()
+	c.cryptoMu.Lock()
+	defer c.cryptoMu.Unlock()
 
 	if c.userPrivateKey == nil {
 		return nil, ErrNoPrivateKey

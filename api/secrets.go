@@ -16,12 +16,7 @@ type Secret struct {
 	Modified   *Time  `json:"modified,omitempty"`
 }
 
-// SecretDataTypePasswordAndDescription is the format a secret of resource type "password-and-description" is stored in
-type SecretDataTypePasswordAndDescription struct {
-	Password    string `json:"password"`
-	Description string `json:"description,omitempty"`
-}
-
+// SecretDataTOTP represents the TOTP sub-object in secret data
 type SecretDataTOTP struct {
 	Algorithm string `json:"algorithm"`
 	SecretKey string `json:"secret_key"`
@@ -29,11 +24,26 @@ type SecretDataTOTP struct {
 	Period    int    `json:"period"`
 }
 
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
+// SecretDataTypePasswordAndDescription is the format a secret of resource type "password-and-description" is stored in
+type SecretDataTypePasswordAndDescription struct {
+	Password    string `json:"password"`
+	Description string `json:"description,omitempty"`
+}
+
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
 // SecretDataTypeTOTP is the format a secret of resource type "totp" is stored in
 type SecretDataTypeTOTP struct {
 	TOTP SecretDataTOTP `json:"totp"`
 }
 
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
 // SecretDataTypePasswordDescriptionTOTP is the format a secret of resource type "password-description-totp" is stored in
 type SecretDataTypePasswordDescriptionTOTP struct {
 	Password    string         `json:"password"`
@@ -41,6 +51,9 @@ type SecretDataTypePasswordDescriptionTOTP struct {
 	TOTP        SecretDataTOTP `json:"totp"`
 }
 
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
 // SecretDataTypeV5Default represents the secret data for a V5 default resource.
 type SecretDataTypeV5Default struct {
 	ObjectType     string `json:"object_type"`
@@ -49,6 +62,9 @@ type SecretDataTypeV5Default struct {
 	Description    string `json:"description,omitempty"`
 }
 
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
 // SecretDataTypeV5DefaultWithTOTP represents the secret data for a V5 default resource with TOTP.
 type SecretDataTypeV5DefaultWithTOTP struct {
 	ObjectType     string         `json:"object_type"`
@@ -58,9 +74,15 @@ type SecretDataTypeV5DefaultWithTOTP struct {
 	TOTP           SecretDataTOTP `json:"totp"`
 }
 
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
 // SecretDataTypeV5PasswordString is just the password directly.
 type SecretDataTypeV5PasswordString string
 
+// Deprecated: marshal/unmarshal secret data via map[string]any with helper.GetResourceFieldMaps
+// or helper.CreateResourceGeneric instead. Will be removed in a future major version.
+//
 // SecretDataTypeV5TOTPStandalone represents the secret data for a V5 standalone TOTP resource.
 type SecretDataTypeV5TOTPStandalone struct {
 	ObjectType     string         `json:"object_type"`
