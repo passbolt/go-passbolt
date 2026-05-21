@@ -60,6 +60,22 @@ func Test_validateCustomFields(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			// Catches an early-break in the per-entry validation
+			// loop: with only one pair, an early-return after the
+			// first iteration would still produce nil. Two valid
+			// pairs force the loop to run twice.
+			name: "happy path: two symmetric pairs both valid",
+			metadata: map[string]any{"custom_fields": []any{
+				map[string]any{"id": idA, "metadata_key": "k1"},
+				map[string]any{"id": idB, "metadata_key": "k2"},
+			}},
+			secret: map[string]any{"custom_fields": []any{
+				map[string]any{"id": idA, "secret_value": "v1"},
+				map[string]any{"id": idB, "secret_value": "v2"},
+			}},
+			wantErr: nil,
+		},
+		{
 			name: "custom_fields on metadata side only",
 			metadata: map[string]any{"custom_fields": []any{
 				map[string]any{"id": idA, "metadata_key": "k"},
