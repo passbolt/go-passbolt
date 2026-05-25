@@ -1,128 +1,18 @@
+//go:build integration
+
 package api_test
 
 import (
-	"context"
-	"crypto/tls"
 	"encoding/json"
-	"net/http"
-	"os"
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/passbolt/go-passbolt/api"
 	"github.com/passbolt/go-passbolt/helper"
 )
 
-// TestConfig holds test configuration
-type TestConfig struct {
-	Address    string
-	Password   string
-	PrivateKey string
-	Debug      bool
-	Timeout    int
-}
-
-// LoadTestConfig loads configuration from environment variables
-func LoadTestConfig(t *testing.T) *TestConfig {
-	address := os.Getenv("PASSBOLT_TEST_URL")
-	if address == "" {
-		t.Skip("PASSBOLT_TEST_URL not set, skipping integration tests")
-	}
-
-	password := os.Getenv("PASSBOLT_TEST_PASSWORD")
-	if password == "" {
-		t.Skip("PASSBOLT_TEST_PASSWORD not set, skipping integration tests")
-	}
-
-	// Try to load private key from environment variable or file
-	privateKey := os.Getenv("PASSBOLT_TEST_PRIVATE_KEY")
-
-	// If PASSBOLT_TEST_PRIVATE_KEY is empty, try loading from PASSBOLT_TEST_PRIVATE_KEY_FILE
-	if privateKey == "" {
-		keyFile := os.Getenv("PASSBOLT_TEST_PRIVATE_KEY_FILE")
-		if keyFile != "" {
-			keyData, err := os.ReadFile(keyFile)
-			if err != nil {
-				// Treat a missing file the same as a missing var: skip
-				// rather than fatal. This is how it lands when the .env
-				// is shared across machines (e.g. a macOS path under a
-				// linux devcontainer) and avoids spurious VS Code test
-				// failures.
-				t.Skipf("PASSBOLT_TEST_PRIVATE_KEY_FILE %s not readable: %v", keyFile, err)
-			}
-			privateKey = string(keyData)
-		}
-	}
-
-	if privateKey == "" {
-		t.Skip("PASSBOLT_TEST_PRIVATE_KEY or PASSBOLT_TEST_PRIVATE_KEY_FILE not set, skipping integration tests")
-	}
-
-	debug := os.Getenv("PASSBOLT_TEST_DEBUG") == "true"
-
-	timeout := 30
-	if timeoutStr := os.Getenv("PASSBOLT_TEST_TIMEOUT"); timeoutStr != "" {
-		// Parse as integer (seconds)
-		if t, err := strconv.Atoi(timeoutStr); err == nil {
-			timeout = t
-		}
-	}
-
-	return &TestConfig{
-		Address:    address,
-		Password:   password,
-		PrivateKey: privateKey,
-		Debug:      debug,
-		Timeout:    timeout,
-	}
-}
-
-// setupTestClient creates a test client with proper SSL handling
-func setupTestClient(t *testing.T) (*api.Client, context.Context, func()) {
-	config := LoadTestConfig(t)
-
-	// Create HTTP client that accepts self-signed certificates
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-		Timeout: time.Duration(config.Timeout) * time.Second,
-	}
-
-	client, err := api.NewClient(httpClient, "go-passbolt-test/1.0", config.Address, config.PrivateKey, config.Password)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	if config.Debug {
-		client.Debug = true
-	}
-
-	ctx := context.Background()
-	err = client.Login(ctx)
-	if err != nil {
-		t.Fatalf("Failed to login: %v", err)
-	}
-
-	cleanup := func() {
-		client.Logout(ctx)
-	}
-
-	return client, ctx, cleanup
-}
-
 // TestClientCreationWithV3 tests that the client is created with gopenpgp v3
 func TestClientCreationWithV3(t *testing.T) {
-	config := LoadTestConfig(t)
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	client, err := api.NewClient(httpClient, "", config.Address, config.PrivateKey, config.Password)
+	client, err := api.NewClient(nil, "", testServerURL, testAdminPrivKey, testAdminPassword)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
