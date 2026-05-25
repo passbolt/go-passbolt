@@ -78,6 +78,14 @@ func setupTestClient(t *testing.T) (*api.Client, context.Context, func()) {
 		t.Fatalf("Failed to login: %v", err)
 	}
 
-	cleanup := func() { _ = client.Logout(ctx) }
+	cleanup := func() {
+		// Surface a non-nil Logout error without failing the test: it
+		// usually means the server-side session is already gone, which
+		// is benign at teardown but worth a log line if it becomes
+		// chronic.
+		if err := client.Logout(ctx); err != nil {
+			t.Logf("Logout (cleanup): %v", err)
+		}
+	}
 	return client, ctx, cleanup
 }
