@@ -16,6 +16,10 @@ import (
 // this package. It is populated by TestMain from a fresh Passbolt container.
 var client *api.Client
 
+// pb is the running Passbolt instance exposed so individual tests can invite
+// additional users (e.g. to exercise SetupAccount on a fresh invite).
+var pb *testenv.Passbolt
+
 // Email/password convention mirrors the existing Passbolt seed-data fixtures
 // (password == email) so any test-script that hard-codes seeded emails like
 // "ada@passbolt.com" or "adele@passbolt.com" lines up.
@@ -36,7 +40,8 @@ func TestMain(m *testing.M) {
 func run(m *testing.M) (int, error) {
 	ctx := context.Background()
 
-	pb, err := testenv.Start(ctx)
+	var err error
+	pb, err = testenv.Start(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("start testenv: %w", err)
 	}
