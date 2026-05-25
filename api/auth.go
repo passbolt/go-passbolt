@@ -153,7 +153,11 @@ func (c *Client) Login(ctx context.Context) error {
 // For a new session, create a new client instance with NewClient().
 // This method is thread-safe.
 func (c *Client) Logout(ctx context.Context) error {
-	_, err := c.DoCustomRequest(ctx, "GET", "/auth/logout.json", "v2", nil, nil)
+	// POST is the version-agnostic verb here: the route accepts both, but
+	// AuthLogoutController's beforeFilter throws MissingRouteException (404)
+	// for GET unless the server opts in via passbolt.security.getLogoutEndpointEnabled
+	// (default off).
+	_, err := c.DoCustomRequest(ctx, "POST", "/auth/logout.json", "v2", nil, nil)
 	if err != nil {
 		return fmt.Errorf("doing Logout Request: %w", err)
 	}
