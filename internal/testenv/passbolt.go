@@ -30,9 +30,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// Pinned by tag AND digest so every CI run and every developer machine pulls
+// byte-identical images. Bumping the tag without bumping the digest (or vice
+// versa) is a deliberate, reviewable change. Refresh both together when moving
+// to a new Passbolt release.
 const (
-	mariadbImage  = "mariadb:10.11"
-	passboltImage = "passbolt/passbolt:latest-ce"
+	mariadbImage  = "mariadb:10.11@sha256:8acd4a5561e8897cfc8a99480f25bcecb10b726fa17b1ec7381c6ef36fa00a79"
+	passboltImage = "passbolt/passbolt:5.12.0-1-ce@sha256:f4344e1d45159494339ca7184c58e6b76067602e898bee72b53bfa093366c24b"
 )
 
 // Credentials is everything a test needs to authenticate as a Passbolt user.
