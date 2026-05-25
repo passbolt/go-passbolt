@@ -44,7 +44,12 @@ func LoadTestConfig(t *testing.T) *TestConfig {
 		if keyFile != "" {
 			keyData, err := os.ReadFile(keyFile)
 			if err != nil {
-				t.Fatalf("Failed to read private key from file %s: %v", keyFile, err)
+				// Treat a missing file the same as a missing var: skip
+				// rather than fatal. This is how it lands when the .env
+				// is shared across machines (e.g. a macOS path under a
+				// linux devcontainer) and avoids spurious VS Code test
+				// failures.
+				t.Skipf("PASSBOLT_TEST_PRIVATE_KEY_FILE %s not readable: %v", keyFile, err)
 			}
 			privateKey = string(keyData)
 		}
