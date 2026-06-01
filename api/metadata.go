@@ -34,9 +34,10 @@ func (c *Client) DecryptMetadataWithKeyID(metadataKeyID string, metadataKey *cry
 		}
 	}
 
-	// The metadataKey is expected to be a copy provided by GetDecryptedMetadataKeyCached
-	// or GetUserPrivateKeyCopy, so we can use it directly without additional copying.
-	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKey, armoredCiphertext)
+	// Use the locked, copying variant: the underlying direct decryption defers
+	// ClearPrivateParams which would otherwise mutate the caller's metadataKey,
+	// breaking subsequent calls and racing across goroutines.
+	metadata, newSessionKey, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(metadataKey, armoredCiphertext)
 	if err != nil {
 		return "", fmt.Errorf("decrypting Metadata: %w", err)
 	}
@@ -87,10 +88,9 @@ func (c *Client) DecryptMetadataWithResourceID(resourceID, metadataKeyID string,
 		}
 	}
 
-	// 3. Full asymmetric decryption
-	// The metadataKey is expected to be a copy provided by GetDecryptedMetadataKeyCached,
-	// so we can use it directly without additional copying.
-	metadata, newSessionKey, err := c.decryptMessageWithPrivateKeyDirect(metadataKey, armoredCiphertext)
+	// 3. Full asymmetric decryption — use the locked, copying variant so the
+	// underlying defer ClearPrivateParams doesn't mutate the caller's metadataKey.
+	metadata, newSessionKey, err := c.DecryptMessageWithPrivateKeyAndReturnSessionKey(metadataKey, armoredCiphertext)
 	if err != nil {
 		return "", fmt.Errorf("decrypting Metadata: %w", err)
 	}

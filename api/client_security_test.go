@@ -1,3 +1,5 @@
+//go:build integration
+
 package api_test
 
 import (
@@ -8,9 +10,8 @@ import (
 // ============================================================================
 // Security Tests for Key Caching and Memory Zeroing
 //
-// Note: This file uses setupTestClient(), LoadTestConfig(), and TestConfig
-// from metadata_implementation_test.go. Both test files share these common
-// test helpers since they're in the same package (api_test).
+// Shared test infrastructure (setupTestClient, package-level testenv vars)
+// lives in integration_main_test.go.
 // ============================================================================
 
 // TestSecureZeroingOnLogout tests that logout clears user private key
