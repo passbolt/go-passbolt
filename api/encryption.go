@@ -127,6 +127,13 @@ func (c *Client) DecryptMessageWithPrivateKeyAndReturnSessionKey(privateKey *cry
 // decryptMessageWithPrivateKeyAndReturnSessionKeyLocked is the internal implementation.
 // Caller must hold cryptoMu.Lock().
 func (c *Client) decryptMessageWithPrivateKeyAndReturnSessionKeyLocked(privateKey *crypto.Key, armoredCiphertext string) (string, *crypto.SessionKey, error) {
+	// helper.GetResourceMetadata calls DecryptMetadataWithResourceID with a nil
+	// key to probe the session-key cache; it expects an error (not a panic) when
+	// the fast path misses and there's no fallback key available.
+	if privateKey == nil {
+		return "", nil, fmt.Errorf("decrypt: no private key provided")
+	}
+
 	// Copy the private key to avoid it being cleared by ClearPrivateParams.
 	// Note: The caller must ensure privateKey is not accessed concurrently
 	// (either by passing a copy or by external synchronization).

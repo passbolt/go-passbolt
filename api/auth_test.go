@@ -57,7 +57,7 @@ func TestLogout_WipesPrivateKeyAndCaches(t *testing.T) {
 
 	var hit atomic.Bool
 	_, client := newTestClientWithKey(t, route{
-		method: "GET", path: "/auth/logout.json",
+		method: "POST", path: "/auth/logout.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			hit.Store(true)
 			writeAPIResponse(t, w, map[string]string{})
@@ -88,7 +88,7 @@ func TestLogout_PropagatesServerError(t *testing.T) {
 	t.Parallel()
 
 	_, client := newTestClientWithKey(t, route{
-		method: "GET", path: "/auth/logout.json",
+		method: "POST", path: "/auth/logout.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIError(t, w, 500, "server down")
 		},
