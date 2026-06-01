@@ -121,6 +121,22 @@ func NewClient(httpClient *http.Client, UserAgent, BaseURL, UserPrivateKey, User
 		return nil, fmt.Errorf("parsing Base URL: %w", err)
 	}
 
+	// Wrap the caller's http.Client in a shallow copy so we can install a
+	// CheckRedirect policy without mutating shared state (e.g. http.DefaultClient).
+	// Custom headers like X-CSRF-Token are not stripped by the stdlib on
+	// cross-host redirects, so we refuse any redirect that leaves the
+	// configured Passbolt host/scheme.
+	httpClientCopy := *httpClient
+	baseHost := u.Host
+	baseScheme := u.Scheme
+	httpClientCopy.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if req.URL.Host != baseHost || req.URL.Scheme != baseScheme {
+			return fmt.Errorf("refusing cross-host redirect to %s://%s", req.URL.Scheme, req.URL.Host)
+		}
+		return nil
+	}
+	httpClient = &httpClientCopy
+
 	pgp := crypto.PGP()
 
 	var unlockedKey *crypto.Key = nil
@@ -173,7 +189,9 @@ func (c *Client) newRequest(method, url string, body interface{}) (*http.Request
 	}
 
 	// Debugging
-	c.log("Request URL: %v", req.URL.String())
+	if c.Debug {
+		c.log("Request URL: %v", req.URL.String())
+	}
 	if c.Debug && body != nil {
 		data, err := json.Marshal(body)
 		if err == nil {
