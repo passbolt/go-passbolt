@@ -14,7 +14,7 @@ type User struct {
 	Created      *Time     `json:"created,omitempty"`
 	Active       bool      `json:"active,omitempty"`
 	Deleted      bool      `json:"deleted,omitempty"`
-	Disabled     bool      `json:"disabled,omitempty"`
+	Disabled     *Time     `json:"disabled,omitempty"`
 	Description  string    `json:"description,omitempty"`
 	Favorite     *Favorite `json:"favorite,omitempty"`
 	Modified     *Time     `json:"modified,omitempty"`
