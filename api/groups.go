@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -97,97 +96,42 @@ type UpdateGroupDryRunSecretsNeeded struct {
 
 // GetGroups gets all Passbolt Groups
 func (c *Client) GetGroups(ctx context.Context, opts *GetGroupsOptions) ([]Group, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/groups.json", "v2", nil, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var groups []Group
-	err = json.Unmarshal(msg.Body, &groups)
-	if err != nil {
-		return nil, err
-	}
-	return groups, nil
+	return doList[Group](ctx, c, "/groups.json", opts)
 }
 
 // CreateGroup Creates a new Passbolt Group
 func (c *Client) CreateGroup(ctx context.Context, group Group) (*Group, error) {
-	msg, err := c.DoCustomRequest(ctx, "POST", "/groups.json", "v2", group, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &group)
-	if err != nil {
-		return nil, err
-	}
-	return &group, nil
+	return doSave(ctx, c, "POST", "/groups.json", group)
 }
 
 // GetGroup gets a Passbolt Group
 func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
-	err := checkUUIDFormat(groupID)
-	if err != nil {
+	if err := checkUUIDFormat(groupID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/groups/"+groupID+".json", "v2", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var group Group
-	err = json.Unmarshal(msg.Body, &group)
-	if err != nil {
-		return nil, err
-	}
-	return &group, nil
+	return doInto[Group](ctx, c, "GET", "/groups/"+groupID+".json", nil, nil)
 }
 
 // UpdateGroup Updates a existing Passbolt Group
 func (c *Client) UpdateGroup(ctx context.Context, groupID string, update GroupUpdate) (*Group, error) {
-	err := checkUUIDFormat(groupID)
-	if err != nil {
+	if err := checkUUIDFormat(groupID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+".json", "v2", update, nil)
-	if err != nil {
-		return nil, err
-	}
-	var group Group
-	err = json.Unmarshal(msg.Body, &group)
-	if err != nil {
-		return nil, err
-	}
-	return &group, nil
+	return doInto[Group](ctx, c, "PUT", "/groups/"+groupID+".json", update, nil)
 }
 
 // UpdateGroupDryRun Checks that a Passbolt Group update passes validation
 func (c *Client) UpdateGroupDryRun(ctx context.Context, groupID string, update GroupUpdate) (*UpdateGroupDryRunResult, error) {
-	err := checkUUIDFormat(groupID)
-	if err != nil {
+	if err := checkUUIDFormat(groupID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/groups/"+groupID+"/dry-run.json", "v2", update, nil)
-	if err != nil {
-		return nil, err
-	}
-	var result UpdateGroupDryRunResult
-	err = json.Unmarshal(msg.Body, &result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
+	return doInto[UpdateGroupDryRunResult](ctx, c, "PUT", "/groups/"+groupID+"/dry-run.json", update, nil)
 }
 
 // DeleteGroup Deletes a Passbolt Group
 func (c *Client) DeleteGroup(ctx context.Context, groupID string) error {
-	err := checkUUIDFormat(groupID)
-	if err != nil {
+	if err := checkUUIDFormat(groupID); err != nil {
 		return fmt.Errorf("checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/groups/"+groupID+".json", "v2", nil, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return doDelete(ctx, c, "/groups/"+groupID+".json")
 }

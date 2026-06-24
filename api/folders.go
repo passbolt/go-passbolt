@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -55,81 +54,36 @@ type GetFolderOptions struct {
 
 // GetFolders gets all Folders from the Passboltserver
 func (c *Client) GetFolders(ctx context.Context, opts *GetFoldersOptions) ([]Folder, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/folders.json", "v2", nil, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var body []Folder
-	err = json.Unmarshal(msg.Body, &body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
+	return doList[Folder](ctx, c, "/folders.json", opts)
 }
 
 // CreateFolder Creates a new Passbolt Folder
 func (c *Client) CreateFolder(ctx context.Context, folder Folder) (*Folder, error) {
-	msg, err := c.DoCustomRequest(ctx, "POST", "/folders.json", "v2", folder, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &folder)
-	if err != nil {
-		return nil, err
-	}
-	return &folder, nil
+	return doSave(ctx, c, "POST", "/folders.json", folder)
 }
 
 // GetFolder gets a Passbolt Folder
 func (c *Client) GetFolder(ctx context.Context, folderID string, opts *GetFolderOptions) (*Folder, error) {
-	err := checkUUIDFormat(folderID)
-	if err != nil {
+	if err := checkUUIDFormat(folderID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/folders/"+folderID+".json", "v2", nil, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var folder Folder
-	err = json.Unmarshal(msg.Body, &folder)
-	if err != nil {
-		return nil, err
-	}
-	return &folder, nil
+	return doInto[Folder](ctx, c, "GET", "/folders/"+folderID+".json", nil, opts)
 }
 
 // UpdateFolder Updates a existing Passbolt Folder
 func (c *Client) UpdateFolder(ctx context.Context, folderID string, folder Folder) (*Folder, error) {
-	err := checkUUIDFormat(folderID)
-	if err != nil {
+	if err := checkUUIDFormat(folderID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/folders/"+folderID+".json", "v2", folder, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &folder)
-	if err != nil {
-		return nil, err
-	}
-	return &folder, nil
+	return doSave(ctx, c, "PUT", "/folders/"+folderID+".json", folder)
 }
 
 // DeleteFolder Deletes a Passbolt Folder
 func (c *Client) DeleteFolder(ctx context.Context, folderID string) error {
-	err := checkUUIDFormat(folderID)
-	if err != nil {
+	if err := checkUUIDFormat(folderID); err != nil {
 		return fmt.Errorf("checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/folders/"+folderID+".json", "v2", nil, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return doDelete(ctx, c, "/folders/"+folderID+".json")
 }
 
 // MoveFolder Moves a Passbolt Folder

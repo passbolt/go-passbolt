@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -129,12 +128,7 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 			return fmt.Errorf("getting Public Key for User %v: %w", user.User.ID, err)
 		}
 
-		publicKey, err := crypto.NewKeyFromArmored(pubkey)
-		if err != nil {
-			return fmt.Errorf("parsing public key for user %v: %w", user.User.ID, err)
-		}
-
-		encSecretData, err := c.EncryptMessageWithKey(publicKey, secretData)
+		encSecretData, err := encryptForArmoredKey(c, pubkey, secretData)
 		if err != nil {
 			return fmt.Errorf("encrypting Secret for User %v: %w", user.User.ID, err)
 		}

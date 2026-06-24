@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -58,31 +57,12 @@ type GetUsersOptions struct {
 
 // GetUsers gets all Passbolt Users
 func (c *Client) GetUsers(ctx context.Context, opts *GetUsersOptions) ([]User, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/users.json", "v2", nil, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var users []User
-	err = json.Unmarshal(msg.Body, &users)
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
+	return doList[User](ctx, c, "/users.json", opts)
 }
 
 // CreateUser Creates a new Passbolt User
 func (c *Client) CreateUser(ctx context.Context, user User) (*User, error) {
-	msg, err := c.DoCustomRequest(ctx, "POST", "/users.json", "v2", user, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return doSave(ctx, c, "POST", "/users.json", user)
 }
 
 // GetMe gets the currently logged in Passbolt User
@@ -93,68 +73,37 @@ func (c *Client) GetMe(ctx context.Context) (*User, error) {
 // GetUser gets a Passbolt User
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
 	if userID != "me" {
-		err := checkUUIDFormat(userID)
-		if err != nil {
+		if err := checkUUIDFormat(userID); err != nil {
 			return nil, fmt.Errorf("checking ID format: %w", err)
 		}
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/users/"+userID+".json", "v2", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var user User
-	err = json.Unmarshal(msg.Body, &user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return doInto[User](ctx, c, "GET", "/users/"+userID+".json", nil, nil)
 }
 
 // UpdateUser Updates a existing Passbolt User
 func (c *Client) UpdateUser(ctx context.Context, userID string, user User) (*User, error) {
 	if userID != "me" {
-		err := checkUUIDFormat(userID)
-		if err != nil {
+		if err := checkUUIDFormat(userID); err != nil {
 			return nil, fmt.Errorf("checking ID format: %w", err)
 		}
 	}
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/users/"+userID+".json", "v2", user, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return doSave(ctx, c, "PUT", "/users/"+userID+".json", user)
 }
 
 // DeleteUser Deletes a Passbolt User
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 	if userID != "me" {
-		err := checkUUIDFormat(userID)
-		if err != nil {
+		if err := checkUUIDFormat(userID); err != nil {
 			return fmt.Errorf("checking ID format: %w", err)
 		}
 	}
-	_, err := c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+".json", "v2", nil, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return doDelete(ctx, c, "/users/"+userID+".json")
 }
 
 // DeleteUserDryrun Check if a Passbolt User is Deleteable
 func (c *Client) DeleteUserDryrun(ctx context.Context, userID string) error {
-	err := checkUUIDFormat(userID)
-	if err != nil {
+	if err := checkUUIDFormat(userID); err != nil {
 		return fmt.Errorf("checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/users/"+userID+"/dry-run.json", "v2", nil, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return doDelete(ctx, c, "/users/"+userID+"/dry-run.json")
 }

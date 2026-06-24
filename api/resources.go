@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -71,82 +70,36 @@ type GetResourcesOptions struct {
 
 // GetResources gets all Passbolt Resources
 func (c *Client) GetResources(ctx context.Context, opts *GetResourcesOptions) ([]Resource, error) {
-	msg, err := c.DoCustomRequest(ctx, "GET", "/resources.json", "v2", nil, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var resources []Resource
-	err = json.Unmarshal(msg.Body, &resources)
-	if err != nil {
-		return nil, err
-	}
-	return resources, nil
+	return doList[Resource](ctx, c, "/resources.json", opts)
 }
 
 // CreateResource Creates a new Passbolt Resource
 func (c *Client) CreateResource(ctx context.Context, resource Resource) (*Resource, error) {
-	msg, err := c.DoCustomRequest(ctx, "POST", "/resources.json", "v2", resource, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &resource)
-	if err != nil {
-		return nil, err
-	}
-	return &resource, nil
+	return doSave(ctx, c, "POST", "/resources.json", resource)
 }
 
 // GetResource gets a Passbolt Resource
 func (c *Client) GetResource(ctx context.Context, resourceID string) (*Resource, error) {
-	err := checkUUIDFormat(resourceID)
-	if err != nil {
+	if err := checkUUIDFormat(resourceID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/resources/"+resourceID+".json", "v2", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var resource Resource
-	err = json.Unmarshal(msg.Body, &resource)
-	if err != nil {
-		return nil, err
-	}
-	return &resource, nil
+	return doInto[Resource](ctx, c, "GET", "/resources/"+resourceID+".json", nil, nil)
 }
 
 // UpdateResource Updates a existing Passbolt Resource
 func (c *Client) UpdateResource(ctx context.Context, resourceID string, resource Resource) (*Resource, error) {
-	err := checkUUIDFormat(resourceID)
-	if err != nil {
+	if err := checkUUIDFormat(resourceID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-
-	msg, err := c.DoCustomRequest(ctx, "PUT", "/resources/"+resourceID+".json", "v2", resource, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(msg.Body, &resource)
-	if err != nil {
-		return nil, err
-	}
-	return &resource, nil
+	return doSave(ctx, c, "PUT", "/resources/"+resourceID+".json", resource)
 }
 
 // DeleteResource Deletes a Passbolt Resource
 func (c *Client) DeleteResource(ctx context.Context, resourceID string) error {
-	err := checkUUIDFormat(resourceID)
-	if err != nil {
+	if err := checkUUIDFormat(resourceID); err != nil {
 		return fmt.Errorf("checking ID format: %w", err)
 	}
-	_, err = c.DoCustomRequest(ctx, "DELETE", "/resources/"+resourceID+".json", "v2", nil, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return doDelete(ctx, c, "/resources/"+resourceID+".json")
 }
 
 // MoveResource Moves a Passbolt Resource
