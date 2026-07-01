@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -177,12 +176,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 			return fmt.Errorf("get pubkey for User: %w", err)
 		}
 
-		publicKey, err := crypto.NewKeyFromArmored(pubkey)
-		if err != nil {
-			return fmt.Errorf("parsing public key for user %v: %w", missingSecret.UserID, err)
-		}
-
-		newSecretData, err := c.EncryptMessageWithKey(publicKey, decryptedSecretCache[missingSecret.ResourceID])
+		newSecretData, err := encryptForArmoredKey(c, pubkey, decryptedSecretCache[missingSecret.ResourceID])
 		if err != nil {
 			return fmt.Errorf("encrypting Secret: %w", err)
 		}

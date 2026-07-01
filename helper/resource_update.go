@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
 )
 
@@ -219,12 +218,7 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 				return fmt.Errorf("encrypting secret data for user me: %w", err)
 			}
 		} else {
-			publicKey, err := crypto.NewKeyFromArmored(user.GPGKey.ArmoredKey)
-			if err != nil {
-				return fmt.Errorf("get public key: %w", err)
-			}
-
-			encSecretData, err = c.EncryptMessageWithKey(publicKey, secretDataStr)
+			encSecretData, err = encryptForArmoredKey(c, user.GPGKey.ArmoredKey, secretDataStr)
 			if err != nil {
 				return fmt.Errorf("encrypting secret data for user %v: %w", user.ID, err)
 			}

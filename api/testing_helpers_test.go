@@ -48,7 +48,7 @@ type route struct {
 // newMockServer starts an httptest.Server that dispatches requests by exact
 // method+path match. Unmatched requests fall through to a t.Errorf so routing
 // mistakes are loud rather than silent.
-func newMockServer(t *testing.T, routes ...route) *httptest.Server {
+func newMockServer(t testing.TB, routes ...route) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 	for _, r := range routes {
@@ -68,7 +68,7 @@ func newMockServer(t *testing.T, routes ...route) *httptest.Server {
 // HTTP transport layer and entity CRUD methods.
 //
 // For tests that need crypto operations, use newTestClientWithKey.
-func newTestClient(t *testing.T, routes ...route) (*httptest.Server, *Client) {
+func newTestClient(t testing.TB, routes ...route) (*httptest.Server, *Client) {
 	t.Helper()
 	srv := newMockServer(t, routes...)
 	client, err := NewClient(nil, "", srv.URL, "", "")
@@ -80,7 +80,7 @@ func newTestClient(t *testing.T, routes ...route) (*httptest.Server, *Client) {
 
 // newTestClientWithKey is like newTestClient but arms the Client with the
 // shared test PGP keypair (generated once per test binary).
-func newTestClientWithKey(t *testing.T, routes ...route) (*httptest.Server, *Client) {
+func newTestClientWithKey(t testing.TB, routes ...route) (*httptest.Server, *Client) {
 	t.Helper()
 	priv, pass := testPGPKey(t)
 	srv := newMockServer(t, routes...)
@@ -173,7 +173,7 @@ const testPGPPassphrase = "test-passphrase"
 
 // testPGPKey returns a passphrase-locked armored PGP private key generated
 // once per test binary. The same passphrase is used for every test.
-func testPGPKey(t *testing.T) (privateArmored, passphrase string) {
+func testPGPKey(t testing.TB) (privateArmored, passphrase string) {
 	t.Helper()
 	testPGPOnce.Do(generateTestPGPKey)
 	if testPGPErr != nil {
@@ -183,7 +183,7 @@ func testPGPKey(t *testing.T) (privateArmored, passphrase string) {
 }
 
 // testPGPPublic returns the armored public key matching testPGPKey.
-func testPGPPublic(t *testing.T) string {
+func testPGPPublic(t testing.TB) string {
 	t.Helper()
 	testPGPOnce.Do(generateTestPGPKey)
 	if testPGPErr != nil {
