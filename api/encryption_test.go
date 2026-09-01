@@ -28,7 +28,7 @@ import (
 func TestEncryptDecryptMessage_RoundTrip(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 
 	want := "hello world"
 	armored, err := client.EncryptMessage(want)
@@ -54,7 +54,7 @@ func TestEncryptDecryptMessage_RoundTrip(t *testing.T) {
 func TestEncryptMessage_FailsWithoutPrivateKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t) // no key
+	client := newTestClient(t) // no key
 	_, err := client.EncryptMessage("anything")
 	if !errors.Is(err, ErrNoPrivateKey) {
 		t.Errorf("err = %v, want ErrNoPrivateKey", err)
@@ -67,7 +67,7 @@ func TestEncryptMessage_FailsWithoutPrivateKey(t *testing.T) {
 func TestDecryptMessage_FailsWithoutPrivateKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	_, err := client.DecryptMessage("-----BEGIN PGP MESSAGE-----\ngarbage\n-----END PGP MESSAGE-----")
 	if !errors.Is(err, ErrNoPrivateKey) {
 		t.Errorf("err = %v, want ErrNoPrivateKey", err)
@@ -79,7 +79,7 @@ func TestDecryptMessage_FailsWithoutPrivateKey(t *testing.T) {
 func TestDecryptMessage_RejectsMalformedCiphertext(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	_, err := client.DecryptMessage("not a PGP message")
 	if err == nil {
 		t.Fatal("expected error for malformed ciphertext")
@@ -94,7 +94,7 @@ func TestDecryptMessage_RejectsMalformedCiphertext(t *testing.T) {
 func TestEncryptMessageWithKey_RoundTripUsingExternalRecipient(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 
 	recipient, err := crypto.NewKeyFromArmored(testPGPPublic(t))
 	if err != nil {
@@ -236,7 +236,7 @@ func TestEncryptMessageWithKeyAndSigner_FailsWithoutPrivateKey(t *testing.T) {
 func TestEncryptMessageWithPublicKey_DeprecatedWrapper(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	armored, err := client.EncryptMessageWithPublicKey(testPGPPublic(t), "via deprecated wrapper")
 	if err != nil {
 		t.Fatalf("EncryptMessageWithPublicKey: %v", err)
@@ -255,7 +255,7 @@ func TestEncryptMessageWithPublicKey_DeprecatedWrapper(t *testing.T) {
 func TestEncryptMessageWithPublicKey_InvalidPublicKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	_, err := client.EncryptMessageWithPublicKey("not a key", "x")
 	if err == nil {
 		t.Fatal("expected error for invalid public key, got nil")
@@ -271,7 +271,7 @@ func TestEncryptMessageWithPublicKey_InvalidPublicKey(t *testing.T) {
 func TestGetUserPrivateKeyCopy_ReturnsIndependentCopy(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	copy1, err := client.GetUserPrivateKeyCopy()
 	if err != nil {
 		t.Fatalf("GetUserPrivateKeyCopy: %v", err)
@@ -293,7 +293,7 @@ func TestGetUserPrivateKeyCopy_ReturnsIndependentCopy(t *testing.T) {
 func TestGetUserPrivateKeyCopy_WithoutKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	_, err := client.GetUserPrivateKeyCopy()
 	if !errors.Is(err, ErrNoPrivateKey) {
 		t.Errorf("err = %v, want ErrNoPrivateKey", err)
@@ -309,7 +309,7 @@ func TestGetUserPrivateKeyCopy_WithoutKey(t *testing.T) {
 func TestEncryptDecrypt_ConcurrentSafety(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	const n = 20
 	var wg sync.WaitGroup
 	errs := make(chan error, n)
@@ -405,7 +405,7 @@ func TestGetPrivateKeyFromArmor_Garbage(t *testing.T) {
 func TestDecryptSecretWithResourceID_DelegatesToDecryptMessage(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	armored, err := client.EncryptMessage("secret-payload")
 	if err != nil {
 		t.Fatalf("EncryptMessage: %v", err)
@@ -428,7 +428,7 @@ func TestDecryptSecretWithResourceID_DelegatesToDecryptMessage(t *testing.T) {
 func TestDecryptMessageWithPrivateKeyAndReturnSessionKey_ReturnsBothPlaintextAndKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	armored, err := client.EncryptMessage("hello")
 	if err != nil {
 		t.Fatalf("EncryptMessage: %v", err)

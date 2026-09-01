@@ -26,7 +26,7 @@ func TestCreateSessionKeysBundle_PostsEncryptedData(t *testing.T) {
 	var seen struct {
 		Data string `json:"data"`
 	}
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "POST", path: "/metadata/session-keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			readJSONBody(t, r, &seen)
@@ -58,7 +58,7 @@ func TestUpdateSessionKeysBundle_PutsEncryptedData(t *testing.T) {
 		Data     string `json:"data"`
 		Modified Time   `json:"modified"`
 	}
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "PUT", path: "/metadata/session-keys/" + validUUID + ".json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			readJSONBody(t, r, &seen)
@@ -134,7 +134,7 @@ func TestFormatSessionKey_NilReturnsEmpty(t *testing.T) {
 func TestAddPendingSessionKey_RespectsGuards(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	if client.GetPendingSessionKeysCount() != 0 {
 		t.Error("count should start at 0")
 	}
@@ -163,7 +163,7 @@ func TestAddPendingSessionKey_RespectsGuards(t *testing.T) {
 func TestGetPendingSessionKeys_DrainsAndClears(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	client.AddPendingSessionKey(ForeignModelTypesResource, validUUID, sessionKeyForTest())
 	client.AddPendingSessionKey(ForeignModelTypesFolder, otherUUID, sessionKeyForTest())
 
@@ -185,7 +185,7 @@ func TestGetPendingSessionKeys_DrainsAndClears(t *testing.T) {
 func TestFetchAndCacheSessionKeys_HandlesEmptyServerResponse(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/metadata/session-keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataSessionKey{})
@@ -209,7 +209,7 @@ func TestSavePendingSessionKeys_NoPendingIsNoOp(t *testing.T) {
 	t.Parallel()
 
 	var hits atomic.Int32
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/metadata/session-keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			hits.Add(1)

@@ -78,7 +78,7 @@ func TestGetPublicKey_ComputesFingerprintLocally(t *testing.T) {
 	t.Parallel()
 
 	pubKey := testPGPPublic(t)
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/auth/verify.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, PublicKeyReponse{
@@ -109,7 +109,7 @@ func TestGetPublicKey_ComputesFingerprintLocally(t *testing.T) {
 func TestGetPublicKey_RejectsInvalidServerKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/auth/verify.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, PublicKeyReponse{Keydata: "not a valid PGP key"})

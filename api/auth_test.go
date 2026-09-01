@@ -19,7 +19,7 @@ import (
 func TestCheckSession_TrueOnSuccessFromServer(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/auth/is-authenticated.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, map[string]bool{"authenticated": true})
@@ -35,7 +35,7 @@ func TestCheckSession_TrueOnSuccessFromServer(t *testing.T) {
 func TestCheckSession_FalseOnServerError(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/auth/is-authenticated.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIError(t, w, 401, "Authentication required")
@@ -56,7 +56,7 @@ func TestLogout_WipesPrivateKeyAndCaches(t *testing.T) {
 	t.Parallel()
 
 	var hit atomic.Bool
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "POST", path: "/auth/logout.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			hit.Store(true)
@@ -87,7 +87,7 @@ func TestLogout_WipesPrivateKeyAndCaches(t *testing.T) {
 func TestLogout_PropagatesServerError(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "POST", path: "/auth/logout.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIError(t, w, 500, "server down")

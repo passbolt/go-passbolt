@@ -71,7 +71,7 @@ func (c *Client) DoCustomRequestAndReturnRawResponse(ctx context.Context, method
 func (c *Client) DoCustomRequestAndReturnRawResponseV5(ctx context.Context, method, path string, body any, opts any) (*http.Response, *APIResponse, error) {
 	firstTime := true
 start:
-	u, err := generateURL(*c.baseURL, path, opts)
+	u, err := generateURL(c.baseURL, path, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating Path: %w", err)
 	}

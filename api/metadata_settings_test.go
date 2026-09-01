@@ -16,7 +16,7 @@ import "testing"
 func TestMetadataTypeSettings_GetterReturnsByValueCopy(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	client.metadataTypeSettings = MetadataTypeSettings{DefaultResourceType: PassboltAPIVersionTypeV5}
 	got := client.MetadataTypeSettings()
 
@@ -30,7 +30,7 @@ func TestMetadataTypeSettings_GetterReturnsByValueCopy(t *testing.T) {
 func TestMetadataKeySettings_GetterReturnsByValueCopy(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	client.metadataKeySettings = MetadataKeySettings{AllowUsageOfPersonalKeys: true}
 	got := client.MetadataKeySettings()
 

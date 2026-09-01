@@ -237,15 +237,24 @@ func (c *Client) log(msg string, args ...any) {
 	fmt.Printf("[go-passbolt] "+msg+"\n", args...)
 }
 
-func generateURL(base url.URL, p string, opt any) (string, error) {
-	base.Path = path.Join(base.Path, p)
+// generateURL builds a request URL by appending p to base's path and encoding opt
+// as the query string. base is never modified: it is copied first, so the Client
+// can hand over its own baseURL and callers can reuse theirs.
+//
+// The struct copy is a full copy here. url.URL holds exactly one pointer field,
+// User *url.Userinfo, and Userinfo is immutable - its fields are unexported and it
+// has no setters - so sharing that pointer with the caller is safe. (Go 1.27 adds
+// (*url.URL).Clone, which this would otherwise use; the SDK still builds on 1.26.)
+func generateURL(base *url.URL, p string, opt any) (string, error) {
+	u := *base
+	u.Path = path.Join(u.Path, p)
 	vs, err := query.Values(opt)
 	if err != nil {
 		return "", fmt.Errorf("getting URL Query Values: %w", err)
 	}
-	base.RawQuery = vs.Encode()
+	u.RawQuery = vs.Encode()
 
-	return base.String(), nil
+	return u.String(), nil
 }
 
 // GetUserID Gets the ID of the Current User
