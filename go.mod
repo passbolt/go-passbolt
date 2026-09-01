@@ -1,6 +1,6 @@
 module github.com/passbolt/go-passbolt
 
-go 1.26.6
+go 1.26.7
 
 require (
 	github.com/ProtonMail/gopenpgp/v3 v3.4.1

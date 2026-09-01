@@ -27,13 +27,15 @@ func Test_validateCustomFields(t *testing.T) {
 	// field entries for the given id. Each test starts from this
 	// shape and mutates exactly the field under test.
 	validEntry := func(id string) (metadata, secret map[string]any) {
-		return map[string]any{
-				"id":           id,
-				"metadata_key": "field-name",
-			}, map[string]any{
-				"id":           id,
-				"secret_value": "field-value",
-			}
+		metadata = map[string]any{
+			"id":           id,
+			"metadata_key": "field-name",
+		}
+		secret = map[string]any{
+			"id":           id,
+			"secret_value": "field-value",
+		}
+		return metadata, secret
 	}
 
 	cases := []struct {
