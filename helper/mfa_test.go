@@ -9,7 +9,7 @@
 // inside one - and it landed in 1.27.
 //
 // The build constraint also raises this file's language version to 1.27, which
-// is what lets it use that API at all while go.mod declares 1.26.7.
+// is what lets it use that API at all while go.mod declares 1.26.8.
 //
 // The cost is that MFA retry coverage is missing on a 1.26 toolchain. CI runs
 // 1.27, so it is covered where it counts; anyone verifying the 1.26 floor gets

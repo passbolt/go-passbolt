@@ -9,7 +9,7 @@
 // under GOEXPERIMENT=nojsonv2, the escape hatch back to the pre-1.27
 // implementation.
 //
-// go1.27, because the SDK's go.mod declares 1.26.7 and a file's language version
+// go1.27, because the SDK's go.mod declares 1.26.8 and a file's language version
 // follows the module unless a //go:build go1.N constraint raises it. Without it,
 // a 1.27 toolchain compiles this file - the experiment tag is on by default there
 // - and then rejects jsontext.AllowDuplicateNames as too new for go1.26. It also

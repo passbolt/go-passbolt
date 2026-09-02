@@ -20,7 +20,7 @@ import (
 //
 //	go test ./api/                                    # 1.27, jsonv2-backed
 //	GOEXPERIMENT=nojsonv2 go test ./api/              # 1.27, original
-//	GOTOOLCHAIN=go1.26.7 go test ./api/               # 1.26, original
+//	GOTOOLCHAIN=go1.26.8 go test ./api/               # 1.26, original
 
 // TestJSONDuplicateNames_LastWins pins that a duplicated object name is accepted
 // and the last occurrence wins, for both struct and map targets.
