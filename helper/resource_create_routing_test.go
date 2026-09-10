@@ -1,49 +1,23 @@
 package helper
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/passbolt/go-passbolt/api"
 )
 
-// Tests for the two pure routing functions in resource_create.go.
-// Both transform a caller-supplied field map to match what the resource
-// type's JSON schema actually expects. If they regressed, the
-// CreateResource path would silently ship the wrong wire shape — the
-// server would either reject it or (worse) accept a malformed
-// payload that no client could read back coherently.
-//
-// We construct minimal ResourceType definitions per test so the
-// HasMetadataField / HasSecretField lookups (api/resource_types.go)
-// return exactly what we want for each branch.
-
 // resourceType builds a type for a real bundled slug, since Schema resolves from the bundle only.
 // A change to a bundled schema can therefore legitimately break these tests.
-func resourceType(slug string, metadataProps, secretProps []string) *api.ResourceType {
-	props := func(names []string) map[string]any {
-		out := make(map[string]any, len(names))
-		for _, n := range names {
-			out[n] = map[string]any{}
-		}
-		return out
-	}
-	def, _ := json.Marshal(map[string]any{
-		"resource": map[string]any{"type": "object", "properties": props(metadataProps)},
-		"secret":   map[string]any{"type": "object", "properties": props(secretProps)},
-	})
-	return &api.ResourceType{Slug: slug, Definition: def}
+func resourceType(slug string) *api.ResourceType {
+	return &api.ResourceType{Slug: slug}
 }
 
 // description moves to the secret side when only the secret schema declares it.
 func TestRouteFieldBySchema_MovesFromMetadataToSecret(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("v5-default",
-		[]string{"name", "username"}, // metadata side: no "description"
-		[]string{"password", "description"},
-	)
+	rt := resourceType("password-and-description")
 	metadata := map[string]any{"name": "Stripe", "description": "prod creds"}
 	secret := map[string]any{"password": "p"}
 
@@ -63,10 +37,7 @@ func TestRouteFieldBySchema_MovesFromMetadataToSecret(t *testing.T) {
 func TestRouteFieldBySchema_MovesFromSecretToMetadata(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("v5-password-string",
-		[]string{"name", "description"}, // metadata side: includes description
-		[]string{"password"},            // secret side: does NOT
-	)
+	rt := resourceType("v5-password-string")
 	metadata := map[string]any{"name": "Stripe"}
 	secret := map[string]any{"password": "p", "description": "prod creds"}
 
@@ -87,10 +58,7 @@ func TestRouteFieldBySchema_MovesFromSecretToMetadata(t *testing.T) {
 func TestRouteFieldBySchema_NoOpWhenAlreadyOnCorrectSide(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("v5-default",
-		[]string{"name"},
-		[]string{"password", "description"},
-	)
+	rt := resourceType("password-and-description")
 	// description starts on the secret side, which matches the schema.
 	metadata := map[string]any{"name": "x"}
 	secret := map[string]any{"password": "p", "description": "d"}
@@ -111,10 +79,7 @@ func TestRouteFieldBySchema_NoOpWhenAlreadyOnCorrectSide(t *testing.T) {
 func TestRouteFieldBySchema_NoOpWhenAbsent(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("v5-default",
-		[]string{"name"},
-		[]string{"password", "description"},
-	)
+	rt := resourceType("password-and-description")
 	metadata := map[string]any{"name": "x"}
 	secret := map[string]any{"password": "p"}
 
@@ -135,10 +100,7 @@ func TestRouteFieldBySchema_NoOpWhenAbsent(t *testing.T) {
 func TestNormalizeURIField_ConvertsUriStringToUrisArray(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("v5-default",
-		[]string{"name", "uris"}, // wants "uris", not "uri"
-		[]string{"password"},
-	)
+	rt := resourceType("v5-default")
 	metadata := map[string]any{"name": "x", "uri": "https://stripe.com"}
 
 	if err := normalizeURIField(rt, metadata); err != nil {
@@ -160,10 +122,7 @@ func TestNormalizeURIField_ConvertsUriStringToUrisArray(t *testing.T) {
 func TestNormalizeURIField_ConvertsUrisStringSliceToUri(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("password-and-description",
-		[]string{"name", "uri"}, // wants "uri", not "uris"
-		[]string{"password"},
-	)
+	rt := resourceType("password-and-description")
 	metadata := map[string]any{"name": "x", "uris": []string{"https://stripe.com"}}
 
 	if err := normalizeURIField(rt, metadata); err != nil {
@@ -185,10 +144,7 @@ func TestNormalizeURIField_ConvertsUrisStringSliceToUri(t *testing.T) {
 func TestNormalizeURIField_ConvertsUrisAnySliceToUri(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("password-and-description",
-		[]string{"name", "uri"},
-		[]string{"password"},
-	)
+	rt := resourceType("password-and-description")
 	metadata := map[string]any{"name": "x", "uris": []any{"https://stripe.com"}}
 
 	if err := normalizeURIField(rt, metadata); err != nil {
@@ -207,10 +163,7 @@ func TestNormalizeURIField_ConvertsUrisAnySliceToUri(t *testing.T) {
 func TestNormalizeURIField_RejectsMultipleURIsForSingleURISchema(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("password-and-description",
-		[]string{"name", "uri"},
-		[]string{"password"},
-	)
+	rt := resourceType("password-and-description")
 	metadata := map[string]any{
 		"name": "x",
 		"uris": []string{"https://a.com", "https://b.com"},
@@ -231,10 +184,7 @@ func TestNormalizeURIField_RejectsMultipleURIsForSingleURISchema(t *testing.T) {
 func TestNormalizeURIField_NoOpWhenFieldAlreadyMatchesSchema(t *testing.T) {
 	t.Parallel()
 
-	rt := resourceType("v5-default",
-		[]string{"name", "uris"},
-		[]string{"password"},
-	)
+	rt := resourceType("v5-default")
 	metadata := map[string]any{"uris": []string{"https://x.test"}}
 
 	if err := normalizeURIField(rt, metadata); err != nil {

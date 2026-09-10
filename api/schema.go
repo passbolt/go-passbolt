@@ -20,6 +20,11 @@ var schemaFS embed.FS
 // ResourceType.Schema, which returns a copy callers may modify.
 var ResourceSchemas = loadResourceSchemas()
 
+// parsedSchemas holds one decoded copy of every bundled schema. The read-only predicates on
+// ResourceType share it, so a lookup costs a map access rather than a JSON parse on every call.
+// Schema returns a fresh copy instead, because callers may modify what they get.
+var parsedSchemas = parseResourceSchemas()
+
 // HasResourceSchema reports whether this SDK bundles a schema for the given slug. Callers that
 // process many resources can use it to skip unsupported ones up front.
 func HasResourceSchema(slug string) bool {
@@ -42,6 +47,18 @@ func loadResourceSchemas() map[string]json.RawMessage {
 			panic("api: reading embedded schema " + e.Name() + ": " + err.Error())
 		}
 		m[strings.TrimSuffix(e.Name(), ".json")] = json.RawMessage(data)
+	}
+	return m
+}
+
+func parseResourceSchemas() map[string]*ResourceTypeSchema {
+	m := make(map[string]*ResourceTypeSchema, len(ResourceSchemas))
+	for slug, raw := range ResourceSchemas {
+		var schema ResourceTypeSchema
+		if err := json.Unmarshal(raw, &schema); err != nil {
+			panic("api: parsing embedded schema " + slug + ": " + err.Error())
+		}
+		m[slug] = &schema
 	}
 	return m
 }

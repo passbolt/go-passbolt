@@ -18,35 +18,12 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 		return nil
 	}
 
-	var schemaDefinition api.ResourceTypeSchema
-	definition := rType.Definition
-
-	// Fallback schema
-	if string(definition) == "[]" || string(definition) == "\"[]\"" {
-		tmp, ok := api.ResourceSchemas[rType.Slug]
-		if !ok {
-			return fmt.Errorf("%w: %v (no schema available)", ErrUnsupportedResourceType, rType.Slug)
-		}
-		definition = tmp
-	}
-
-	err := json.Unmarshal([]byte(definition), &schemaDefinition)
+	schemaDefinition, err := rType.Schema()
 	if err != nil {
-		// Workaround for inconsistent API Responses where sometimes the Schema is embedded directly and sometimes it's escaped as a string
-		if _, ok := errors.AsType[*json.UnmarshalTypeError](err); ok {
-			var tmp string
-			err = json.Unmarshal([]byte(definition), &tmp)
-			if err != nil {
-				return fmt.Errorf("workaround Unmarshal Json Schema String: %w", err)
-			}
-
-			err = json.Unmarshal([]byte(tmp), &schemaDefinition)
-			if err != nil {
-				return fmt.Errorf("workaround Unmarshal Json Schema: %w", err)
-			}
-		} else {
-			return fmt.Errorf("unmarshal Json Schema: %w", err)
+		if errors.Is(err, api.ErrSchemaUnavailable) {
+			return fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
 		}
+		return fmt.Errorf("resolving schema: %w", err)
 	}
 
 	comp := jsonschema.NewCompiler()

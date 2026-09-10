@@ -65,6 +65,11 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		return fmt.Errorf("getting resource type: %w", err)
 	}
 
+	// Refuse a type this SDK cannot validate, even if the server describes it.
+	if _, err := rType.Schema(); err != nil {
+		return fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
+	}
+
 	opts := &api.GetUsersOptions{
 		FilterHasAccess: []string{resourceID},
 	}

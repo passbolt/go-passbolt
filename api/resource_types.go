@@ -3,18 +3,25 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
 
+// ErrSchemaUnavailable is returned by ResourceType.Schema when this SDK bundles no schema for
+// the resource type's slug.
+var ErrSchemaUnavailable = errors.New("no schema available for resource type")
+
 // ResourceType is the Type of a Resource
 type ResourceType struct {
-	ID          string          `json:"id,omitempty"`
-	Slug        string          `json:"slug,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Definition  json.RawMessage `json:"definition,omitempty"`
-	Created     *Time           `json:"created,omitempty"`
-	Modified    *Time           `json:"modified,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Slug        string `json:"slug,omitempty"`
+	Description string `json:"description,omitempty"`
+	// Definition is the schema the server reports. Informational only: validation uses the
+	// bundle embedded in this SDK (see Schema).
+	Definition json.RawMessage `json:"definition,omitempty"`
+	Created    *Time           `json:"created,omitempty"`
+	Modified   *Time           `json:"modified,omitempty"`
 }
 
 type ResourceTypeSchema struct {
@@ -25,8 +32,8 @@ type ResourceTypeSchema struct {
 // IsSecretString reports whether the type's secret is a plain string rather than JSON.
 // Returns false if this SDK bundles no schema for the slug.
 func (rt *ResourceType) IsSecretString() bool {
-	schema, err := rt.parseSchema()
-	if err != nil {
+	schema, ok := rt.bundledSchema()
+	if !ok {
 		return false
 	}
 	secretType, _ := schema.Secret["type"].(string)
@@ -39,13 +46,15 @@ func (rt *ResourceType) IsV5() bool {
 	return strings.HasPrefix(rt.Slug, "v5-")
 }
 
-// HasSecretField returns true if the resource type's secret schema contains the given field.
+// HasSecretField returns true if the resource type's bundled secret schema contains the given
+// field. Returns false if this SDK bundles no schema for the slug.
 func (rt *ResourceType) HasSecretField(field string) bool {
-	schema, err := rt.parseSchema()
-	if err != nil {
+	schema, ok := rt.bundledSchema()
+	if !ok {
 		return false
 	}
-	if rt.IsSecretString() {
+	// A plain-string secret has no fields.
+	if secretType, _ := schema.Secret["type"].(string); secretType == "string" {
 		return false
 	}
 	props, ok := schema.Secret["properties"].(map[string]any)
@@ -56,10 +65,11 @@ func (rt *ResourceType) HasSecretField(field string) bool {
 	return has
 }
 
-// HasMetadataField returns true if the resource type's metadata schema contains the given field.
+// HasMetadataField returns true if the resource type's bundled metadata schema contains the
+// given field. Returns false if this SDK bundles no schema for the slug.
 func (rt *ResourceType) HasMetadataField(field string) bool {
-	schema, err := rt.parseSchema()
-	if err != nil {
+	schema, ok := rt.bundledSchema()
+	if !ok {
 		return false
 	}
 	props, ok := schema.Resource["properties"].(map[string]any)
@@ -70,29 +80,24 @@ func (rt *ResourceType) HasMetadataField(field string) bool {
 	return has
 }
 
-func (rt *ResourceType) parseSchema() (*ResourceTypeSchema, error) {
-	definition := rt.Definition
+// bundledSchema returns the shared parse of the type's bundled schema, or false when this SDK
+// bundles none. The result is read-only: callers that need to modify a schema use Schema.
+func (rt *ResourceType) bundledSchema() (*ResourceTypeSchema, bool) {
+	schema, ok := parsedSchemas[rt.Slug]
+	return schema, ok
+}
 
-	// Handle fallback schemas for broken servers
-	if string(definition) == "[]" || string(definition) == "\"[]\"" {
-		tmp, ok := ResourceSchemas[rt.Slug]
-		if !ok {
-			return nil, fmt.Errorf("no schema available for %v", rt.Slug)
-		}
-		definition = tmp
+// Schema returns a fresh copy of the type's bundled JSON Schema; rt.Definition is never used.
+// A slug this SDK does not bundle yields an error wrapping ErrSchemaUnavailable.
+func (rt *ResourceType) Schema() (*ResourceTypeSchema, error) {
+	raw, ok := ResourceSchemas[rt.Slug]
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrSchemaUnavailable, rt.Slug)
 	}
 
 	var schema ResourceTypeSchema
-	err := json.Unmarshal(definition, &schema)
-	if err != nil {
-		// Workaround: sometimes schema is escaped as a string
-		var tmp string
-		if err2 := json.Unmarshal(definition, &tmp); err2 == nil {
-			if err3 := json.Unmarshal([]byte(tmp), &schema); err3 == nil {
-				return &schema, nil
-			}
-		}
-		return nil, err
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		return nil, fmt.Errorf("unmarshal schema for %q: %w", rt.Slug, err)
 	}
 	return &schema, nil
 }

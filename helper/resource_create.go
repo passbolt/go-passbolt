@@ -48,6 +48,12 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 		return "", err
 	}
 
+	// Refuse a type this SDK cannot validate, even if the server describes it. Without this the
+	// schema-driven helpers below no-op, and the failure surfaces later as a confusing parse error.
+	if _, err := rType.Schema(); err != nil {
+		return "", fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
+	}
+
 	isV5 := rType.IsV5()
 
 	// Check creation permissions
