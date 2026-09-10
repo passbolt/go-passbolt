@@ -18,6 +18,8 @@ var (
 	schemaCacheMu sync.RWMutex
 )
 
+// GetResourceMetadata decrypts a v5 resource's metadata, validating leniently so undeclared
+// properties survive. Use GetResourceMetadataForWrite when the result will be stored again.
 func GetResourceMetadata(ctx context.Context, c *api.Client, resource *api.Resource, rType *api.ResourceType) (string, error) {
 	// First, check if we have a pre-fetched session key for this resource
 	// This avoids unnecessary key copy operations when cache hits

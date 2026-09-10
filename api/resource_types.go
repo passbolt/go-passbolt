@@ -22,9 +22,8 @@ type ResourceTypeSchema struct {
 	Secret   map[string]any `json:"secret"`
 }
 
-// IsSecretString returns true if the resource type's secret is a plain string (not JSON).
-// This is determined by checking the "type" field of the secret section in the definition schema.
-// Returns false if the definition cannot be parsed.
+// IsSecretString reports whether the type's secret is a plain string rather than JSON.
+// Returns false if this SDK bundles no schema for the slug.
 func (rt *ResourceType) IsSecretString() bool {
 	schema, err := rt.parseSchema()
 	if err != nil {

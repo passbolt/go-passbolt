@@ -1,0 +1,246 @@
+{
+  "resource": {
+    "type": "object",
+    "required": [
+      "name"
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "maxLength": 255
+      },
+      "username": {
+        "anyOf": [
+          {
+            "type": "string",
+            "maxLength": 255
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "uris": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1024
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxItems": 32
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string",
+            "maxLength": 10000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "icon": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "keepass-icon-set",
+              "passbolt-icon-set"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "background_color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "custom_fields": {
+        "type": "array",
+        "maxItems": 128,
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "type"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "text",
+                "password",
+                "boolean",
+                "number",
+                "uri"
+              ]
+            },
+            "metadata_key": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "metadata_value": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "secret": {
+    "type": "object",
+    "required": [
+      "password",
+      "totp"
+    ],
+    "properties": {
+      "object_type": {
+        "type": "string",
+        "enum": [
+          "PASSBOLT_SECRET_DATA"
+        ]
+      },
+      "password": {
+        "type": "string",
+        "maxLength": 4096
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string",
+            "maxLength": 50000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "totp": {
+        "type": "object",
+        "required": [
+          "secret_key",
+          "digits",
+          "algorithm"
+        ],
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 6
+          },
+          "secret_key": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "digits": {
+            "type": "number",
+            "minimum": 6,
+            "exclusiveMaximum": 9
+          },
+          "period": {
+            "type": "number"
+          }
+        }
+      },
+      "custom_fields": {
+        "type": "array",
+        "maxItems": 128,
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "type"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "text",
+                "password",
+                "boolean",
+                "number",
+                "uri"
+              ]
+            },
+            "secret_key": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "secret_value": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

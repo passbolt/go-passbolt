@@ -19,9 +19,8 @@ import (
 // HasMetadataField / HasSecretField lookups (api/resource_types.go)
 // return exactly what we want for each branch.
 
-// resourceType builds an api.ResourceType whose schema lists the given
-// metadata and secret property names. This is the minimal shape that
-// the schema-parsing helpers need.
+// resourceType builds a type for a real bundled slug, since Schema resolves from the bundle only.
+// A change to a bundled schema can therefore legitimately break these tests.
 func resourceType(slug string, metadataProps, secretProps []string) *api.ResourceType {
 	props := func(names []string) map[string]any {
 		out := make(map[string]any, len(names))
@@ -37,12 +36,7 @@ func resourceType(slug string, metadataProps, secretProps []string) *api.Resourc
 	return &api.ResourceType{Slug: slug, Definition: def}
 }
 
-// TestRouteFieldBySchema_MovesFromMetadataToSecret covers the
-// "description in v5-default" case: callers may put description in
-// either map, and the function must move it to the secret side when
-// the schema only declares it there. Without this, an inattentive
-// caller would silently lose the description (it'd be sent unencrypted
-// to a schema that doesn't accept it).
+// description moves to the secret side when only the secret schema declares it.
 func TestRouteFieldBySchema_MovesFromMetadataToSecret(t *testing.T) {
 	t.Parallel()
 

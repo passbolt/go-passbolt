@@ -46,10 +46,7 @@ func TestGetResourceTypesCached_OnlyHitsServerOnce(t *testing.T) {
 	}
 }
 
-// IsSecretString discriminates between string-shaped secrets (the
-// legacy password type stores a single string) and structured ones
-// (v5 stores a JSON object). HasSecretField relies on this; getting
-// the dispatch wrong would break secret-field lookups in helper/.
+// IsSecretString tells string-shaped secrets from JSON objects; HasSecretField relies on it.
 func TestResourceType_IsSecretString(t *testing.T) {
 	t.Parallel()
 
