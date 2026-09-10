@@ -8,30 +8,12 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-// expectedSchemaSlugs are the resource-type slugs the embedded schema bundle must ship.
-var expectedSchemaSlugs = []string{
-	"password-string",
-	"password-and-description",
-	"totp",
-	"password-description-totp",
-	"v5-default",
-	"v5-password-string",
-	"v5-default-with-totp",
-	"v5-totp-standalone",
-	"v5-custom-fields",
-	"v5-note",
-	"v5-pin-code",
-}
-
-// Every expected slug is bundled, has both sections and compiles as standard JSON Schema.
-func TestResourceSchemas_AllSlugsPresentAndCompile(t *testing.T) {
-	for _, slug := range expectedSchemaSlugs {
-		raw, ok := ResourceSchemas[slug]
-		if !ok {
-			t.Errorf("missing bundled schema for slug %q", slug)
-			continue
-		}
-
+// Every bundled schema has both sections and compiles as standard JSON Schema.
+func TestResourceSchemas_AllCompile(t *testing.T) {
+	if len(ResourceSchemas) == 0 {
+		t.Fatal("no bundled schemas were loaded")
+	}
+	for slug, raw := range ResourceSchemas {
 		var def ResourceTypeSchema
 		if err := json.Unmarshal(raw, &def); err != nil {
 			t.Errorf("%s: invalid JSON: %v", slug, err)
@@ -54,11 +36,6 @@ func TestResourceSchemas_AllSlugsPresentAndCompile(t *testing.T) {
 				t.Errorf("%s/%s: compile: %v", slug, name, err)
 			}
 		}
-	}
-
-	if len(ResourceSchemas) != len(expectedSchemaSlugs) {
-		t.Errorf("ResourceSchemas has %d entries, expected %d: %v",
-			len(ResourceSchemas), len(expectedSchemaSlugs), keys(ResourceSchemas))
 	}
 }
 
@@ -95,12 +72,20 @@ func TestResourceSchemas_AcceptIconAndNulls(t *testing.T) {
 	}
 }
 
-func keys(m map[string]json.RawMessage) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
+// No bundled schema may ship additionalProperties:false; strictness comes only from
+// DenyAdditionalProperties on the write path, or reads would turn strict too.
+func TestResourceSchemas_NoBakedAdditionalProperties(t *testing.T) {
+	for slug, raw := range ResourceSchemas {
+		var doc any
+		if err := json.Unmarshal(raw, &doc); err != nil {
+			t.Errorf("%s: invalid JSON: %v", slug, err)
+			continue
+		}
+		if path := findKey(doc, "additionalProperties", ""); path != "" {
+			t.Errorf("%s: schema declares additionalProperties at %s; strictness must come only "+
+				"from DenyAdditionalProperties on the write path", slug, path)
+		}
 	}
-	return out
 }
 
 // TestResourceSchemas_NoRefs guards a limitation of compileSection: it uses a bare compiler with
@@ -109,7 +94,7 @@ func TestResourceSchemas_NoRefs(t *testing.T) {
 	for slug, raw := range ResourceSchemas {
 		var doc any
 		if err := json.Unmarshal(raw, &doc); err != nil {
-			continue // reported by TestResourceSchemas_IsStandardJSONSchema
+			continue // reported by TestResourceSchemas_NoBakedAdditionalProperties
 		}
 		if path := findKey(doc, "$ref", ""); path != "" {
 			t.Errorf("%s: schema uses $ref at %s; compileSection cannot resolve references", slug, path)

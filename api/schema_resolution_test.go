@@ -49,8 +49,8 @@ func TestResourceTypeSchema_UnbundledSlugUnavailable(t *testing.T) {
 	}
 }
 
-// TestResourceTypeSchema_ReturnsIndependentCopy guards the copy contract: callers may mutate the
-// returned schema in place, so aliasing the bundle would leak those changes into later calls.
+// TestResourceTypeSchema_ReturnsIndependentCopy guards the copy contract: compileSection mutates
+// the returned schema in place, so aliasing the bundle would leak strictness into later reads.
 func TestResourceTypeSchema_ReturnsIndependentCopy(t *testing.T) {
 	rt := &ResourceType{Slug: "v5-default"}
 
@@ -58,7 +58,7 @@ func TestResourceTypeSchema_ReturnsIndependentCopy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Schema(): %v", err)
 	}
-	first.Resource["additionalProperties"] = false
+	DenyAdditionalProperties(first.Resource)
 	delete(first.Resource["properties"].(map[string]any), "name")
 
 	second, err := rt.Schema()
@@ -70,5 +70,70 @@ func TestResourceTypeSchema_ReturnsIndependentCopy(t *testing.T) {
 	}
 	if props := second.Resource["properties"].(map[string]any); props["name"] == nil {
 		t.Error("mutation of the first copy leaked into the bundle: 'name' was deleted")
+	}
+}
+
+func TestDenyAdditionalProperties(t *testing.T) {
+	// Object schema is locked down and allowExtra fields are whitelisted.
+	obj := map[string]any{
+		"type":       "object",
+		"properties": map[string]any{"name": map[string]any{"type": "string"}},
+	}
+	DenyAdditionalProperties(obj, "object_type")
+	if obj["additionalProperties"] != false {
+		t.Errorf("expected additionalProperties=false, got %v", obj["additionalProperties"])
+	}
+	if props := obj["properties"].(map[string]any); props["object_type"] == nil {
+		t.Error("allowExtra field 'object_type' not added to properties")
+	}
+
+	// A section that omits "type" is still locked down; leaving it open would turn strict
+	// validation into lenient validation for that type without anyone noticing.
+	untyped := map[string]any{"properties": map[string]any{"name": map[string]any{"type": "string"}}}
+	DenyAdditionalProperties(untyped)
+	if untyped["additionalProperties"] != false {
+		t.Error("a section without \"type\" should be locked down")
+	}
+
+	// A section without properties gets an empty map so the allowExtra stubs have a home.
+	bare := map[string]any{"type": "object"}
+	DenyAdditionalProperties(bare, "object_type")
+	if props := bare["properties"].(map[string]any); props["object_type"] == nil {
+		t.Error("allowExtra field 'object_type' not added to a section without properties")
+	}
+}
+
+// TestDenyAdditionalProperties_DoesNotRecurse pins the strict definition: only the top-level node
+// is constrained, so nested structures (totp, custom_fields entries, icon) stay open.
+func TestDenyAdditionalProperties_DoesNotRecurse(t *testing.T) {
+	rt := &ResourceType{Slug: "v5-default-with-totp"}
+	def, err := rt.Schema()
+	if err != nil {
+		t.Fatalf("Schema(): %v", err)
+	}
+
+	DenyAdditionalProperties(def.Secret, "object_type")
+	if def.Secret["additionalProperties"] != false {
+		t.Fatal("top-level secret schema should have been locked down")
+	}
+
+	secretProps := def.Secret["properties"].(map[string]any)
+	for _, nested := range []string{"totp", "custom_fields"} {
+		node, ok := secretProps[nested].(map[string]any)
+		if !ok {
+			t.Fatalf("v5-default-with-totp secret should declare %q", nested)
+		}
+		if _, set := node["additionalProperties"]; set {
+			t.Errorf("%q must not be constrained: DenyAdditionalProperties does not recurse", nested)
+		}
+	}
+
+	DenyAdditionalProperties(def.Resource, "object_type", "resource_type_id")
+	icon, ok := def.Resource["properties"].(map[string]any)["icon"].(map[string]any)
+	if !ok {
+		t.Fatal("v5-default-with-totp resource should declare 'icon'")
+	}
+	if _, set := icon["additionalProperties"]; set {
+		t.Error("'icon' must not be constrained: DenyAdditionalProperties does not recurse")
 	}
 }

@@ -47,7 +47,7 @@ func GetResourceFromDataWithOptions(c *api.Client, resource api.Resource, secret
 			return "", "", "", "", "", "", fmt.Errorf("decrypting secret data: %w", err)
 		}
 
-		err = validateSecretData(&rType, rawSecretData)
+		err = validateSecretData(&rType, rawSecretData, validateRead)
 		if err != nil {
 			return "", "", "", "", "", "", fmt.Errorf("validate secret data: %w", err)
 		}
@@ -135,7 +135,7 @@ func GetResourceFieldMaps(c *api.Client, resource api.Resource, secret api.Secre
 			return "", nil, nil, fmt.Errorf("decrypting secret data: %w", err)
 		}
 
-		err = validateSecretData(&rType, rawSecretData)
+		err = validateSecretData(&rType, rawSecretData, validateRead)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("validate secret data: %w", err)
 		}

@@ -48,12 +48,6 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 		return "", err
 	}
 
-	// Refuse a type this SDK cannot validate, even if the server describes it. Without this the
-	// schema-driven helpers below no-op, and the failure surfaces later as a confusing parse error.
-	if _, err := rType.Schema(); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrUnsupportedResourceType, rType.Slug)
-	}
-
 	isV5 := rType.IsV5()
 
 	// Check creation permissions
@@ -94,7 +88,8 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 			return "", fmt.Errorf("marshaling metadata: %w", err)
 		}
 
-		err = validateMetadata(rType, string(metaData))
+		// Strict: a freshly authored document, so reject any field the type does not define.
+		err = validateMetadata(rType, string(metaData), validateWrite)
 		if err != nil {
 			return "", fmt.Errorf("validating metadata: %w", err)
 		}
@@ -136,7 +131,7 @@ func CreateResourceGeneric(ctx context.Context, c *api.Client, slug string, fold
 		secretDataStr = string(secretData)
 	}
 
-	err = validateSecretData(rType, secretDataStr)
+	err = validateSecretData(rType, secretDataStr, validateWrite)
 	if err != nil {
 		return "", fmt.Errorf("validating secret data: %w", err)
 	}

@@ -1,10 +1,24 @@
 package helper
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // ErrUnsupportedResourceType is returned when a resource has an unknown resource type slug
 // that cannot be decoded by the helper functions.
 var ErrUnsupportedResourceType = errors.New("unsupported resource type")
+
+// ErrSchemaValidation is returned when a document fails validation against the bundled Resource
+// Type schema, on the read path as well as the write path. Lenient read validation still enforces
+// every declared constraint, so a stored value this build's schema rejects fails here too.
+var ErrSchemaValidation = errors.New("data does not match the bundled Resource Type schema")
+
+// ErrSchemaMismatch is the write-path case of ErrSchemaValidation: the document carries
+// properties the schema does not declare, either because of a wrong field name or because the
+// bundled schema is older than the server's Resource Type. errors.Is reports ErrSchemaValidation
+// for it too.
+var ErrSchemaMismatch = fmt.Errorf("%w: it has undeclared properties", ErrSchemaValidation)
 
 var (
 	// Resource creation errors

@@ -8,9 +8,10 @@ import (
 )
 
 // validateSecretData validates a decrypted secret against the bundled schema for its resource
-// type.
-func validateSecretData(rType *api.ResourceType, secretData string) error {
-	// A plain-string secret is a raw password, not JSON, so only length can be checked.
+// type. See validationMode for the read/write distinction.
+func validateSecretData(rType *api.ResourceType, secretData string, mode validationMode) error {
+	// A plain-string secret is a raw password, not JSON, so only length can be checked. Both
+	// modes reduce to the same check here.
 	if rType.IsSecretString() {
 		if len(secretData) > 4096 {
 			return ErrPasswordTooLong
@@ -18,7 +19,7 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 		return nil
 	}
 
-	schema, err := compileSection(rType, schemaSectionSecret)
+	schema, err := compileSection(rType, schemaSectionSecret, mode)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 	}
 
 	if err := schema.Validate(parsedSecretData); err != nil {
-		return fmt.Errorf("validating Secret Data with Schema: %w", err)
+		return wrapValidationError("Secret Data", err)
 	}
 	return nil
 }
