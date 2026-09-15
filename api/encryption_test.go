@@ -125,7 +125,7 @@ func TestEncryptMessageWithKey_RoundTripUsingExternalRecipient(t *testing.T) {
 func TestEncryptMessageWithKeyAndSigner_DualSignatureVerifies(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	extraKey := generateTestKey(t, "Shared Metadata Key", "metadata@example.com")
 
 	want := "shared secret payload"
@@ -185,7 +185,7 @@ func TestEncryptMessageWithKeyAndSigner_DualSignatureVerifies(t *testing.T) {
 func TestEncryptMessageWithKeyAndSigner_NilExtraSignerMatchesSingleSigner(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	recipient, err := crypto.NewKeyFromArmored(testPGPPublic(t))
 	if err != nil {
 		t.Fatalf("parse recipient key: %v", err)
@@ -223,7 +223,7 @@ func TestEncryptMessageWithKeyAndSigner_NilExtraSignerMatchesSingleSigner(t *tes
 func TestEncryptMessageWithKeyAndSigner_FailsWithoutPrivateKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	_, err := client.EncryptMessageWithKeyAndSigner(nil, nil, "message")
 	if !errors.Is(err, ErrNoPrivateKey) {
 		t.Errorf("got %v, want ErrNoPrivateKey", err)

@@ -197,7 +197,7 @@ func TestEncryptMetadata_FailsWithoutClientKey(t *testing.T) {
 func TestEncryptMetadataWithKeyType_SharedKeySignsWithBothKeys(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	metadataKey := generateTestKey(t, "Shared Metadata Key", "metadata@example.com")
 
 	want := `{"name":"Stripe","username":"alice@example.com"}`
@@ -252,7 +252,7 @@ func TestEncryptMetadataWithKeyType_SharedKeySignsWithBothKeys(t *testing.T) {
 func TestEncryptMetadataWithKeyType_UserKeyStaysSingleSigned(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	metaKey, err := client.GetUserPrivateKeyCopy()
 	if err != nil {
 		t.Fatalf("GetUserPrivateKeyCopy: %v", err)
@@ -283,7 +283,7 @@ func TestEncryptMetadataWithKeyType_UserKeyStaysSingleSigned(t *testing.T) {
 func TestEncryptMetadata_DeprecatedWrapperStaysSingleSigned(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t)
+	client := newTestClientWithKey(t)
 	metaKey, err := client.GetUserPrivateKeyCopy()
 	if err != nil {
 		t.Fatalf("GetUserPrivateKeyCopy: %v", err)
