@@ -2,8 +2,9 @@
 //
 // All hermetic tests in this package follow the same pattern:
 //
-//  1. Build a per-test httptest.Server with exact-match routes via
-//     newMockServer / newTestClient. Unmatched requests fail the test.
+//  1. Build a per-test mock server with exact-match routes via
+//     newTestClient, which returns a Client already pointed at it.
+//     Unmatched requests fail the test.
 //  2. Use writeAPIResponse / writeAPIError / writeMFAChallenge to emit
 //     the Passbolt envelope JSON shape.
 //  3. Use readJSONBody to inspect what the Client sent (URL, method,
@@ -45,10 +46,16 @@ type route struct {
 	handler http.HandlerFunc
 }
 
-// newMockServer starts an httptest.Server that dispatches requests by exact
-// method+path match. Unmatched requests fall through to a t.Errorf so routing
-// mistakes are loud rather than silent.
-func newMockServer(t testing.TB, routes ...route) *httptest.Server {
+// newMockServer starts a mock server that dispatches requests by exact method+path
+// match, and returns its URL together with an http.Client configured for it.
+// Unmatched requests fall through to a t.Errorf so routing mistakes are loud rather
+// than silent.
+//
+// Starting the server and registering its Close happen here rather than at the call
+// sites: every caller wanted both, and a returned-but-unstarted server is an easy
+// thing to get wrong. Handing back (url, client) instead of the *httptest.Server
+// keeps callers from reaching for the parts they should not need.
+func newMockServer(t testing.TB, routes ...route) (string, *http.Client) {
 	t.Helper()
 	mux := http.NewServeMux()
 	for _, r := range routes {
@@ -60,7 +67,7 @@ func newMockServer(t testing.TB, routes ...route) *httptest.Server {
 	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	return srv
+	return srv.URL, srv.Client()
 }
 
 // newTestClient builds a Client pointed at a fresh mock server with the given
@@ -68,27 +75,27 @@ func newMockServer(t testing.TB, routes ...route) *httptest.Server {
 // HTTP transport layer and entity CRUD methods.
 //
 // For tests that need crypto operations, use newTestClientWithKey.
-func newTestClient(t testing.TB, routes ...route) (*httptest.Server, *Client) {
+func newTestClient(t testing.TB, routes ...route) *Client {
 	t.Helper()
-	srv := newMockServer(t, routes...)
-	client, err := NewClient(nil, "", srv.URL, "", "")
+	srvURL, httpClient := newMockServer(t, routes...)
+	client, err := NewClient(httpClient, "", srvURL, "", "")
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
-	return srv, client
+	return client
 }
 
 // newTestClientWithKey is like newTestClient but arms the Client with the
 // shared test PGP keypair (generated once per test binary).
-func newTestClientWithKey(t testing.TB, routes ...route) (*httptest.Server, *Client) {
+func newTestClientWithKey(t testing.TB, routes ...route) *Client {
 	t.Helper()
 	priv, pass := testPGPKey(t)
-	srv := newMockServer(t, routes...)
-	client, err := NewClient(nil, "", srv.URL, priv, pass)
+	srvURL, httpClient := newMockServer(t, routes...)
+	client, err := NewClient(httpClient, "", srvURL, priv, pass)
 	if err != nil {
 		t.Fatalf("NewClient with key: %v", err)
 	}
-	return srv, client
+	return client
 }
 
 // writeAPIResponse encodes a `status="success"` envelope wrapping body as JSON.

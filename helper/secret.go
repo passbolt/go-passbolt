@@ -33,8 +33,7 @@ func validateSecretData(rType *api.ResourceType, secretData string) error {
 	err := json.Unmarshal([]byte(definition), &schemaDefinition)
 	if err != nil {
 		// Workaround for inconsistent API Responses where sometimes the Schema is embedded directly and sometimes it's escaped as a string
-		var unmarshalErr *json.UnmarshalTypeError
-		if errors.As(err, &unmarshalErr) {
+		if _, ok := errors.AsType[*json.UnmarshalTypeError](err); ok {
 			var tmp string
 			err = json.Unmarshal([]byte(definition), &tmp)
 			if err != nil {

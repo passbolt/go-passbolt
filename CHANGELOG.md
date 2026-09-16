@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Releases before 0.8.2 are documented in the [GitHub releases](https://github.com/passbolt/go-passbolt/releases).
 
 ## [Unreleased]
+### Fixed
+- The TOTP MFA callback now reports how many attempts it actually made instead of always saying 3
+- The TOTP MFA callback no longer waits one extra retry delay after its final failed attempt
+
+### Maintenance
+- PB-54147: Build and test with Go 1.27.1; the minimum supported Go version is now 1.26.8
+- PB-54147: Use go 1.26 syntax
 
 ## [0.8.3] - 2026-08-27
 ### Fixed

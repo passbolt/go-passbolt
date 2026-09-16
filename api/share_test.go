@@ -16,7 +16,7 @@ import (
 func TestSearchAROs_DecodesMixedUsersAndGroups(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/share/search-aros.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			// Hand-crafted raw JSON so we can inject both shapes — a User
@@ -95,7 +95,7 @@ func TestShareFolder_WrapsPermissionsInFolder(t *testing.T) {
 	t.Parallel()
 
 	var seen Folder
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "PUT", path: "/share/folder/" + validUUID + ".json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			readJSONBody(t, r, &seen)

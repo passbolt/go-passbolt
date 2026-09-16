@@ -24,7 +24,7 @@ func TestGetResourceTypesCached_OnlyHitsServerOnce(t *testing.T) {
 	t.Parallel()
 
 	var calls atomic.Int32
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/resource-types.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			calls.Add(1)
