@@ -17,6 +17,7 @@ func DenyAdditionalProperties(section map[string]any, allowExtra ...string) {
 	}
 	for _, name := range allowExtra {
 		if _, exists := props[name]; !exists {
+			// TODO: give the allowExtra fields a real schema, to limit the types they accept.
 			props[name] = map[string]any{} // empty schema: accept any value
 		}
 	}

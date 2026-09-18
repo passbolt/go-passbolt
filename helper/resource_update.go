@@ -116,6 +116,7 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		// Merge updates. The envelope is the SDK's to write, as in CreateResourceGeneric, so a
 		// caller-supplied value never reaches the stored document.
 		maps.Copy(metadataMap, metadataUpdates)
+		// TODO: set to align with the browser extension; drop it once the extension stops shipping it.
 		metadataMap["object_type"] = api.PassboltObjectTypeResourceMetadata
 		metadataMap["resource_type_id"] = resource.ResourceTypeID
 
