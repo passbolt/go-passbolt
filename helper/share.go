@@ -74,7 +74,8 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 		return fmt.Errorf("getting ResourceType: %w", err)
 	}
 
-	err = validateSecretData(rType, secretData)
+	// Strict: sharing re-encrypts this secret verbatim, so what we validate is what we store.
+	err = validateSecretData(rType, secretData, validateWrite)
 	if err != nil {
 		return fmt.Errorf("validating Secret Data: %w", err)
 	}
@@ -83,7 +84,8 @@ func ShareResource(ctx context.Context, c *api.Client, resourceID string, change
 	// we assume that if MetadataKeyType is not null that this is a v5 Resource and that the other field are fine
 	// TODO Calculate if this should be the Shared Metadatakey or our Personal one (if we are unsharing)
 	if resource.MetadataKeyType == api.MetadataKeyTypeUserKey {
-		metadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		// Strict for the same reason: re-encrypted verbatim under the shared key.
+		metadata, err := GetResourceMetadataForWrite(ctx, c, resource, rType)
 		if err != nil {
 			return fmt.Errorf("get Metadata: %w", err)
 		}

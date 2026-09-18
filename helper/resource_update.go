@@ -73,7 +73,7 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		return fmt.Errorf("getting users: %w", err)
 	}
 
-	// V5 detection uses metadata presence — see comment in UpdateResource.
+	// V5 detection uses metadata presence, see the comment in UpdateResource.
 	isV5 := resource.Metadata != ""
 
 	// Auto-route fields between metadata and secret based on schema
@@ -96,10 +96,15 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 
 	// --- Handle metadata ---
 	if isV5 {
-		// V5: decrypt existing metadata, merge updates, re-encrypt
-		orgMetadata, err := GetResourceMetadata(ctx, c, resource, rType)
+		// V5: decrypt existing metadata, merge updates, re-encrypt.
+		//
+		// The stored document is the merge base, not what we write, so it is not validated: a
+		// stored value that breaks the schema stays repairable by the update that fixes it. Only
+		// the merged document below has to pass, and maps.Copy carries every stored property into
+		// it, so an undeclared one is still caught there.
+		orgMetadata, err := decryptResourceMetadata(ctx, c, resource)
 		if err != nil {
-			return fmt.Errorf("getting resource metadata: %w", err)
+			return fmt.Errorf("decrypting resource metadata: %w", err)
 		}
 
 		var metadataMap map[string]any
@@ -108,15 +113,20 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 			return fmt.Errorf("parsing metadata: %w", err)
 		}
 
-		// Merge updates
+		// Merge updates. The envelope is the SDK's to write, as in CreateResourceGeneric, so a
+		// caller-supplied value never reaches the stored document.
 		maps.Copy(metadataMap, metadataUpdates)
+		// TODO: set to align with the browser extension; drop it once the extension stops shipping it.
+		metadataMap["object_type"] = api.PassboltObjectTypeResourceMetadata
+		metadataMap["resource_type_id"] = resource.ResourceTypeID
 
 		newMetadata, err := json.Marshal(metadataMap)
 		if err != nil {
 			return fmt.Errorf("marshaling metadata: %w", err)
 		}
 
-		err = validateMetadata(rType, string(newMetadata))
+		// Strict: this is the document we encrypt and store.
+		err = validateMetadata(rType, string(newMetadata), validateWrite)
 		if err != nil {
 			return fmt.Errorf("validating metadata: %w", err)
 		}
@@ -190,8 +200,11 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 			return fmt.Errorf("parsing decrypted secret data: %w", err)
 		}
 
-		// Merge updates
+		// Merge updates, stamping the envelope as CreateResourceGeneric does.
 		maps.Copy(secretMap, secretUpdates)
+		if isV5 {
+			secretMap["object_type"] = api.PassboltObjectTypeSecretData
+		}
 
 		res, err := json.Marshal(secretMap)
 		if err != nil {
@@ -200,7 +213,9 @@ func UpdateResourceGeneric(ctx context.Context, c *api.Client, resourceID string
 		secretDataStr = string(res)
 	}
 
-	err = validateSecretData(rType, secretDataStr)
+	// Strict: this is the document we encrypt and store. As with the metadata above, it is the
+	// only check on this path, and maps.Copy carries undeclared properties through to here.
+	err = validateSecretData(rType, secretDataStr, validateWrite)
 	if err != nil {
 		return fmt.Errorf("validating secret data: %w", err)
 	}
