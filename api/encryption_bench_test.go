@@ -29,7 +29,7 @@ var (
 )
 
 func BenchmarkEncryptMessage(b *testing.B) {
-	_, client := newTestClientWithKey(b)
+	client := newTestClientWithKey(b)
 
 	b.ReportAllocs()
 	for b.Loop() {
@@ -43,7 +43,7 @@ func BenchmarkEncryptMessage(b *testing.B) {
 // BenchmarkDecryptMessage measures the asymmetric decrypt path: every call
 // copies the private key and performs a full PGP decryption.
 func BenchmarkDecryptMessage(b *testing.B) {
-	_, client := newTestClientWithKey(b)
+	client := newTestClientWithKey(b)
 
 	armored, err := client.EncryptMessage(benchPayload)
 	if err != nil {
@@ -64,7 +64,7 @@ func BenchmarkDecryptMessage(b *testing.B) {
 // the ciphertext, then loop on the session-key decrypt only. Compare against
 // BenchmarkDecryptMessage to quantify the cache win.
 func BenchmarkDecryptMessageWithSessionKey(b *testing.B) {
-	_, client := newTestClientWithKey(b)
+	client := newTestClientWithKey(b)
 
 	armored, err := client.EncryptMessage(benchPayload)
 	if err != nil {

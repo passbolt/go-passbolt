@@ -21,7 +21,7 @@ func TestGetResourceTypeCached_PopulatesCacheAndServesRepeat(t *testing.T) {
 	t.Parallel()
 
 	var calls atomic.Int32
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/resource-types.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			calls.Add(1)
@@ -59,7 +59,7 @@ func TestGetResourceTypeCached_PopulatesCacheAndServesRepeat(t *testing.T) {
 func TestGetResourceTypeCached_NotFoundError(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/resource-types.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []ResourceType{{ID: validUUID}})
@@ -77,7 +77,7 @@ func TestGetResourceTypeCached_NotFoundError(t *testing.T) {
 func TestGetResourceTypeBySlugCached_FindsBySlug(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/resource-types.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []ResourceType{
@@ -99,7 +99,7 @@ func TestGetResourceTypeBySlugCached_FindsBySlug(t *testing.T) {
 func TestGetResourceTypeBySlugCached_NotFoundError(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/resource-types.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []ResourceType{{ID: validUUID, Slug: "v5-default"}})
@@ -120,7 +120,7 @@ func TestGetMetadataKeysCached_OnlyHitsServerOnce(t *testing.T) {
 	t.Parallel()
 
 	var calls atomic.Int32
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			calls.Add(1)
@@ -148,7 +148,7 @@ func TestGetMetadataKeysCached_OnlyHitsServerOnce(t *testing.T) {
 func TestGetDecryptedMetadataKeyCached_NotFound(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{})
@@ -166,7 +166,7 @@ func TestGetDecryptedMetadataKeyCached_NotFound(t *testing.T) {
 func TestGetDecryptedMetadataKeyCached_NoPrivateKeyForUser(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{
@@ -188,7 +188,7 @@ func TestGetDecryptedMetadataKeyCached_NoPrivateKeyForUser(t *testing.T) {
 func TestPreFetchCaches_HappyPathReturnsCounts(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t,
+	client := newTestClientWithKey(t,
 		route{
 			method: "GET", path: "/metadata/session-keys.json",
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +217,7 @@ func TestPreFetchCaches_HappyPathReturnsCounts(t *testing.T) {
 func TestPreDecryptAllMetadataPrivateKeys_EmptyKeysReturnsZero(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{})
@@ -240,7 +240,7 @@ func TestPreDecryptAllMetadataPrivateKeys_EmptyKeysReturnsZero(t *testing.T) {
 func TestPreDecryptAllMetadataPrivateKeys_SkipsKeysItCannotDecrypt(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{
@@ -268,7 +268,7 @@ func TestPreDecryptAllMetadataPrivateKeys_SkipsKeysItCannotDecrypt(t *testing.T)
 func TestSetMetadataTypeSettings_FetchesWhenPluginEnabled(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t,
+	client := newTestClient(t,
 		route{
 			method: "GET", path: "/metadata/types/settings.json",
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -310,7 +310,7 @@ func TestSetMetadataTypeSettings_FetchesWhenPluginEnabled(t *testing.T) {
 func TestSetMetadataTypeSettings_FallsBackToV4WhenPluginDisabled(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	settings := &ServerSettingsResponse{
 		Passbolt: ServerPassboltSettings{
 			Plugins: map[string]ServerPassboltPluginSettings{},
@@ -331,7 +331,7 @@ func TestSetMetadataTypeSettings_FallsBackToV4WhenPluginDisabled(t *testing.T) {
 func TestSetPasswordExpirySettings_FetchesWhenPluginEnabled(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/password-expiry/settings.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, PasswordExpirySettings{ID: validUUID, DefaultExpiryPeriod: 90})
@@ -357,7 +357,7 @@ func TestSetPasswordExpirySettings_FetchesWhenPluginEnabled(t *testing.T) {
 func TestSetPasswordExpirySettings_FallsBackToDefaultsWhenPluginDisabled(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	settings := &ServerSettingsResponse{
 		Passbolt: ServerPassboltSettings{Plugins: map[string]ServerPassboltPluginSettings{}},
 	}

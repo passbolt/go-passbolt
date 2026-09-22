@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -80,8 +81,8 @@ type Passbolt struct {
 // others.
 func (p *Passbolt) Close(ctx context.Context) error {
 	var errs []error
-	for i := len(p.teardown) - 1; i >= 0; i-- {
-		if err := p.teardown[i](ctx); err != nil {
+	for _, teardown := range slices.Backward(p.teardown) {
+		if err := teardown(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}

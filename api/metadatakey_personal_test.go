@@ -21,7 +21,7 @@ import (
 func TestGetMetadataKey_PersonalReturnsUserKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/users/me.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, User{
@@ -54,7 +54,7 @@ func TestGetMetadataKey_PersonalReturnsUserKey(t *testing.T) {
 func TestGetMetadataKey_PersonalFailsWhenUserHasNoGPGKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/users/me.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, User{ID: validUUID, GPGKey: nil})
@@ -77,7 +77,7 @@ func TestGetMetadataKey_PersonalFailsWhenUserHasNoGPGKey(t *testing.T) {
 func TestGetMetadataKey_PersonalFailsWithoutUserPrivateKey(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t) // no user key
+	client := newTestClient(t) // no user key
 	client.metadataKeySettings = MetadataKeySettings{AllowUsageOfPersonalKeys: true}
 
 	_, _, _, err := client.GetMetadataKey(bg(), true)
@@ -95,7 +95,7 @@ func TestGetMetadataKey_PersonalFailsWithoutUserPrivateKey(t *testing.T) {
 func TestGetMetadataKeyByID_NotFound(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{{ID: validUUID, MetadataPrivateKeys: []MetadataPrivateKey{}}})
@@ -111,7 +111,7 @@ func TestGetMetadataKeyByID_NotFound(t *testing.T) {
 func TestGetMetadataKeyByID_NoPrivateKeyForUser(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{
@@ -134,7 +134,7 @@ func TestGetMetadataKeyByID_MoreThanOnePrivateKey(t *testing.T) {
 	t.Parallel()
 
 	owner := validUUID
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{
@@ -164,7 +164,7 @@ func TestGetMetadataKeyByID_PrivateKeyForDifferentUser(t *testing.T) {
 	t.Parallel()
 
 	other := otherUUID
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "GET", path: "/metadata/keys.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, []MetadataKey{

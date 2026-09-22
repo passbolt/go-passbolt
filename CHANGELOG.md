@@ -5,6 +5,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Releases before 0.8.2 are documented in the [GitHub releases](https://github.com/passbolt/go-passbolt/releases).
 
 ## [Unreleased]
+### Fixed
+- The TOTP MFA callback now reports how many attempts it actually made instead of always saying 3
+- The TOTP MFA callback no longer waits one extra retry delay after its final failed attempt
+
+### Maintenance
+- PB-54147: Build and test with Go 1.27.1; the minimum supported Go version is now 1.26.8
+- PB-54147: Use go 1.26 syntax
+
+### Changed
+- PB-54610: Validate Resource metadata and secrets against JSON schemas bundled with the SDK (lenient on read, strict on write) instead of the server-provided definitions, and bundle the six previously missing Resource Types. Resources of a type or with a field that a newer Passbolt release added cannot be read, updated or shared until the SDK is upgraded
 
 ## [0.8.3] - 2026-08-27
 ### Fixed

@@ -21,7 +21,7 @@ const benchMetadataKeyID = "33333333-3333-3333-3333-333333333333"
 // BenchmarkDecryptMetadata measures the cache-miss baseline: full asymmetric
 // decryption with no session-key cache (empty key ID disables caching).
 func BenchmarkDecryptMetadata(b *testing.B) {
-	_, client := newTestClientWithKey(b)
+	client := newTestClientWithKey(b)
 
 	key, err := client.GetUserPrivateKeyCopy()
 	if err != nil {
@@ -47,7 +47,7 @@ func BenchmarkDecryptMetadata(b *testing.B) {
 // path, making this identical to BenchmarkDecryptMetadata). The loop then
 // exercises the symmetric fast path the cache is meant to deliver.
 func BenchmarkDecryptMetadataWithKeyID(b *testing.B) {
-	_, client := newTestClientWithKey(b)
+	client := newTestClientWithKey(b)
 
 	key, err := client.GetUserPrivateKeyCopy()
 	if err != nil {
@@ -79,7 +79,7 @@ func BenchmarkDecryptMetadataWithKeyID(b *testing.B) {
 // session-key cache accessors, isolated from any crypto. A deterministic
 // placeholder key is fine here — nothing decrypts.
 func BenchmarkSessionKeyCache_GetSet(b *testing.B) {
-	_, client := newTestClient(b)
+	client := newTestClient(b)
 	sk := sessionKeyForTest()
 
 	b.ReportAllocs()

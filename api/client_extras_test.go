@@ -10,7 +10,7 @@ import "testing"
 func TestClearMetadataKeysCache_PreservesEmptyMap(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	client.metadataKeysCache = []MetadataKey{{ID: validUUID}}
 
 	client.ClearMetadataKeysCache()
@@ -34,7 +34,7 @@ func TestClearMetadataKeysCache_PreservesEmptyMap(t *testing.T) {
 func TestClearCache_TouchesAllThreeCaches(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t)
+	client := newTestClient(t)
 	client.resourceTypesCache = []ResourceType{{ID: validUUID}}
 	client.metadataKeysCache = []MetadataKey{{ID: validUUID}}
 	client.SetSessionKeyByMetadataKeyID("mk-1", sessionKeyForTest())

@@ -34,12 +34,15 @@ func AddMFACallbackTOTP(c *api.Client, retrys uint, retryDelay, offset time.Dura
 			var raw *http.Response
 			raw, _, err = c.DoCustomRequestAndReturnRawResponseV5(ctx, "POST", "mfa/verify/totp.json", req, nil)
 			if err != nil {
-				var apiErr *api.APIError
-				if !errors.As(err, &apiErr) {
+				if _, ok := errors.AsType[*api.APIError](err); !ok {
 					return http.Cookie{}, fmt.Errorf("doing MFA Challenge Response: %w", err)
 				}
-				// MFA failed, so lets wait just let the loop try again
-				time.Sleep(retryDelay)
+				// MFA failed, so wait and let the loop try again. Not after the
+				// last attempt though: there is nothing left to wait for, and
+				// sleeping there just delays the error the caller already earned.
+				if i < retrys {
+					time.Sleep(retryDelay)
+				}
 			} else {
 				// MFA worked so lets find the cookie and return it
 				for _, cookie := range raw.Cookies() {
@@ -50,6 +53,6 @@ func AddMFACallbackTOTP(c *api.Client, retrys uint, retryDelay, offset time.Dura
 				return http.Cookie{}, fmt.Errorf("unable to find Passbolt MFA Cookie")
 			}
 		}
-		return http.Cookie{}, fmt.Errorf("failed MFA Challenge 3 times: %w", err)
+		return http.Cookie{}, fmt.Errorf("failed MFA Challenge after %d attempts: %w", retrys+1, err)
 	}
 }

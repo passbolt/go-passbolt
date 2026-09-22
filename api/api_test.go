@@ -31,7 +31,7 @@ import (
 func TestDoCustomRequestV5_Success(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/ping.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, map[string]string{"pong": "yes"})
@@ -58,7 +58,7 @@ func TestDoCustomRequestV5_Success(t *testing.T) {
 func TestDoCustomRequestV5_ErrorStatusReturnsAPIError(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/forbidden.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIError(t, w, 403, "Forbidden")
@@ -91,7 +91,7 @@ func TestDoCustomRequestV5_ErrorStatusReturnsAPIError(t *testing.T) {
 func TestDoCustomRequestV5_UnknownStatusReturnsAPIError(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/weird.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			env := APIResponse{
@@ -123,7 +123,7 @@ func TestDoCustomRequestV5_UnknownStatusReturnsAPIError(t *testing.T) {
 func TestDoCustomRequestV5_MalformedJSONBody(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/broken.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -168,7 +168,7 @@ func TestDoCustomRequestV5_NetworkError(t *testing.T) {
 func TestDoCustomRequestV5_ContextCancellation(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/slow.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			<-r.Context().Done()
@@ -196,7 +196,7 @@ func TestDoCustomRequestV5_ContextCancellation(t *testing.T) {
 func TestDoCustomRequestV5_CapturesCSRFCookieOnFirstResponse(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/seed.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			http.SetCookie(w, &http.Cookie{Name: "csrfToken", Value: "abc123"})
@@ -223,7 +223,7 @@ func TestDoCustomRequestV5_SendsCSRFHeaderAndCookieOnSubsequentRequests(t *testi
 	seenHeader.Store("")
 	seenCookie.Store("")
 
-	_, client := newTestClient(t,
+	client := newTestClient(t,
 		route{
 			method: "GET", path: "/seed.json",
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -268,7 +268,7 @@ func TestDoCustomRequestV5_RetriesAfterMFACallbackSucceeds(t *testing.T) {
 
 	var callCount atomic.Int32
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/protected.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			n := callCount.Add(1)
@@ -309,7 +309,7 @@ func TestDoCustomRequestV5_RetriesAfterMFACallbackSucceeds(t *testing.T) {
 func TestDoCustomRequestV5_FailsWhenMFACallbackErrors(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/protected.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeMFAChallenge(t, w)
@@ -335,7 +335,7 @@ func TestDoCustomRequestV5_FailsWhenMFACallbackErrors(t *testing.T) {
 func TestDoCustomRequestV5_FailsWhenMFAChallengeRepeats(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/protected.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeMFAChallenge(t, w)
@@ -360,7 +360,7 @@ func TestDoCustomRequestV5_FailsWhenMFAChallengeRepeats(t *testing.T) {
 func TestDoCustomRequestV5_FailsWhenMFAChallengedButCallbackMissing(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/protected.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeMFAChallenge(t, w)
@@ -393,7 +393,7 @@ func TestDoCustomRequestV5_SendsJSONBodyWithCorrectHeaders(t *testing.T) {
 		gotContentType, gotAccept, gotUA string
 		gotBody                          payload
 	)
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "POST", path: "/echo.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			gotContentType = r.Header.Get("Content-Type")
@@ -429,7 +429,7 @@ func TestDoCustomRequestV5_SerialisesQueryOptions(t *testing.T) {
 	t.Parallel()
 
 	var gotQuery string
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/list.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			gotQuery = r.URL.RawQuery
@@ -459,7 +459,7 @@ func TestDoCustomRequestV5_SerialisesQueryOptions(t *testing.T) {
 func TestDoCustomRequest_DeprecatedWrapperDelegates(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClient(t, route{
+	client := newTestClient(t, route{
 		method: "GET", path: "/delegated.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			writeAPIResponse(t, w, map[string]string{"ok": "1"})

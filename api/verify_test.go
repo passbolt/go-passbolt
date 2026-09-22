@@ -15,7 +15,7 @@ func TestVerifyServer_AcceptsMatchingResponseHeader(t *testing.T) {
 	t.Parallel()
 
 	const token = "gpgauthv1.3.0|36|11111111-2222-3333-4444-555555555555|gpgauthv1.3.0"
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "POST", path: "/auth/verify.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-GPGAuth-Verify-Response", token)
@@ -40,7 +40,7 @@ func TestVerifyServer_AcceptsMatchingResponseHeader(t *testing.T) {
 func TestVerifyServer_RejectsMismatchedResponseHeader(t *testing.T) {
 	t.Parallel()
 
-	_, client := newTestClientWithKey(t, route{
+	client := newTestClientWithKey(t, route{
 		method: "POST", path: "/auth/verify.json",
 		handler: func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-GPGAuth-Verify-Response", "different-token")
@@ -88,7 +88,7 @@ func TestSetupServerVerification_FullRoundTrip(t *testing.T) {
 		t.Fatalf("setup: build decryptor: %v", err)
 	}
 
-	_, client := newTestClientWithKey(t,
+	client := newTestClientWithKey(t,
 		route{
 			method: "GET", path: "/auth/verify.json",
 			handler: func(w http.ResponseWriter, r *http.Request) {
