@@ -1,14 +1,8 @@
-package testenv
+package server
 
 import "testing"
 
-// PassboltImage is what scripts/test-matrix.sh drives to replay the suite
-// against each release, so the fallback and trimming behavior is worth
-// pinning: a silently-ignored override would report one version's results
-// under another version's name.
-//
-// The CLI's copy of passbolt.go carries identical logic; `make
-// check-testenv-sync` is what keeps the two from drifting.
+// An ignored override would report results under the wrong Passbolt version.
 func TestPassboltImage(t *testing.T) {
 	t.Run("defaults to the pinned image", func(t *testing.T) {
 		t.Setenv(PassboltImageEnv, "")
@@ -26,9 +20,7 @@ func TestPassboltImage(t *testing.T) {
 	})
 
 	t.Run("treats a blank override as unset", func(t *testing.T) {
-		// Makefile recipes export PASSBOLT_TEST_IMAGE unconditionally, so an
-		// unset override arrives as an empty (or whitespace) value rather than
-		// an absent variable.
+		// Callers may export the variable empty rather than unset it.
 		t.Setenv(PassboltImageEnv, "   \t ")
 		if got := PassboltImage(); got != defaultPassboltImage {
 			t.Errorf("PassboltImage() = %q, want the pinned default %q", got, defaultPassboltImage)

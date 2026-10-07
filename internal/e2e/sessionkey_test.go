@@ -1,13 +1,18 @@
 //go:build integration
 
-package api_test
+package e2e
+
+// Session key caching and pre-fetching.
 
 import (
+	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/passbolt/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/helper"
 )
 
 // TestSessionKeyCaching verifies session key cache behavior and performance
@@ -32,7 +37,7 @@ func TestSessionKeyCaching(t *testing.T) {
 	}
 
 	testData := `{"object_type":"PASSBOLT_RESOURCE_METADATA","name":"Cache Test"}`
-	encrypted, err := client.EncryptMetadata(metadataKey, testData)
+	encrypted, err := client.EncryptMetadataWithKeyType(metadataKey, api.MetadataKeyTypeUserKey, testData)
 	if err != nil {
 		t.Fatalf("Failed to encrypt metadata: %v", err)
 	}
@@ -92,7 +97,7 @@ func TestSessionKeyCacheClear(t *testing.T) {
 	keyID := keys[0].ID
 	metadataKey, _ := client.GetDecryptedMetadataKeyCached(ctx, keyID)
 	testData := `{"object_type":"PASSBOLT_RESOURCE_METADATA","name":"Clear Test"}`
-	encrypted, _ := client.EncryptMetadata(metadataKey, testData)
+	encrypted, _ := client.EncryptMetadataWithKeyType(metadataKey, api.MetadataKeyTypeUserKey, testData)
 
 	// Populate cache
 	client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
@@ -114,6 +119,150 @@ func TestSessionKeyCacheClear(t *testing.T) {
 	if client.GetSessionKeyByMetadataKeyID(keyID) != nil {
 		t.Error("Expected cache cleared on logout")
 	}
+}
+
+// TestClearSessionKeyCacheZerosKeys tests that session key cache clearing zeros memory
+func TestClearSessionKeyCacheZerosKeys(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	client, ctx, cleanup := setupTestClient(t)
+	defer cleanup()
+
+	// Get a metadata key and encrypt/decrypt to populate session key cache
+	keys, err := client.GetMetadataKeysCached(ctx)
+	if err != nil {
+		t.Skip("Metadata keys not available (v4 server)")
+	}
+
+	if len(keys) == 0 {
+		t.Skip("No metadata keys available")
+	}
+
+	keyID := keys[0].ID
+	metadataKey, err := client.GetDecryptedMetadataKeyCached(ctx, keyID)
+	if err != nil {
+		t.Fatalf("Failed to get metadata key: %v", err)
+	}
+
+	testData := `{"object_type":"PASSBOLT_RESOURCE_METADATA","name":"Clear Test"}`
+	encrypted, err := client.EncryptMetadataWithKeyType(metadataKey, api.MetadataKeyTypeUserKey, testData)
+	if err != nil {
+		t.Fatalf("Encryption failed: %v", err)
+	}
+
+	_, err = client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
+	if err != nil {
+		t.Fatalf("Decryption failed: %v", err)
+	}
+
+	// Verify session key is cached
+	sessionKey := client.GetSessionKeyByMetadataKeyID(keyID)
+	if sessionKey == nil {
+		t.Fatal("Expected session key to be cached")
+	}
+
+	t.Logf("Session key cached (algo: %s, key length: %d)",
+		sessionKey.Algo, len(sessionKey.Key))
+
+	// Clear session key cache (should zero memory)
+	client.ClearSessionKeyCache()
+
+	// Verify cache is empty
+	sessionKey = client.GetSessionKeyByMetadataKeyID(keyID)
+	if sessionKey != nil {
+		t.Error("Expected session key cache to be empty after clear")
+	}
+
+	// Verify decryption still works (will do full PGP decrypt)
+	decrypted, err := client.DecryptMetadataWithKeyID(keyID, metadataKey, encrypted)
+	if err != nil {
+		t.Fatalf("Decryption after cache clear failed: %v", err)
+	}
+
+	if decrypted != testData {
+		t.Error("Decryption after cache clear returned wrong data")
+	}
+
+	t.Log("SUCCESS: Session key cache clearing and re-decryption works correctly")
+}
+
+// TestUserKeySessionCaching tests that session key caching works for user-owned v5 resources
+func TestUserKeySessionCaching(t *testing.T) {
+	// Skip integration tests if no client is available
+	if client == nil {
+		t.SkipNow()
+	}
+
+	ctx := context.TODO()
+
+	// Get resources
+	resources, err := client.GetResources(ctx, nil)
+	if err != nil {
+		t.Fatalf("Failed to get resources: %v", err)
+	}
+
+	// Find a user-owned v5 resource
+	var userOwnedV5Resource *api.Resource
+	for i := range resources {
+		rType, err := client.GetResourceType(ctx, resources[i].ResourceTypeID)
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(rType.Slug, "v5-") && resources[i].MetadataKeyType == api.MetadataKeyTypeUserKey {
+			userOwnedV5Resource = &resources[i]
+			t.Logf("Found user-owned v5 resource: %s (type: %s)", resources[i].ID, rType.Slug)
+			break
+		}
+	}
+
+	if userOwnedV5Resource == nil {
+		t.Skip("No user-owned v5 resources available for testing")
+	}
+
+	// Clear session key cache to start fresh
+	client.ClearSessionKeyCache()
+
+	// Verify session key cache is empty initially (session keys are cached by resource ID)
+	sessionKey := client.GetSessionKeyByResourceID(userOwnedV5Resource.ID)
+	if sessionKey != nil {
+		t.Error("Expected session key cache to be empty initially")
+	}
+
+	// Get resource type for metadata decryption
+	rType, err := client.GetResourceType(ctx, userOwnedV5Resource.ResourceTypeID)
+	if err != nil {
+		t.Fatalf("Failed to get resource type: %v", err)
+	}
+
+	// First decryption - should cache session key by resource ID
+	_, err = helper.GetResourceMetadata(ctx, client, userOwnedV5Resource, rType)
+	if err != nil {
+		t.Fatalf("First decryption failed: %v", err)
+	}
+
+	// Verify session key was cached by resource ID
+	sessionKey = client.GetSessionKeyByResourceID(userOwnedV5Resource.ID)
+	if sessionKey == nil {
+		t.Errorf("Expected session key to be cached for resource %q", userOwnedV5Resource.ID)
+	} else {
+		t.Logf("SUCCESS: Session key cached for resource %q", userOwnedV5Resource.ID)
+	}
+
+	// Second decryption - should use cached session key
+	_, err = helper.GetResourceMetadata(ctx, client, userOwnedV5Resource, rType)
+	if err != nil {
+		t.Fatalf("Second decryption failed: %v", err)
+	}
+
+	// Verify session key is still cached
+	sessionKey = client.GetSessionKeyByResourceID(userOwnedV5Resource.ID)
+	if sessionKey == nil {
+		t.Error("Expected session key to still be cached after second decryption")
+	}
+
+	t.Log("SUCCESS: Session key caching works for user-owned v5 resources")
 }
 
 // TestResourceSessionKeyPreFetch verifies pre-fetched session keys from login
@@ -148,70 +297,6 @@ func TestResourceSessionKeyPreFetch(t *testing.T) {
 
 	hitRate := float64(cacheHits) / float64(total) * 100
 	t.Logf("V5 resources: %d, Cache hits: %d (%.1f%%)", total, cacheHits, hitRate)
-}
-
-// TestPreFetchPerformance measures performance improvement from pre-fetching
-func TestPreFetchPerformance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	client, ctx, cleanup := setupTestClient(t)
-	defer cleanup()
-
-	resources, err := client.GetResources(ctx, nil)
-	if err != nil {
-		t.Fatalf("Failed to get resources: %v", err)
-	}
-
-	// Get v5 resources with metadata keys
-	type prepared struct {
-		id, keyID, metadata string
-		key                 *crypto.Key
-	}
-	var items []prepared
-
-	for _, r := range resources {
-		if r.Metadata == "" {
-			continue
-		}
-		if r.MetadataKeyType == api.MetadataKeyTypeUserKey {
-			key, err := client.GetUserPrivateKeyCopy()
-			if err == nil {
-				items = append(items, prepared{r.ID, "user-key:" + key.GetFingerprint(), r.Metadata, key})
-			}
-		} else {
-			key, err := client.GetDecryptedMetadataKeyCached(ctx, r.MetadataKeyID)
-			if err == nil {
-				items = append(items, prepared{r.ID, r.MetadataKeyID, r.Metadata, key})
-			}
-		}
-		if len(items) >= 10 {
-			break
-		}
-	}
-
-	if len(items) < 3 {
-		t.Skip("Need at least 3 v5 resources")
-	}
-
-	// WITH cache
-	start := time.Now()
-	for _, item := range items {
-		client.DecryptMetadataWithResourceID(item.id, item.keyID, item.key, item.metadata)
-	}
-	withCache := time.Since(start)
-
-	// Clear and measure WITHOUT cache
-	client.ClearSessionKeyCache()
-	start = time.Now()
-	for _, item := range items {
-		client.DecryptMetadataWithKeyID(item.keyID, item.key, item.metadata)
-	}
-	withoutCache := time.Since(start)
-
-	speedup := float64(withoutCache) / float64(withCache)
-	t.Logf("Resources: %d, With cache: %v, Without: %v, Speedup: %.1fx", len(items), withCache, withoutCache, speedup)
 }
 
 // TestSavePendingSessionKeys tests the pending session keys save functionality
@@ -310,6 +395,70 @@ func TestSavePendingSessionKeys(t *testing.T) {
 	}
 }
 
+// TestPreFetchPerformance measures performance improvement from pre-fetching
+func TestPreFetchPerformance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	client, ctx, cleanup := setupTestClient(t)
+	defer cleanup()
+
+	resources, err := client.GetResources(ctx, nil)
+	if err != nil {
+		t.Fatalf("Failed to get resources: %v", err)
+	}
+
+	// Get v5 resources with metadata keys
+	type prepared struct {
+		id, keyID, metadata string
+		key                 *crypto.Key
+	}
+	var items []prepared
+
+	for _, r := range resources {
+		if r.Metadata == "" {
+			continue
+		}
+		if r.MetadataKeyType == api.MetadataKeyTypeUserKey {
+			key, err := client.GetUserPrivateKeyCopy()
+			if err == nil {
+				items = append(items, prepared{r.ID, "user-key:" + key.GetFingerprint(), r.Metadata, key})
+			}
+		} else {
+			key, err := client.GetDecryptedMetadataKeyCached(ctx, r.MetadataKeyID)
+			if err == nil {
+				items = append(items, prepared{r.ID, r.MetadataKeyID, r.Metadata, key})
+			}
+		}
+		if len(items) >= 10 {
+			break
+		}
+	}
+
+	if len(items) < 3 {
+		t.Skip("Need at least 3 v5 resources")
+	}
+
+	// WITH cache
+	start := time.Now()
+	for _, item := range items {
+		client.DecryptMetadataWithResourceID(item.id, item.keyID, item.key, item.metadata)
+	}
+	withCache := time.Since(start)
+
+	// Clear and measure WITHOUT cache
+	client.ClearSessionKeyCache()
+	start = time.Now()
+	for _, item := range items {
+		client.DecryptMetadataWithKeyID(item.keyID, item.key, item.metadata)
+	}
+	withoutCache := time.Since(start)
+
+	speedup := float64(withoutCache) / float64(withCache)
+	t.Logf("Resources: %d, With cache: %v, Without: %v, Speedup: %.1fx", len(items), withCache, withoutCache, speedup)
+}
+
 // TestConcurrentCacheAccessIntegration tests concurrent access with real server.
 // The Client is now thread-safe, so we can run parallel decryption operations.
 func TestConcurrentCacheAccessIntegration(t *testing.T) {
@@ -333,7 +482,7 @@ func TestConcurrentCacheAccessIntegration(t *testing.T) {
 	}
 
 	testData := `{"object_type":"PASSBOLT_RESOURCE_METADATA","name":"Concurrent Test"}`
-	encrypted, err := client.EncryptMetadata(metadataKey, testData)
+	encrypted, err := client.EncryptMetadataWithKeyType(metadataKey, api.MetadataKeyTypeUserKey, testData)
 	if err != nil {
 		t.Fatalf("Failed to encrypt: %v", err)
 	}

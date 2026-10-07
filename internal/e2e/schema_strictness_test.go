@@ -1,6 +1,6 @@
 //go:build integration
 
-package helper
+package e2e
 
 import (
 	"context"
@@ -10,14 +10,15 @@ import (
 	"testing"
 
 	"github.com/passbolt/go-passbolt/api"
+	"github.com/passbolt/go-passbolt/helper"
 )
 
 // A stored v5 resource carrying an undeclared metadata property reads fine, but update and share
-// fail with ErrSchemaMismatch. Only observable against a real server.
+// fail with helper.ErrSchemaMismatch. Only observable against a real server.
 func TestSchemaStrictness_ReadLenientWriteStrict(t *testing.T) {
 	ctx := context.Background()
 
-	resourceID, err := CreateResourceGeneric(ctx, client, "v5-default", "",
+	resourceID, err := helper.CreateResourceGeneric(ctx, client, "v5-default", "",
 		map[string]any{"name": "strictness-probe", "username": "u"},
 		map[string]any{"password": "correct horse battery staple"},
 	)
@@ -43,7 +44,7 @@ func TestSchemaStrictness_ReadLenientWriteStrict(t *testing.T) {
 			t.Fatalf("getting secret: %v", err)
 		}
 
-		_, metaFields, _, err := GetResourceFieldMaps(client, *resource, *secret, *rType, true)
+		_, metaFields, _, err := helper.GetResourceFieldMaps(client, *resource, *secret, *rType, true)
 		if err != nil {
 			t.Fatalf("GetResourceFieldMaps should tolerate an undeclared property: %v", err)
 		}
@@ -53,10 +54,10 @@ func TestSchemaStrictness_ReadLenientWriteStrict(t *testing.T) {
 	})
 
 	t.Run("update is strict", func(t *testing.T) {
-		err := UpdateResourceGeneric(ctx, client, resourceID,
+		err := helper.UpdateResourceGeneric(ctx, client, resourceID,
 			map[string]any{"name": "renamed"}, map[string]any{})
-		if !errors.Is(err, ErrSchemaMismatch) {
-			t.Fatalf("expected ErrSchemaMismatch, got %v", err)
+		if !errors.Is(err, helper.ErrSchemaMismatch) {
+			t.Fatalf("expected helper.ErrSchemaMismatch, got %v", err)
 		}
 		if !strings.Contains(err.Error(), "future_field") {
 			t.Errorf("error should name the offending property, got %q", err.Error())
@@ -69,9 +70,9 @@ func TestSchemaStrictness_ReadLenientWriteStrict(t *testing.T) {
 			t.Skipf("could not create a second user to share with: %v", err)
 		}
 
-		err = ShareResourceWithUsersAndGroups(ctx, client, resourceID, []string{user.UserID}, nil, 7)
-		if !errors.Is(err, ErrSchemaMismatch) {
-			t.Fatalf("expected ErrSchemaMismatch, got %v", err)
+		err = helper.ShareResourceWithUsersAndGroups(ctx, client, resourceID, []string{user.UserID}, nil, 7)
+		if !errors.Is(err, helper.ErrSchemaMismatch) {
+			t.Fatalf("expected helper.ErrSchemaMismatch, got %v", err)
 		}
 	})
 }
@@ -81,14 +82,14 @@ func TestSchemaStrictness_ReadLenientWriteStrict(t *testing.T) {
 func TestUpdateResourceGeneric_RepairsInvalidStoredMetadata(t *testing.T) {
 	ctx := context.Background()
 
-	resourceID, err := CreateResourceGeneric(ctx, client, "v5-default", "",
+	resourceID, err := helper.CreateResourceGeneric(ctx, client, "v5-default", "",
 		map[string]any{"name": "repair-probe", "username": "u"},
 		map[string]any{"password": "correct horse battery staple"},
 	)
 	if err != nil {
 		t.Fatalf("creating probe resource: %v", err)
 	}
-	t.Cleanup(func() { _ = DeleteResource(ctx, client, resourceID) })
+	t.Cleanup(func() { _ = helper.DeleteResource(ctx, client, resourceID) })
 
 	// v5-default caps name at 255 characters.
 	rType := storeRawMetadata(t, resourceID, map[string]any{
@@ -100,15 +101,15 @@ func TestUpdateResourceGeneric_RepairsInvalidStoredMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getting resource: %v", err)
 	}
-	if _, err := GetResourceMetadata(ctx, client, resource, rType); !errors.Is(err, ErrSchemaValidation) {
+	if _, err := helper.GetResourceMetadata(ctx, client, resource, rType); !errors.Is(err, helper.ErrSchemaValidation) {
 		t.Fatalf("the broken document should fail lenient validation, got %v", err)
 	}
 
-	if err := UpdateResourceGeneric(ctx, client, resourceID, map[string]any{"name": "repaired"}, nil); err != nil {
+	if err := helper.UpdateResourceGeneric(ctx, client, resourceID, map[string]any{"name": "repaired"}, nil); err != nil {
 		t.Fatalf("the repairing update should succeed, got %v", err)
 	}
 
-	_, name, _, _, _, _, err := GetResource(ctx, client, resourceID)
+	_, name, _, _, _, _, err := helper.GetResource(ctx, client, resourceID)
 	if err != nil {
 		t.Fatalf("reading back the repaired resource: %v", err)
 	}
@@ -122,16 +123,16 @@ func TestUpdateResourceGeneric_RepairsInvalidStoredMetadata(t *testing.T) {
 func TestUpdateResourceGeneric_RestampsEnvelope(t *testing.T) {
 	ctx := context.Background()
 
-	resourceID, err := CreateResourceGeneric(ctx, client, "v5-default", "",
+	resourceID, err := helper.CreateResourceGeneric(ctx, client, "v5-default", "",
 		map[string]any{"name": "envelope-probe", "username": "u"},
 		map[string]any{"password": "correct horse battery staple"},
 	)
 	if err != nil {
 		t.Fatalf("creating probe resource: %v", err)
 	}
-	t.Cleanup(func() { _ = DeleteResource(ctx, client, resourceID) })
+	t.Cleanup(func() { _ = helper.DeleteResource(ctx, client, resourceID) })
 
-	err = UpdateResourceGeneric(ctx, client, resourceID,
+	err = helper.UpdateResourceGeneric(ctx, client, resourceID,
 		map[string]any{"object_type": "garbage", "resource_type_id": "not-a-uuid"},
 		map[string]any{"object_type": "garbage"},
 	)
@@ -151,7 +152,7 @@ func TestUpdateResourceGeneric_RestampsEnvelope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getting resource type: %v", err)
 	}
-	_, metaFields, secretFields, err := GetResourceFieldMaps(client, *resource, *secret, *rType, true)
+	_, metaFields, secretFields, err := helper.GetResourceFieldMaps(client, *resource, *secret, *rType, true)
 	if err != nil {
 		t.Fatalf("GetResourceFieldMaps: %v", err)
 	}
