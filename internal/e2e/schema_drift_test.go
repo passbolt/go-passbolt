@@ -1,18 +1,9 @@
 //go:build integration
 
-// Which resource types this build can actually use against a given Passbolt version.
-//
-// The bundle is authoritative, so a divergence from the server is a correctness bug that strict
-// write validation turns into a user-visible failure, and the signal to tell users to update.
-// Every advertised type is compared in full against the bundled schema.
-//
-// A type the server does not advertise is not a failure: the client refuses it up front
-// (findResourceTypeBySlug) and reports that the API does not support it.
-//
-// On failure the server's definition is printed too, so refreshing a stale schema is a
-// copy-paste, which is why the repository has no schema generator.
+// Every resource type the server advertises must match the bundled schema.
+// On failure the server's definition is printed, ready to paste.
 
-package api_test
+package e2e
 
 import (
 	"encoding/json"
@@ -24,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/passbolt/go-passbolt/api"
-	"github.com/passbolt/go-passbolt/internal/testenv"
+	"github.com/passbolt/go-passbolt/internal/e2e/server"
 )
 
 // maxDiffsPerSection caps reported differences so a wholesale upstream rewrite does not bury the
@@ -85,7 +76,7 @@ func TestEmbeddedSchemasMatchServerDefinitions(t *testing.T) {
 			if t.Failed() {
 				t.Logf("fix: replace api/schemas/%s.json with the definition below "+
 					"(image %s, resource type id %s)\nserver definition:\n%s",
-					rType.Slug, testenv.PassboltImage(), rType.ID, prettyDefinition(rType.Definition))
+					rType.Slug, server.PassboltImage(), rType.ID, prettyDefinition(rType.Definition))
 			}
 		})
 	}
@@ -101,7 +92,7 @@ func TestEmbeddedSchemasMatchServerDefinitions(t *testing.T) {
 	slices.Sort(clientAhead)
 	if len(clientAhead) > 0 {
 		t.Logf("bundled but not advertised by %s (client ahead of server, expected): %s",
-			testenv.PassboltImage(), strings.Join(clientAhead, ", "))
+			server.PassboltImage(), strings.Join(clientAhead, ", "))
 	}
 }
 
