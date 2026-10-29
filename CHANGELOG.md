@@ -5,20 +5,30 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Releases before 0.8.2 are documented in the [GitHub releases](https://github.com/passbolt/go-passbolt/releases).
 
 ## [Unreleased]
+
+## [0.8.4] - 2026-10-29
+### Added
+- PB-54610: Validate Resource metadata and secrets against the JSON schemas bundled with the SDK instead of the server definition
+- PB-54610: Embed all Resource Type schemas as JSON files, including the six previously missing ones
+- PB-54610: Validate leniently on read and strictly on write
+
 ### Fixed
-- The TOTP MFA callback now reports how many attempts it actually made instead of always saying 3
-- The TOTP MFA callback no longer waits one extra retry delay after its final failed attempt
+- PB-54147: Harden the MFA retry loop and cover it with testing/synctest
 
 ### Security
-- PB-55610: Bump go version to 1.27.3 (security fixes in crypto/x509)
+- PB-54147: Move to the Go 1.26.8 and 1.27.1 security patches
+- PB-55389: Update Go to 1.26.9 and 1.27.2 (security fixes in crypto/tls, net/http, net/textproto and os)
+- PB-55610: Bump Go version to 1.26.10/1.27.3 (security fixes in crypto/x509)
 
 ### Maintenance
-- PB-54147: Build and test with Go 1.27.3; the minimum supported Go version is now 1.26.10
-- PB-54147: Use go 1.26 syntax
-- PB-55888: Update dependencies in SDK and CLI
-
-### Changed
-- PB-54610: Validate Resource metadata and secrets against JSON schemas bundled with the SDK (lenient on read, strict on write) instead of the server-provided definitions, and bundle the six previously missing Resource Types. Resources of a type or with a field that a newer Passbolt release added cannot be read, updated or shared until the SDK is upgraded
+- PB-54147: Bump the toolchain to Go 1.27 and keep the SDK floor at 1.26.10
+- PB-54147: Pin encoding/json v1 semantics across both implementations
+- PB-54610: Cache compiled schemas per slug and section
+- PB-54610: Add an integration test comparing the bundled schemas with the server
+- PB-54610: Add scenario benchmarks
+- PB-55287: Reorganize e2e test files in CLI and SDK
+- PB-54998: Update GitHub Actions to stable versions
+- PB-55888: Update Go dependencies
 
 ## [0.8.3] - 2026-08-27
 ### Fixed
