@@ -15,6 +15,7 @@ Releases before 0.8.2 are documented in the [GitHub releases](https://github.com
 ### Maintenance
 - PB-54147: Build and test with Go 1.27.3; the minimum supported Go version is now 1.26.10
 - PB-54147: Use go 1.26 syntax
+- PB-55888: Update dependencies in SDK and CLI
 
 ### Changed
 - PB-54610: Validate Resource metadata and secrets against JSON schemas bundled with the SDK (lenient on read, strict on write) instead of the server-provided definitions, and bundle the six previously missing Resource Types. Resources of a type or with a field that a newer Passbolt release added cannot be read, updated or shared until the SDK is upgraded
