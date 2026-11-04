@@ -52,8 +52,8 @@ type GroupUpdate struct {
 
 // GetGroupsOptions are all available query parameters
 type GetGroupsOptions struct {
-	FilterHasUsers    []string `url:"filter[has_users],omitempty"`
-	FilterHasManagers []string `url:"filter[has-managers],omitempty"`
+	FilterHasUsers    []string `url:"filter[has-users][],omitempty"`
+	FilterHasManagers []string `url:"filter[has-managers][],omitempty"`
 
 	ContainModifier               bool `url:"contain[modifier],omitempty"`
 	ContainModifierProfile        bool `url:"contain[modifier.profile],omitempty"`

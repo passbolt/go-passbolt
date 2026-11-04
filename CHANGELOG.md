@@ -14,6 +14,9 @@ Releases before 0.8.2 are documented in the [GitHub releases](https://github.com
 
 ### Fixed
 - PB-54147: Harden the MFA retry loop and cover it with testing/synctest
+- PB-56059: Fix the `FilterHasUsers` and `FilterHasGroup` filters
+- PB-56059: Fix `FilterHasManagers` using only the last ID
+- PB-56059: Fix `MissingMetadataKeyIDs` never being filled
 
 ### Security
 - PB-54147: Move to the Go 1.26.8 and 1.27.1 security patches
@@ -29,6 +32,8 @@ Releases before 0.8.2 are documented in the [GitHub releases](https://github.com
 - PB-55287: Reorganize e2e test files in CLI and SDK
 - PB-54998: Update GitHub Actions to stable versions
 - PB-55888: Update Go dependencies
+- PB-56059: Use `/setup/start` instead of the legacy `/setup/install` endpoint
+- PB-56059: Add integration tests for the list filters
 
 ## [0.8.3] - 2026-08-27
 ### Fixed
