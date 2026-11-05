@@ -6,7 +6,7 @@ Releases before 0.8.2 are documented in the [GitHub releases](https://github.com
 
 ## [Unreleased]
 
-## [0.8.4] - 2026-10-29
+## [0.8.4] - 2026-11-05
 ### Added
 - PB-54610: Validate Resource metadata and secrets against the JSON schemas bundled with the SDK instead of the server definition
 - PB-54610: Embed all Resource Type schemas as JSON files, including the six previously missing ones
