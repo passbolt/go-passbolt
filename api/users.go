@@ -46,13 +46,13 @@ type Profile struct {
 // GetUsersOptions are all available query parameters
 type GetUsersOptions struct {
 	FilterSearch    string   `url:"filter[search],omitempty"`
-	FilterHasGroup  []string `url:"filter[has-group][],omitempty"`
+	FilterHasGroup  []string `url:"filter[has-groups][],omitempty"`
 	FilterHasAccess []string `url:"filter[has-access][],omitempty"`
 	FilterIsAdmin   bool     `url:"filter[is-admin],omitempty"`
-	// Admin only, TODO are underscores correct?
-	MissingMetadataKeyIDs bool `url:"filter[missing_metadata_key_ids],omitempty"`
 
 	ContainLastLoggedIn bool `url:"contain[LastLoggedIn],omitempty"`
+	// Admin only
+	MissingMetadataKeyIDs bool `url:"contain[missing_metadata_key_ids],omitempty"`
 }
 
 // GetUsers gets all Passbolt Users

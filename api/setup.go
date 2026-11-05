@@ -30,7 +30,7 @@ func (c *Client) SetupInstall(ctx context.Context, userID, token string) (*Setup
 	if err != nil {
 		return nil, fmt.Errorf("checking Token format: %w", err)
 	}
-	msg, err := c.DoCustomRequest(ctx, "GET", "/setup/install/"+userID+"/"+token+".json", "v2", nil, nil)
+	msg, err := c.DoCustomRequest(ctx, "GET", "/setup/start/"+userID+"/"+token+".json", "v2", nil, nil)
 	if err != nil {
 		return nil, err
 	}
