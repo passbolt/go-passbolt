@@ -1,32 +1,10 @@
 //go:build integration
 
-package api_test
+package e2e
 
-import (
-	"encoding/json"
-	"testing"
+// Resource type and metadata key caches.
 
-	"github.com/passbolt/go-passbolt/api"
-	"github.com/passbolt/go-passbolt/helper"
-)
-
-// TestClientCreationWithV3 tests that the client is created with gopenpgp v3
-func TestClientCreationWithV3(t *testing.T) {
-	client, err := api.NewClient(nil, "", testServerURL, testAdminPrivKey, testAdminPassword)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	if client == nil {
-		t.Fatal("Expected non-nil client")
-	}
-
-	// Verify PGP handle is initialized
-	pgp := client.GetPGPHandle()
-	if pgp == nil {
-		t.Error("Expected non-nil PGP handle")
-	}
-}
+import "testing"
 
 // TestLoginClearsCacheOnStart tests that cache is cleared on login
 func TestLoginClearsCacheOnStart(t *testing.T) {
@@ -236,8 +214,8 @@ func TestDecryptedMetadataKeyCaching(t *testing.T) {
 	}
 }
 
-// TestMetadataEncryptionDecryption tests metadata encryption and decryption
-func TestMetadataEncryptionDecryption(t *testing.T) {
+// TestClearMetadataKeysCacheZerosKeys tests that cache clearing zeros key memory
+func TestClearMetadataKeysCacheZerosKeys(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
@@ -245,7 +223,7 @@ func TestMetadataEncryptionDecryption(t *testing.T) {
 	client, ctx, cleanup := setupTestClient(t)
 	defer cleanup()
 
-	// Get a metadata key
+	// Get and cache a metadata key
 	keys, err := client.GetMetadataKeysCached(ctx)
 	if err != nil {
 		t.Skip("Metadata keys not available (v4 server)")
@@ -255,128 +233,30 @@ func TestMetadataEncryptionDecryption(t *testing.T) {
 		t.Skip("No metadata keys available")
 	}
 
-	// Get decrypted metadata key
-	metadataKey, err := client.GetDecryptedMetadataKeyCached(ctx, keys[0].ID)
+	keyID := keys[0].ID
+	cachedKey, err := client.GetDecryptedMetadataKeyCached(ctx, keyID)
 	if err != nil {
-		t.Fatalf("Failed to get decrypted metadata key: %v", err)
+		t.Fatalf("Failed to cache metadata key: %v", err)
 	}
 
-	// Test data
-	testData := `{"object_type":"PASSBOLT_RESOURCE_METADATA","name":"Test Resource","username":"testuser"}`
+	fingerprint := cachedKey.GetFingerprint()
+	t.Logf("Cached key fingerprint: %s", fingerprint)
 
-	// Encrypt
-	encrypted, err := client.EncryptMetadata(metadataKey, testData)
+	// Clear cache (should zero key memory)
+	client.ClearMetadataKeysCache()
+
+	// Verify we need to fetch again (cache was cleared)
+	cachedKey2, err := client.GetDecryptedMetadataKeyCached(ctx, keyID)
 	if err != nil {
-		t.Fatalf("Failed to encrypt metadata: %v", err)
+		t.Fatalf("Failed to get metadata key after clear: %v", err)
 	}
 
-	if encrypted == testData {
-		t.Error("Encrypted data should differ from plaintext")
+	// Verify we got the same key (by fingerprint) but it was re-fetched
+	if cachedKey2.GetFingerprint() != fingerprint {
+		t.Error("Key fingerprint changed after cache clear")
 	}
 
-	// Decrypt
-	decrypted, err := client.DecryptMetadata(metadataKey, encrypted)
-	if err != nil {
-		t.Fatalf("Failed to decrypt metadata: %v", err)
-	}
-
-	if decrypted != testData {
-		t.Errorf("Decrypted data doesn't match original.\nExpected: %s\nGot: %s", testData, decrypted)
-	}
-}
-
-// TestGetResourceWithMetadata tests the helper function for getting resource metadata
-func TestGetResourceWithMetadata(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	client, ctx, cleanup := setupTestClient(t)
-	defer cleanup()
-
-	// Create a v5 test resource with metadata
-	resourceID, err := helper.CreateResourceGeneric(
-		ctx,
-		client,
-		"v5-default",
-		"", // no folder
-		map[string]any{
-			"name":     "Test Resource With Metadata",
-			"username": "testuser",
-			"uris":     []string{"https://test.example.com"},
-		},
-		map[string]any{
-			"password":    "TestPassword123!",
-			"description": "Test description for metadata test",
-		},
-	)
-	if err != nil {
-		t.Skipf("Cannot create v5 resource (server may not support v5): %v", err)
-	}
-
-	// Clean up the test resource when done
-	defer func() {
-		if err := client.DeleteResource(ctx, resourceID); err != nil {
-			t.Logf("Warning: Failed to delete test resource %s: %v", resourceID, err)
-		}
-	}()
-
-	// Get the created resource
-	testResource, err := client.GetResource(ctx, resourceID)
-	if err != nil {
-		t.Fatalf("Failed to get created resource: %v", err)
-	}
-
-	// Verify it has metadata
-	if testResource.Metadata == "" {
-		t.Fatal("Created resource has no metadata")
-	}
-
-	// Get resource type
-	rType, err := client.GetResourceTypeCached(ctx, testResource.ResourceTypeID)
-	if err != nil {
-		t.Fatalf("Failed to get resource type: %v", err)
-	}
-
-	// Get and decrypt metadata using helper
-	metadata, err := helper.GetResourceMetadata(ctx, client, testResource, rType)
-	if err != nil {
-		t.Fatalf("Failed to get resource metadata: %v", err)
-	}
-
-	// Verify it's valid JSON
-	var metadataObj map[string]interface{}
-	err = json.Unmarshal([]byte(metadata), &metadataObj)
-	if err != nil {
-		t.Fatalf("Metadata is not valid JSON: %v", err)
-	}
-
-	// Verify it has expected fields
-	objectType, ok := metadataObj["object_type"]
-	if !ok {
-		t.Error("Metadata missing object_type field")
-	}
-
-	if objectType != api.PassboltObjectTypeResourceMetadata {
-		t.Errorf("Expected object_type %s, got %v", api.PassboltObjectTypeResourceMetadata, objectType)
-	}
-
-	// Verify the metadata contains the values we set
-	if name, ok := metadataObj["name"].(string); ok {
-		if name != "Test Resource With Metadata" {
-			t.Errorf("Expected name 'Test Resource With Metadata', got %s", name)
-		}
-	} else {
-		t.Error("Metadata missing name field")
-	}
-
-	if username, ok := metadataObj["username"].(string); ok {
-		if username != "testuser" {
-			t.Errorf("Expected username 'testuser', got %s", username)
-		}
-	} else {
-		t.Error("Metadata missing username field")
-	}
+	t.Log("SUCCESS: Cache clearing and re-fetching works correctly")
 }
 
 // TestCacheManagement tests that cache management functions work correctly

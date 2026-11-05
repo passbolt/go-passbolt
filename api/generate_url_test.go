@@ -64,6 +64,35 @@ func TestGenerateURL(t *testing.T) {
 			opt:  &GetResourcesOptions{FilterHasTag: "prod"},
 			want: "https://passbolt.test/passbolt/resources.json?filter%5Bhas-tag%5D=prod",
 		},
+		// The server silently ignores unknown keys (#81).
+		{
+			name: "groups filtered by several users",
+			base: "https://passbolt.test",
+			path: "/groups.json",
+			opt:  &GetGroupsOptions{FilterHasUsers: []string{"u1", "u2"}},
+			want: "https://passbolt.test/groups.json?filter%5Bhas-users%5D%5B%5D=u1&filter%5Bhas-users%5D%5B%5D=u2",
+		},
+		{
+			name: "groups filtered by several managers",
+			base: "https://passbolt.test",
+			path: "/groups.json",
+			opt:  &GetGroupsOptions{FilterHasManagers: []string{"u1", "u2"}},
+			want: "https://passbolt.test/groups.json?filter%5Bhas-managers%5D%5B%5D=u1&filter%5Bhas-managers%5D%5B%5D=u2",
+		},
+		{
+			name: "users filtered by group",
+			base: "https://passbolt.test",
+			path: "/users.json",
+			opt:  &GetUsersOptions{FilterHasGroup: []string{"g1"}},
+			want: "https://passbolt.test/users.json?filter%5Bhas-groups%5D%5B%5D=g1",
+		},
+		{
+			name: "missing metadata key ids is a contain",
+			base: "https://passbolt.test",
+			path: "/users.json",
+			opt:  &GetUsersOptions{MissingMetadataKeyIDs: true},
+			want: "https://passbolt.test/users.json?contain%5Bmissing_metadata_key_ids%5D=true",
+		},
 		{
 			name: "an existing query on the base is replaced",
 			base: "https://passbolt.test/passbolt?stale=1",
