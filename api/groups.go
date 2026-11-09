@@ -38,7 +38,7 @@ type GroupMembership struct {
 	ID      string `json:"id,omitempty"`
 	UserID  string `json:"user_id,omitempty"`
 	GroupID string `json:"group_id,omitempty"`
-	IsAdmin bool   `json:"is_admin,omitempty"`
+	IsAdmin bool   `json:"is_admin"`
 	Delete  bool   `json:"delete,omitempty"`
 	User    User   `json:"user,omitempty"`
 	Created *Time  `json:"created,omitempty"`
