@@ -430,3 +430,16 @@ func main() {
     	client.Logout(ctx)
 }
 ```
+
+## Optional user administration details
+
+User responses preserve optional `is_mfa_enabled` and `scim_entry` fields. A nil
+`IsMFAEnabled` means the API did not disclose the value, rather than MFA being
+disabled. SCIM linkage stays in its original JSON schema.
+
+`GetUserWithOptions` can request `contain[scim_entry]`; the same option exists on
+`GetUsersOptions`. User lists can explicitly request MFA state and filter it
+through `FilterIsMFAEnabled`. A non-nil filter automatically requests the required
+MFA contain, including when filtering for false, without changing caller options.
+These optional operations require the relevant plugins and access rights. User
+views return MFA state for administrators or the viewed user where supported.
