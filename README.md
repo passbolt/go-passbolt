@@ -430,3 +430,52 @@ func main() {
     	client.Logout(ctx)
 }
 ```
+
+## Organization settings
+
+`GetOrganizationSettings`, `SetOrganizationSettings` and
+`DeleteOrganizationSettings` use the named plugin's organization settings API.
+`OrganizationSettingsPlugins()` lists supported names and operations without
+contacting a server. Available operations also depend on the server edition,
+enabled plugins and the current user's permissions.
+
+```go
+settings, err := client.GetOrganizationSettings(ctx, "email-notifications")
+updated, err := client.SetOrganizationSettings(ctx, "email-notifications",
+    json.RawMessage(`{"send":{"admin":{"user":{"create":false}}}}`))
+```
+
+Settings and responses use the plugin's original JSON schema. Read responses can
+include server-only fields and are not necessarily suitable for direct reuse as
+update input. Values such as `false`, `null` and large integers are preserved.
+Prepare any encrypted or signed credentials before submitting a payload. SSO
+writes create settings; activation is a separate server workflow. These methods
+do not perform metadata migrations. Log in again after changing settings to
+refresh the client's cached metadata and password-expiry settings.
+
+Supported plugins:
+
+| Plugin | Read | Write | Delete |
+| --- | --- | --- | --- |
+| account-recovery-policies | yes | yes | — |
+| directory-sync | yes | yes | singleton |
+| email-notifications | yes | yes | — |
+| export-policies | yes | — | — |
+| locale | — | yes | — |
+| metadata-keys | yes | yes | — |
+| metadata-types | yes | yes | — |
+| mfa | yes | yes | — |
+| mfa-policies | yes | yes | — |
+| password-expiry | yes | yes | settings UUID |
+| password-policies | yes | yes | — |
+| scim | yes | yes | settings UUID |
+| secret-revisions | yes | yes | singleton |
+| self-registration | yes | yes | settings UUID |
+| smtp | yes | yes | — |
+| sso | yes | yes | settings UUID |
+| user-key-policies | yes | — | — |
+| user-passphrase-policies | yes | yes | — |
+
+For singleton deletion pass an empty settings ID. For record-specific deletion,
+pass the UUID returned by the settings API. Unsupported operations and invalid
+JSON objects/IDs are rejected before a request is sent.
