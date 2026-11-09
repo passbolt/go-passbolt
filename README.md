@@ -430,3 +430,18 @@ func main() {
     	client.Logout(ctx)
 }
 ```
+
+## Group membership reads and updates
+
+`GetGroupWithOptions` requests associations from a single group view endpoint.
+`helper.GetGroup` reads both `groups_users` and `users` join-data layouts and
+returns membership UUIDs separately from user UUIDs. Missing profiles are allowed;
+missing membership IDs, unknown roles and conflicting identities are errors.
+
+`helper.UpdateGroup` is idempotent for an existing role or an already absent
+membership. It rejects contradictory operations for the same user, retains the
+normal dry-run and shared-secret re-encryption flow, and rereads the group after
+writing to verify the requested name and memberships. Verification requires
+permission to read complete membership associations. API and verification errors
+remain errors; a failed verification can mean the server already applied some
+changes, so reread the current group before retrying.

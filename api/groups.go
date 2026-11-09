@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Group is a Group
@@ -26,22 +28,107 @@ type GroupUser struct {
 	JoinData GroupJoinData `json:"_join_data,omitempty"`
 }
 
+// UnmarshalJSON accepts the join-data names used by supported server versions.
+func (g *GroupUser) UnmarshalJSON(data []byte) error {
+	var value struct {
+		User
+		Snake *GroupJoinData `json:"_join_data"`
+		Camel *GroupJoinData `json:"_joinData"`
+	}
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+
+	if value.Snake != nil && value.Camel != nil {
+		a, b := value.Snake, value.Camel
+		conflict := func(x, y string) bool { return x != "" && y != "" && !strings.EqualFold(x, y) }
+		if conflict(a.ID, b.ID) || conflict(a.UserID, b.UserID) || conflict(a.GroupID, b.GroupID) || (a.HasRoleInformation() && b.HasRoleInformation() && a.IsAdmin != b.IsAdmin) {
+			return fmt.Errorf("conflicting group join data")
+		}
+		if a.ID == "" {
+			a.ID = b.ID
+		}
+		if a.UserID == "" {
+			a.UserID = b.UserID
+		}
+		if a.GroupID == "" {
+			a.GroupID = b.GroupID
+		}
+		if !a.HasRoleInformation() && b.HasRoleInformation() {
+			a.IsAdmin = b.IsAdmin
+			a.adminRoleKnown = true
+		}
+	}
+	*g = GroupUser{User: value.User}
+	if value.Snake != nil {
+		g.JoinData = *value.Snake
+	} else if value.Camel != nil {
+		g.JoinData = *value.Camel
+	}
+
+	return nil
+}
+
 type GroupJoinData struct {
-	ID      string `json:"id,omitempty"`
-	GroupID string `json:"group_id,omitempty"`
-	UserID  string `json:"user_id,omitempty"`
-	IsAdmin bool   `json:"is_admin,omitempty"`
-	Created *Time  `json:"created,omitempty"`
+	adminRoleKnown bool
+	ID             string `json:"id,omitempty"`
+	GroupID        string `json:"group_id,omitempty"`
+	UserID         string `json:"user_id,omitempty"`
+	IsAdmin        bool   `json:"is_admin,omitempty"`
+	Created        *Time  `json:"created,omitempty"`
 }
 
 type GroupMembership struct {
-	ID      string `json:"id,omitempty"`
-	UserID  string `json:"user_id,omitempty"`
-	GroupID string `json:"group_id,omitempty"`
-	IsAdmin bool   `json:"is_admin"`
-	Delete  bool   `json:"delete,omitempty"`
-	User    User   `json:"user,omitempty"`
-	Created *Time  `json:"created,omitempty"`
+	adminRoleKnown bool
+	ID             string `json:"id,omitempty"`
+	UserID         string `json:"user_id,omitempty"`
+	GroupID        string `json:"group_id,omitempty"`
+	IsAdmin        bool   `json:"is_admin"`
+	Delete         bool   `json:"delete,omitempty"`
+	User           User   `json:"user,omitempty"`
+	Created        *Time  `json:"created,omitempty"`
+}
+
+// HasRoleInformation reports whether the server supplied a non-null is_admin.
+func (m GroupMembership) HasRoleInformation() bool { return m.adminRoleKnown }
+
+// HasRoleInformation reports whether the server supplied a non-null is_admin.
+func (m GroupJoinData) HasRoleInformation() bool { return m.adminRoleKnown }
+
+func (m *GroupMembership) UnmarshalJSON(data []byte) error {
+	type plain GroupMembership
+	var value plain
+	wire := struct {
+		*plain
+		IsAdmin *bool `json:"is_admin"`
+	}{plain: &value}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	*m = GroupMembership(value)
+	m.adminRoleKnown = wire.IsAdmin != nil
+	if wire.IsAdmin != nil {
+		m.IsAdmin = *wire.IsAdmin
+	}
+	return nil
+}
+
+func (m *GroupJoinData) UnmarshalJSON(data []byte) error {
+	type plain GroupJoinData
+	var value plain
+	wire := struct {
+		*plain
+		IsAdmin *bool `json:"is_admin"`
+	}{plain: &value}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	*m = GroupJoinData(value)
+	m.adminRoleKnown = wire.IsAdmin != nil
+	if wire.IsAdmin != nil {
+		m.IsAdmin = *wire.IsAdmin
+	}
+	return nil
 }
 
 type GroupUpdate struct {
@@ -106,10 +193,15 @@ func (c *Client) CreateGroup(ctx context.Context, group Group) (*Group, error) {
 
 // GetGroup gets a Passbolt Group
 func (c *Client) GetGroup(ctx context.Context, groupID string) (*Group, error) {
+	return c.GetGroupWithOptions(ctx, groupID, nil)
+}
+
+// GetGroupWithOptions gets a group with explicitly requested associations.
+func (c *Client) GetGroupWithOptions(ctx context.Context, groupID string, opts *GetGroupsOptions) (*Group, error) {
 	if err := checkUUIDFormat(groupID); err != nil {
 		return nil, fmt.Errorf("checking ID format: %w", err)
 	}
-	return doInto[Group](ctx, c, "GET", "/groups/"+groupID+".json", nil, nil)
+	return doInto[Group](ctx, c, "GET", "/groups/"+groupID+".json", nil, opts)
 }
 
 // UpdateGroup Updates a existing Passbolt Group

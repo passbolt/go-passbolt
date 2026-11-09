@@ -3,6 +3,8 @@ package helper
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"strings"
 
 	"github.com/passbolt/go-passbolt/api"
 )
@@ -16,6 +18,7 @@ type GroupMembershipOperation struct {
 
 // GroupMembership contains who and what kind of membership they have with a group
 type GroupMembership struct {
+	MembershipID   string
 	UserID         string
 	Username       string
 	UserFirstName  string
@@ -47,56 +50,45 @@ func CreateGroup(ctx context.Context, c *api.Client, name string, operations []G
 
 // GetGroup gets a Groups Name and Memberships
 func GetGroup(ctx context.Context, c *api.Client, groupID string) (string, []GroupMembership, error) {
-	// for some reason the groups index api call does not give back the groups_users even though it is supposed to, so i have to do this...
-	groups, err := c.GetGroups(ctx, &api.GetGroupsOptions{
-		ContainGroupsUsers:            true,
-		ContainGroupsUsersUser:        true,
-		ContainGroupsUsersUserProfile: true,
-	})
+	group, current, err := readGroupMemberships(ctx, c, groupID)
 	if err != nil {
-		return "", nil, fmt.Errorf("getting Groups: %w", err)
+		return "", nil, err
 	}
-
-	for _, g := range groups {
-		if g.ID == groupID {
-			memberships := []GroupMembership{}
-			for _, m := range g.GroupUsers {
-				memberships = append(memberships, GroupMembership{
-					UserID:         m.UserID,
-					Username:       m.User.Username,
-					UserFirstName:  m.User.Profile.FirstName,
-					UserLastName:   m.User.Profile.LastName,
-					IsGroupManager: m.IsAdmin,
-				})
-			}
-			return g.Name, memberships, nil
+	memberships := make([]GroupMembership, 0, len(current))
+	for _, m := range current {
+		member := GroupMembership{MembershipID: m.ID, UserID: m.UserID, Username: m.User.Username, IsGroupManager: m.IsAdmin}
+		if m.User.Profile != nil {
+			member.UserFirstName, member.UserLastName = m.User.Profile.FirstName, m.User.Profile.LastName
 		}
+		memberships = append(memberships, member)
 	}
-	return "", nil, fmt.Errorf("cannot Find Group in API Response")
+	return group.Name, memberships, nil
 }
 
 // UpdateGroup Updates a Groups Name and Memberships
 func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, operations []GroupMembershipOperation) error {
-	// for some reason the groups index api call does not give back the groups_users even though it is supposed to, so i have to do this...
-	groups, err := c.GetGroups(ctx, &api.GetGroupsOptions{
-		ContainGroupsUsers: true,
-	})
-	if err != nil {
-		return fmt.Errorf("getting Groups: %w", err)
-	}
-
-	var currentMemberships []api.GroupMembership
-	var currentName string
-	for _, g := range groups {
-		if g.ID == groupID {
-			currentMemberships = g.GroupUsers
-			currentName = g.Name
-			break
+	unique := make([]GroupMembershipOperation, 0, len(operations))
+	seen := make(map[string]GroupMembershipOperation)
+	for _, op := range operations {
+		if len(op.UserID) != 36 || uuid.Validate(op.UserID) != nil {
+			return fmt.Errorf("invalid user ID %q", op.UserID)
 		}
+		op.UserID = strings.ToLower(op.UserID)
+		if previous, ok := seen[op.UserID]; ok {
+			if previous != op {
+				return fmt.Errorf("conflicting operations for user %s", op.UserID)
+			}
+			continue
+		}
+		seen[op.UserID] = op
+		unique = append(unique, op)
 	}
-	if currentMemberships == nil {
-		return fmt.Errorf("cannot Find Group with ID %v", groupID)
+	operations = unique
+	group, currentMemberships, err := readGroupMemberships(ctx, c, groupID)
+	if err != nil {
+		return err
 	}
+	currentName := group.Name
 
 	request := api.GroupUpdate{
 		Name:         name,
@@ -114,7 +106,7 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 		if err != nil {
 			// Membership does not Exist so we can only create a new one
 			if operation.Delete {
-				return fmt.Errorf("cannot Delete User %v as it has no membership", operation.UserID)
+				continue
 			}
 			request.GroupChanges = append(request.GroupChanges, api.GroupMembership{
 				UserID:  operation.UserID,
@@ -122,8 +114,11 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 			})
 		} else {
 			// Membership Exists so we can modify or delete it
+			if membership.ID == "" {
+				return fmt.Errorf("missing membership ID for user %s", operation.UserID)
+			}
 			if !operation.Delete && membership.IsAdmin == operation.IsGroupManager {
-				return fmt.Errorf("membership for User %v already Exists with Same Role", operation.UserID)
+				continue
 			}
 			request.GroupChanges = append(request.GroupChanges, api.GroupMembership{
 				ID:      membership.ID,
@@ -131,6 +126,10 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 				Delete:  operation.Delete,
 			})
 		}
+	}
+
+	if len(request.GroupChanges) == 0 && request.Name == currentName {
+		return nil
 	}
 
 	dryrun, err := c.UpdateGroupDryRun(ctx, groupID, request)
@@ -190,6 +189,23 @@ func UpdateGroup(ctx context.Context, c *api.Client, groupID, name string, opera
 	_, err = c.UpdateGroup(ctx, groupID, request)
 	if err != nil {
 		return fmt.Errorf("updating Group: %w", err)
+	}
+	verified, memberships, err := readGroupMemberships(ctx, c, groupID)
+	if err != nil {
+		return fmt.Errorf("verifying group update: %w", err)
+	}
+	if verified.Name != request.Name {
+		return fmt.Errorf("verifying group update: name did not match requested value")
+	}
+	for _, op := range operations {
+		membership, lookupErr := getMembershipByUserID(memberships, op.UserID)
+		if op.Delete {
+			if lookupErr == nil {
+				return fmt.Errorf("verifying group update: user %s is still a member", op.UserID)
+			}
+		} else if lookupErr != nil || membership.IsAdmin != op.IsGroupManager {
+			return fmt.Errorf("verifying group update: requested role missing for user %s", op.UserID)
+		}
 	}
 	return nil
 }
