@@ -102,6 +102,11 @@ func (c *Client) Login(ctx context.Context) error {
 		return ErrSessionNotFound
 	}
 
+	return c.initializeAuthenticatedSession(ctx, "")
+}
+
+// initializeAuthenticatedSession is shared by GPG and browser-authorized login.
+func (c *Client) initializeAuthenticatedSession(ctx context.Context, expectedUserID string) error {
 	// Because of MFA, the custom Request Function now Fetches the CSRF token, we still need the user for his public key
 	apiMsg, err := c.DoCustomRequest(ctx, "GET", "/users/me.json", "v2", nil, nil)
 	if err != nil {
@@ -115,6 +120,9 @@ func (c *Client) Login(ctx context.Context) error {
 		return fmt.Errorf("parsing User 'Me' JSON from API Request: %w", err)
 	}
 
+	if expectedUserID != "" && user.ID != expectedUserID {
+		return fmt.Errorf("browser authorization returned a different account")
+	}
 	c.userID = user.ID
 
 	settings, err := c.GetServerSettings(ctx)
